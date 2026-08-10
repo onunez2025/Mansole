@@ -1,25 +1,24 @@
 /**
  * Catálogo de permisos y mapa rol -> permisos.
  *
- * Los permisos se derivan del rol en código porque las tablas Permissions y
- * Role_Permissions no existen en la base. Toda la lectura de permisos pasa por
- * getPermissionsForRole(), así que migrar a tablas más adelante solo implica
- * cambiar esta función.
+ * Las claves de ROLE_PERMISSIONS DEBEN coincidir exactamente con
+ * MANSOLE.Roles.Name tal como están en el schema.sql:
+ *   'Administrador', 'Supervisor', 'Técnico', 'Operador'
  *
- * Convención: mansole.<modulo>.<accion>
+ * Convención de permisos: mansole.<modulo>.<accion>
  */
 
 const PERMISSIONS = {
   workorders: ['view', 'create', 'edit', 'delete', 'assign', 'close', 'export'],
-  assets: ['view', 'create', 'edit', 'delete', 'changestatus'],
-  schedule: ['view', 'create', 'edit', 'reprogram', 'delete'],
-  inventory: ['view', 'create', 'edit', 'delete', 'cannibalize'],
+  assets:     ['view', 'create', 'edit', 'delete', 'changestatus'],
+  schedule:   ['view', 'create', 'edit', 'reprogram', 'delete'],
+  inventory:  ['view', 'create', 'edit', 'delete', 'cannibalize'],
   activities: ['view', 'create', 'edit', 'delete'],
-  users: ['view', 'create', 'edit', 'delete', 'audit'],
-  reports: ['view', 'export']
+  users:      ['view', 'create', 'edit', 'delete', 'audit'],
+  reports:    ['view', 'export']
 };
 
-/** Construye el código completo: p('workorders', 'view') -> 'mansole.workorders.view' */
+/** p('workorders', 'view') -> 'mansole.workorders.view' */
 function p(module, action) {
   return `mansole.${module}.${action}`;
 }
@@ -33,8 +32,11 @@ function all(module) {
 const ALL_PERMISSIONS = Object.keys(PERMISSIONS).flatMap(all);
 
 /**
- * Mapa rol -> permisos. Las claves coinciden con MANSOLE.Roles.Name.
- * El comodín '*' equivale a todos los permisos (ver checkPermission).
+ * Mapa rol -> permisos.
+ * Las claves deben coincidir EXACTAMENTE con MANSOLE.Roles.Name.
+ *
+ * Roles en producción (según schema.sql e INSERT inicial):
+ *   'Administrador', 'Supervisor', 'Técnico', 'Operador'
  */
 const ROLE_PERMISSIONS = {
   Administrador: ['*'],
@@ -43,35 +45,54 @@ const ROLE_PERMISSIONS = {
     ...all('workorders'),
     ...all('schedule'),
     p('assets', 'view'), p('assets', 'edit'), p('assets', 'changestatus'),
-    p('inventory', 'view'), p('inventory', 'edit'),
+    p('inventory', 'view'), p('inventory', 'create'), p('inventory', 'edit'),
     p('activities', 'view'), p('activities', 'create'), p('activities', 'edit'),
     p('users', 'view'),
     ...all('reports')
   ],
 
   'Técnico': [
-    p('workorders', 'view'), p('workorders', 'edit'), p('workorders', 'close'),
+    p('workorders', 'view'), p('workorders', 'create'), p('workorders', 'edit'), p('workorders', 'close'), p('workorders', 'export'),
     p('assets', 'view'), p('assets', 'changestatus'),
     p('schedule', 'view'),
-    p('inventory', 'view'),
+    p('inventory', 'view'), p('inventory', 'create'), p('inventory', 'cannibalize'),
     p('activities', 'view')
   ],
 
   Operador: [
-    p('workorders', 'view'), p('workorders', 'create'),
+    p('workorders', 'view'), p('workorders', 'create'), p('workorders', 'export'),
     p('assets', 'view'),
     p('schedule', 'view'),
-    p('inventory', 'view'), p('inventory', 'edit'), p('inventory', 'cannibalize'),
-    p('activities', 'view')
+    p('inventory', 'view')
   ]
 };
 
 /**
  * Permisos de un rol. Rol desconocido o nulo => sin permisos (fail closed).
+ * getPermissionsForRole es tolerante a variantes tipográficas del nombre de rol
+ * para evitar que un error de capitalización deje a un usuario sin acceso.
  */
 function getPermissionsForRole(roleName) {
   if (!roleName) return [];
-  return ROLE_PERMISSIONS[roleName] || [];
+
+  // Búsqueda exacta primero
+  if (ROLE_PERMISSIONS[roleName]) return ROLE_PERMISSIONS[roleName];
+
+  // Búsqueda tolerante: normaliza tildes comunes y compara en minúsculas
+  const normalize = (s) => (s || '')
+    .toLowerCase()
+    .replace(/é/g, 'e').replace(/á/g, 'a').replace(/í/g, 'i')
+    .replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/ñ/g, 'n');
+
+  const normInput = normalize(roleName);
+
+  for (const [key, perms] of Object.entries(ROLE_PERMISSIONS)) {
+    if (normalize(key) === normInput) return perms;
+  }
+
+  // No encontrado: sin permisos (fail closed)
+  console.warn(`[permissions] Rol desconocido: "${roleName}". Sin permisos asignados.`);
+  return [];
 }
 
 module.exports = {

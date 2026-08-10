@@ -5,20 +5,14 @@ import { api } from '../services/api';
 export default function Users({ currentUser }) {
   const [activeTab, setActiveTab] = useState('users');
 
-  const [usersList, setUsersList] = useState([
-    { id: 1, name: 'Carlos Admin', email: 'admin@gruposole.com', role: 'Administrador', ceco: 'Todos los CECOs', isActive: true, status: 'Activo' },
-    { id: 2, name: 'Roberto Gómez', email: 'supervisor@gruposole.com', role: 'Supervisor', ceco: 'CECO-SOL-101 (Ensamble)', isActive: true, status: 'Activo' },
-    { id: 3, name: 'Juan Pérez', email: 'tecnico1@gruposole.com', role: 'Técnico', ceco: 'CECO-SOL-102 (Metalmecán)', isActive: true, status: 'Activo' },
-    { id: 4, name: 'Miguel Torres', email: 'tecnico2@gruposole.com', role: 'Técnico', ceco: 'CECO-SOL-103 (Pintura)', isActive: false, status: 'Suspendido' },
-    { id: 5, name: 'Ana Vásquez', email: 'operador@gruposole.com', role: 'Operativo', ceco: 'CECO-SOL-101 (Ensamble)', isActive: true, status: 'Activo' }
-  ]);
+  // Estado vacío: los datos SIEMPRE vienen de Azure SQL via /api/auth/users
+  const [usersList, setUsersList] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState(null);
 
-  const [rolesList, setRolesList] = useState([
-    { id: 1, name: 'Administrador', description: 'Control total del sistema, configuración y seguridad RBAC.', isSystem: true },
-    { id: 2, name: 'Supervisor', description: 'Aprueba costos, supervisa cronogramas y gestiona técnicos.', isSystem: true },
-    { id: 3, name: 'Técnico', description: 'Ejecuta mantenimientos, consulta IA de diagnóstico y repuestos.', isSystem: true },
-    { id: 4, name: 'Operario', description: 'Reporta fallas iniciales y visualiza estado de equipos.', isSystem: true }
-  ]);
+  // Roles reales desde MANSOLE.Roles: Administrador, Supervisor, Técnico, Operador
+  const [rolesList, setRolesList] = useState([]);
+  const [rolesLoading, setRolesLoading] = useState(true);
 
   // Matriz RBAC con permisos vinculados directamente al NOMBRE DEL ROL para que sea 100% explícito
   const [modulesRBAC, setModulesRBAC] = useState([
@@ -101,56 +95,63 @@ export default function Users({ currentUser }) {
   const [roleDataForm, setRoleDataForm] = useState({ name: '', description: '' });
 
   useEffect(() => {
+    // Carga usuarios reales desde Azure SQL (GET /api/auth/users)
+    setUsersLoading(true);
+    setUsersError(null);
     api.getUsers()
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          const safeData = data.map((u, index) => ({
+        if (Array.isArray(data)) {
+          setUsersList(data.map((u, index) => ({
             id: u.id || u.Id || index + 1,
-            name: u.name || u.Name || u.FullName || `Colaborador #${index + 1}`,
-            email: u.email || u.Email || 'sin-correo@gruposole.com',
-            role: u.role || u.Role || u.RoleName || 'Técnico',
-            ceco: u.ceco || u.Ceco || 'CECO-SOL-101 (Ensamble)',
-            isActive: (u.isActive !== undefined ? u.isActive : u.IsActive) !== false && (u.isActive !== 0),
-            status: ((u.isActive !== undefined ? u.isActive : u.IsActive) !== false && (u.isActive !== 0)) ? 'Activo' : 'Suspendido'
-          }));
-          setUsersList(safeData);
+            name: u.name || u.Name || `Colaborador #${index + 1}`,
+            email: u.email || u.Email || '',
+            role: u.role || u.RoleName || 'Sin Rol',
+            isActive: u.isActive !== false && u.isActive !== 0,
+            status: (u.isActive !== false && u.isActive !== 0) ? 'Activo' : 'Suspendido'
+          })));
         }
+        setUsersLoading(false);
       })
-      .catch(() => console.log('Usando datos locales para Usuarios.'));
+      .catch(err => {
+        setUsersError(`No se pudo conectar con Azure SQL: ${err.response?.data?.error || err.message}`);
+        setUsersLoading(false);
+      });
 
+    // Carga roles reales desde MANSOLE.Roles
+    setRolesLoading(true);
     api.getRoles()
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
-          const merged = data.map((d, i) => {
-            const roleName = d.name || d.Name || `Rol #${i + 1}`;
-            return {
-              id: d.id || d.Id || i + 1,
-              name: roleName,
-              description: d.description || 'Rol corporativo administrado en Azure SQL',
-              isSystem: i < 4 || (d.id || d.Id) <= 4
-            };
-          });
+          const merged = data.map((d, i) => ({
+            id: d.id || d.Id || i + 1,
+            name: d.name || d.Name || `Rol #${i + 1}`,
+            description: d.description || 'Rol corporativo en MANSOLE.Roles',
+            permissionCount: d.permissionCount || 0,
+            isSystem: true
+          }));
           setRolesList(merged);
 
-          // Asegurar que si Azure SQL devuelve roles que no tienen key inicial, tengan valor por defecto
+          // Expandir la matriz RBAC con cualquier rol nuevo que no tenga columna aún
           setModulesRBAC(prev => prev.map(mod => ({
             ...mod,
             actions: mod.actions.map(act => {
               const newAct = { ...act };
               merged.forEach(role => {
                 if (newAct[role.name] === undefined) {
-                  const rLower = role.name.toLowerCase();
-                  if (rLower.includes('admin') || rLower.includes('super')) newAct[role.name] = true;
-                  else if (rLower.includes('técn') || rLower.includes('tecn')) newAct[role.name] = act.label.includes('Consultar') || act.label.includes('Emitir');
-                  else newAct[role.name] = act.label.includes('Emitir') || act.label.includes('Descargar');
+                  const rLower = (role.name || '').toLowerCase();
+                  if (rLower.includes('admin')) newAct[role.name] = true;
+                  else if (rLower.includes('super')) newAct[role.name] = true;
+                  else if (rLower.includes('tecn')) newAct[role.name] = act.label.includes('Consultar') || act.label.includes('Emitir');
+                  else newAct[role.name] = false;
                 }
               });
               return newAct;
             })
           })));
         }
+        setRolesLoading(false);
       })
-      .catch(() => console.log('Usando roles locales.'));
+      .catch(() => setRolesLoading(false));
   }, []);
 
   const togglePermission = (modIdx, actionIdx, roleName) => {
@@ -422,26 +423,42 @@ export default function Users({ currentUser }) {
             <h4 style={{ fontSize: '17px', fontWeight: '800', color: '#1A1C1E' }}>Directorio de Usuarios y Control de Acceso</h4>
             <span style={{ fontSize: '13px', color: '#515254' }}>Haz clic en "Editar" para cambiar roles o en el interruptor para suspender cuentas</span>
           </div>
-          <div className="table-container">
-            <table className="custom-table">
-              <thead>
-                <tr>
-                  <th>Colaborador</th>
-                  <th>Correo Institucional</th>
-                  <th>Rol Asignado</th>
-                  <th>CECO Asociado (RLS)</th>
-                  <th style={{ textAlign: 'center' }}>Estado (Toggle)</th>
-                  <th style={{ textAlign: 'center' }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {usersList.map((u) => {
-                  const displayName = u.name || 'Colaborador';
-                  const initial = (displayName.charAt(0) || 'U').toUpperCase();
-                  const isUserActive = u.isActive !== false && u.isActive !== 0;
 
-                  return (
-                    <tr key={u.id} style={{ opacity: !isUserActive ? '0.6' : '1', transition: 'opacity 0.2s' }}>
+          {usersError && (
+            <div style={{ padding: '12px 16px', background: '#FDF1F2', color: '#DF2935', borderRadius: '8px', fontSize: '13px', marginBottom: '16px', display: 'flex', gap: '8px', alignItems: 'center', fontWeight: '600' }}>
+              <AlertCircle size={16} /> {usersError}
+            </div>
+          )}
+
+          {usersLoading ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#8A919E', fontWeight: '600' }}>
+              ⏳ Cargando lista de colaboradores desde Azure SQL...
+            </div>
+          ) : usersList.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#8A919E', fontWeight: '600' }}>
+              📭 No hay usuarios registrados en la base de datos MANSOLE.Users.
+            </div>
+          ) : (
+            <div className="table-container">
+              <table className="custom-table">
+                <thead>
+                  <tr>
+                    <th>Colaborador</th>
+                    <th>Correo Institucional</th>
+                    <th>Rol Asignado</th>
+                    <th>CECO Asociado (RLS)</th>
+                    <th style={{ textAlign: 'center' }}>Estado (Toggle)</th>
+                    <th style={{ textAlign: 'center' }}>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usersList.map((u) => {
+                    const displayName = u.name || 'Colaborador';
+                    const initial = (displayName.charAt(0) || 'U').toUpperCase();
+                    const isUserActive = u.isActive !== false && u.isActive !== 0;
+
+                    return (
+                      <tr key={u.id} style={{ opacity: !isUserActive ? '0.6' : '1', transition: 'opacity 0.2s' }}>
                       <td style={{ fontWeight: '700', color: '#1A1C1E' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <div style={{

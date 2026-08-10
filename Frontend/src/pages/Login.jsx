@@ -22,7 +22,7 @@ export default function Login({ onNavigateToLanding }) {
     {
       name: 'Roberto Supervisor',
       email: 'supervisor@gruposole.com',
-      role: 'Supervisor de Planta',
+      role: 'Supervisor',
       roleDescription: 'Reprogramar fechas preventivo, aprobar OTs y consultar IA',
       badgeClass: 'badge-success',
       avatarColor: '#05B169'
@@ -38,7 +38,7 @@ export default function Login({ onNavigateToLanding }) {
     {
       name: 'Ana Vásquez',
       email: 'operador@gruposole.com',
-      role: 'Operario de Máquina',
+      role: 'Operador',
       roleDescription: 'Solo solicitar incidencias y ver estado operativa de su Área/CECO',
       badgeClass: 'badge-danger',
       avatarColor: '#DF2935'

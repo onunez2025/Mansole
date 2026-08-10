@@ -13,16 +13,22 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout }) {
-  const menuItems = [
+export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout, hasModule }) {
+  const allMenuItems = [
     { id: 'dashboard', label: 'Dashboard & KPIs', icon: <LayoutDashboard size={19} /> },
-    { id: 'workOrders', label: 'Órdenes de Trabajo (OT)', icon: <Hammer size={19} />, highlight: 'PRO' },
-    { id: 'schedule', label: 'Cronograma Preventivo', icon: <CalendarClock size={19} /> },
-    { id: 'assets', label: 'Activos y CECOs', icon: <Wrench size={19} /> },
-    { id: 'inventory', label: 'Repuestos / Almacén', icon: <Boxes size={19} /> },
-    { id: 'activities', label: 'Catálogo Actividades', icon: <ClipboardList size={19} /> },
-    { id: 'users', label: 'Usuarios & RBAC', icon: <Users size={19} />, adminOnly: false }
+    { id: 'workOrders', label: 'Órdenes de Trabajo (OT)', icon: <Hammer size={19} />, highlight: 'PRO', module: 'workorders' },
+    { id: 'schedule', label: 'Cronograma Preventivo', icon: <CalendarClock size={19} />, module: 'schedule' },
+    { id: 'assets', label: 'Activos y CECOs', icon: <Wrench size={19} />, module: 'assets' },
+    { id: 'inventory', label: 'Repuestos / Almacén', icon: <Boxes size={19} />, module: 'inventory' },
+    { id: 'activities', label: 'Catálogo Actividades', icon: <ClipboardList size={19} />, module: 'activities' },
+    { id: 'users', label: 'Usuarios & RBAC', icon: <Users size={19} />, module: 'users' }
   ];
+
+  // Ocultar los módulos que el rol no puede abrir. Sin hasModule (uso fuera de
+  // AuthProvider) se muestran todos, y el backend sigue siendo quien decide.
+  const menuItems = hasModule
+    ? allMenuItems.filter(item => !item.module || hasModule(item.module))
+    : allMenuItems;
 
   return (
     <aside style={{

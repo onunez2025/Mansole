@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
@@ -10,21 +10,35 @@ import WorkOrders from './pages/WorkOrders';
 import Users from './pages/Users';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
+import AccessDeniedPage from './pages/AccessDeniedPage';
+import { useAuth } from './hooks/useAuth';
 import './index.css';
 
-export default function App() {
-  // Estado de navegación institucional: 'landing', 'login', o 'app'
-  const [currentView, setCurrentView] = useState('landing');
-  
-  // Usuario autenticado por defecto (Se puede cambiar en 1-clic desde el Login)
-  const [currentUser, setCurrentUser] = useState({
-    name: 'Carlos Admin',
-    email: 'admin@gruposole.com',
-    role: 'Administrador'
-  });
+// Módulo -> permiso mínimo para verlo. Debe coincidir con Backend/src/config/permissions.js
+const TAB_MODULES = {
+  dashboard: null, // visible para cualquier usuario autenticado
+  workOrders: 'workorders',
+  schedule: 'schedule',
+  assets: 'assets',
+  inventory: 'inventory',
+  activities: 'activities',
+  users: 'users'
+};
 
-  // Módulo activo dentro del CMMS
+export default function App() {
+  const { user, isAuthenticated, isInitializing, logout, hasModule } = useAuth();
+
+  // Vista pública: 'landing' o 'login'. Con sesión activa se muestra el CMMS.
+  const [publicView, setPublicView] = useState('landing');
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  // Si el usuario pierde acceso al módulo abierto (logout, cambio de rol), volver al dashboard.
+  useEffect(() => {
+    const module = TAB_MODULES[activeTab];
+    if (isAuthenticated && module && !hasModule(module)) {
+      setActiveTab('dashboard');
+    }
+  }, [isAuthenticated, activeTab, hasModule]);
 
   const getTabTitle = () => {
     switch (activeTab) {
@@ -39,55 +53,69 @@ export default function App() {
     }
   };
 
-  const handleLoginSuccess = (user) => {
-    setCurrentUser(user);
-    setCurrentView('app');
-    setActiveTab('dashboard'); // Entrar al dashboard por defecto al hacer login
+  const handleLogout = async () => {
+    await logout();
+    setPublicView('login');
+    setActiveTab('dashboard');
   };
 
-  const handleLogout = () => {
-    setCurrentView('login');
-  };
-
-  // Renderizar Landing Page
-  if (currentView === 'landing') {
-    return <Landing onNavigateToLogin={() => setCurrentView('login')} />;
-  }
-
-  // Renderizar Pantalla de Login con Cuentas Demo en 1-Clic
-  if (currentView === 'login') {
+  // Mientras se valida el token guardado, evitar el parpadeo del landing.
+  // Solo en el arranque: durante un login en curso el formulario debe seguir montado.
+  if (isInitializing) {
     return (
-      <Login 
-        onLoginSuccess={handleLoginSuccess} 
-        onNavigateToLanding={() => setCurrentView('landing')} 
-      />
+      <div style={{
+        minHeight: '100vh', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', background: '#F5F6F8', color: '#515254',
+        fontSize: '14px', fontWeight: 600
+      }}>
+        Verificando sesión…
+      </div>
     );
   }
 
-  // Renderizar Plataforma Interna CMMS (SIATC Monolith)
+  if (!isAuthenticated) {
+    if (publicView === 'landing') {
+      return <Landing onNavigateToLogin={() => setPublicView('login')} />;
+    }
+
+    return <Login onNavigateToLanding={() => setPublicView('landing')} />;
+  }
+
+  // Renderiza el módulo activo solo si el rol tiene acceso.
+  const renderTab = () => {
+    const module = TAB_MODULES[activeTab];
+    if (module && !hasModule(module)) return <AccessDeniedPage />;
+
+    switch (activeTab) {
+      case 'dashboard': return <Dashboard currentUser={user} />;
+      case 'workOrders': return <WorkOrders currentUser={user} />;
+      case 'schedule': return <Schedule currentUser={user} />;
+      case 'assets': return <Assets currentUser={user} />;
+      case 'inventory': return <Inventory currentUser={user} />;
+      case 'activities': return <Activities currentUser={user} />;
+      case 'users': return <Users currentUser={user} />;
+      default: return <Dashboard currentUser={user} />;
+    }
+  };
+
   return (
     <div className="app-container">
-      <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        currentUser={currentUser}
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        currentUser={user}
         onLogout={handleLogout}
+        hasModule={hasModule}
       />
 
       <main className="main-content">
-        <Navbar 
-          currentUser={currentUser} 
-          activeTabTitle={getTabTitle()} 
+        <Navbar
+          currentUser={user}
+          activeTabTitle={getTabTitle()}
         />
-        
+
         <div className="page-container">
-          {activeTab === 'dashboard' && <Dashboard currentUser={currentUser} />}
-          {activeTab === 'workOrders' && <WorkOrders currentUser={currentUser} />}
-          {activeTab === 'schedule' && <Schedule currentUser={currentUser} />}
-          {activeTab === 'assets' && <Assets currentUser={currentUser} />}
-          {activeTab === 'inventory' && <Inventory currentUser={currentUser} />}
-          {activeTab === 'activities' && <Activities currentUser={currentUser} />}
-          {activeTab === 'users' && <Users currentUser={currentUser} />}
+          {renderTab()}
         </div>
       </main>
     </div>

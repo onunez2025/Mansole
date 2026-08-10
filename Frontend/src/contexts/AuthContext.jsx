@@ -1,138 +1,114 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
+import { api, getTokens, setTokens } from '../services/api';
 
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [tokens, setTokens] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // isInitializing: restaurando la sesión guardada al arrancar la app.
+  // isLoading: hay un login en curso. Son distintos a propósito — si App.jsx
+  // reaccionara a isLoading desmontaría el formulario de login y perdería el error.
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Cargar tokens del localStorage al montar
+  // Restaurar sesión al montar: si hay tokens guardados, validarlos contra el backend.
   useEffect(() => {
-    const storedTokens = localStorage.getItem('tokens');
-    if (storedTokens) {
-      try {
-        const parsed = JSON.parse(storedTokens);
-        setTokens(parsed);
-        // Verificar que el token siga siendo válido
-        fetchCurrentUser(parsed.accessToken);
-      } catch (err) {
-        console.error('Error parsing stored tokens:', err);
-        localStorage.removeItem('tokens');
-        setIsLoading(false);
+    let cancelled = false;
+
+    async function restoreSession() {
+      if (!getTokens()?.accessToken) {
+        setIsInitializing(false);
+        return;
       }
-    } else {
-      setIsLoading(false);
+
+      try {
+        const data = await api.me();
+        if (!cancelled) setUser(data.user);
+      } catch {
+        // Token vencido o revocado: sesión limpia, sin ruido para el usuario.
+        setTokens(null);
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setIsInitializing(false);
+      }
     }
+
+    restoreSession();
+    return () => { cancelled = true; };
   }, []);
 
-  // Obtener usuario actual
-  const fetchCurrentUser = async (accessToken) => {
-    try {
-      const response = await fetch('http://localhost:5000/api/auth/me', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('No autorizado');
-      }
-
-      const data = await response.json();
-      setUser(data.user);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching current user:', err);
+  // El interceptor de api.js avisa cuando el refresh falla.
+  useEffect(() => {
+    const onExpired = () => {
       setUser(null);
-      setTokens(null);
-      localStorage.removeItem('tokens');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      setError('Tu sesión expiró. Vuelve a iniciar sesión.');
+    };
 
-  // Login
-  const login = useCallback(async (username, password) => {
+    window.addEventListener('auth:session-expired', onExpired);
+    return () => window.removeEventListener('auth:session-expired', onExpired);
+  }, []);
+
+  const login = useCallback(async (email, password) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ username, password })
-      });
+      const data = await api.login(email, password);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error en el login');
-      }
-
-      const data = await response.json();
-      const newTokens = {
+      setTokens({
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
         expiresIn: data.expiresIn
-      };
-
-      setTokens(newTokens);
+      });
       setUser(data.user);
-      localStorage.setItem('tokens', JSON.stringify(newTokens));
 
       return { success: true, user: data.user };
     } catch (err) {
-      const errorMessage = err.message || 'Error desconocido';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
+      // El backend responde 401/403/429 con { error }; si no hay respuesta, es red caída.
+      const message = err.response?.data?.error
+        || (err.response ? 'Error al iniciar sesión' : 'No se pudo conectar con el servidor');
+      setError(message);
+      return { success: false, error: message };
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Logout
   const logout = useCallback(async () => {
     try {
-      if (tokens?.accessToken) {
-        await fetch('http://localhost:5000/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${tokens.accessToken}`
-          }
-        });
-      }
-    } catch (err) {
-      console.error('Logout error:', err);
+      if (getTokens()?.accessToken) await api.logout();
+    } catch {
+      // Da igual si el backend no responde: la sesión local se cierra igual.
     } finally {
-      setUser(null);
       setTokens(null);
-      localStorage.removeItem('tokens');
+      setUser(null);
+      setError(null);
     }
-  }, [tokens]);
+  }, []);
 
-  // Verificar permiso
   const hasPermission = useCallback((permission) => {
     if (!user) return false;
     if (!permission) return true;
 
-    // '*' significa acceso de administrador a todo
-    return user.permissions?.includes(permission) || user.permissions?.includes('*') || false;
+    const permissions = user.permissions || [];
+    return permissions.includes('*') || permissions.includes(permission);
   }, [user]);
 
-  // Verificar módulo
   const hasModule = useCallback((module) => {
     if (!user) return false;
-    return user.permissions?.some(p => p.startsWith(`mansole.${module}.`)) || false;
+
+    const permissions = user.permissions || [];
+    // '*' es el comodín de administrador: da acceso a todos los módulos.
+    return permissions.includes('*') || permissions.some(p => p.startsWith(`mansole.${module}.`));
   }, [user]);
 
   const value = {
     user,
-    tokens,
+    isInitializing,
     isLoading,
     error,
+    clearError: () => setError(null),
     login,
     logout,
     hasPermission,

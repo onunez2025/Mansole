@@ -1,86 +1,95 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const { getDbConnection, sql } = require('../config/db');
 const { generateTokens, verifyToken } = require('../utils/jwt');
-const { authenticateToken, rateLimit, auditLog } = require('../middleware/authMiddleware');
+const {
+  authenticateToken, rateLimit, auditLog, checkPermission, checkRole
+} = require('../middleware/authMiddleware');
+const { getPermissionsForRole, ALL_PERMISSIONS } = require('../config/permissions');
+
+/**
+ * Consulta base de usuario contra el esquema real de MANSOLE.Users
+ * (Id, FirstName, LastName, Email, PasswordHash, RoleId, IsActive, CreatedAt).
+ */
+const USER_SELECT = `
+  SELECT
+    u.Id, u.Email, u.FirstName, u.LastName, u.IsActive, u.PasswordHash,
+    u.RoleId, r.Name AS RoleName
+  FROM MANSOLE.Users u
+  LEFT JOIN MANSOLE.Roles r ON u.RoleId = r.Id
+`;
+
+/** Normaliza una fila de Users al shape que consume el frontend. */
+function toPublicUser(row) {
+  return {
+    id: row.Id,
+    email: row.Email,
+    name: [row.FirstName, row.LastName].filter(Boolean).join(' ').trim(),
+    roleId: row.RoleId,
+    role: row.RoleName || null,
+    isActive: !!row.IsActive,
+    permissions: getPermissionsForRole(row.RoleName)
+  };
+}
 
 /**
  * POST /api/auth/login
- * Autenticar usuario con username/email y contraseña
+ * Autenticar usuario con email y contraseña
  */
-router.post('/login', rateLimit(5, 15 * 60 * 1000), auditLog('LOGIN', 'Users'), async (req, res) => {
-  const { username, password } = req.body;
+router.post('/login', rateLimit(5, 15 * 60 * 1000), async (req, res) => {
+  // Se acepta `username` como alias histórico, pero el identificador es el email.
+  const email = req.body.email || req.body.username;
+  const { password } = req.body;
 
   try {
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username y password requeridos' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email y password requeridos' });
     }
 
     const pool = await getDbConnection();
 
-    // Obtener usuario y sus permisos
     const userResult = await pool.request()
-      .input('username', sql.NVarChar, username.toLowerCase())
-      .query(`
-        SELECT
-          u.Id, u.Username, u.Email, u.Name, u.Status, u.Password_Hash,
-          u.Role_Id, r.Name as RoleName,
-          STRING_AGG(p.Code, ',') as Permissions
-        FROM MANSOLE.Users u
-        LEFT JOIN MANSOLE.Roles r ON u.Role_Id = r.Id
-        LEFT JOIN MANSOLE.Role_Permissions rp ON r.Id = rp.Role_Id
-        LEFT JOIN MANSOLE.Permissions p ON rp.Permission_Id = p.Id
-        WHERE LOWER(u.Username) = @username
-        GROUP BY u.Id, u.Username, u.Email, u.Name, u.Status, u.Password_Hash,
-                 u.Role_Id, r.Name
-      `);
+      .input('email', sql.NVarChar, email.toLowerCase())
+      .query(`${USER_SELECT} WHERE LOWER(u.Email) = @email`);
 
     if (userResult.recordset.length === 0) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    const user = userResult.recordset[0];
+    const row = userResult.recordset[0];
 
-    // Verificar contraseña
-    const validPassword = await bcrypt.compare(password, user.Password_Hash);
+    // Verificar contraseña. Un hash ausente o corrupto nunca debe autenticar.
+    const storedHash = row.PasswordHash || '';
+    let validPassword = false;
+    try {
+      validPassword = await bcrypt.compare(password, storedHash);
+    } catch {
+      validPassword = false;
+    }
+
     if (!validPassword) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    // Verificar que el usuario esté activo
-    if (user.Status !== 'Activo') {
-      return res.status(403).json({ error: `Usuario ${user.Status}. Contacta al administrador.` });
+    if (!row.IsActive) {
+      return res.status(403).json({ error: 'Usuario inactivo. Contacta al administrador.' });
     }
 
-    // Parsear permisos
-    const permissions = user.Permissions ? user.Permissions.split(',').filter(Boolean) : [];
-
-    // Generar tokens
-    const tokens = generateTokens(user, permissions);
-
-    // Actualizar último login
-    await pool.request()
-      .input('userId', sql.Int, user.Id)
-      .query('UPDATE MANSOLE.Users SET Last_Login = GETDATE() WHERE Id = @userId');
+    const user = toPublicUser(row);
+    const tokens = generateTokens(user, user.permissions);
 
     res.json({
       success: true,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       expiresIn: tokens.expiresIn,
-      user: {
-        id: user.Id,
-        username: user.Username,
-        email: user.Email,
-        name: user.Name,
-        role: user.RoleName,
-        permissions: permissions
-      }
+      user
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Error al autenticar', details: error.message });
+    res.status(500).json({ error: 'Error al autenticar' });
   }
 });
 
@@ -105,25 +114,21 @@ router.post('/refresh', async (req, res) => {
     const pool = await getDbConnection();
     const userResult = await pool.request()
       .input('userId', sql.Int, decoded.userId)
-      .query(`
-        SELECT
-          u.Id, u.Username, u.Email, u.Name, u.Role_Id,
-          STRING_AGG(p.Code, ',') as Permissions
-        FROM MANSOLE.Users u
-        LEFT JOIN MANSOLE.Roles r ON u.Role_Id = r.Id
-        LEFT JOIN MANSOLE.Role_Permissions rp ON r.Id = rp.Role_Id
-        LEFT JOIN MANSOLE.Permissions p ON rp.Permission_Id = p.Id
-        WHERE u.Id = @userId
-        GROUP BY u.Id, u.Username, u.Email, u.Name, u.Role_Id
-      `);
+      .query(`${USER_SELECT} WHERE u.Id = @userId`);
 
     if (userResult.recordset.length === 0) {
       return res.status(401).json({ error: 'Usuario no encontrado' });
     }
 
-    const user = userResult.recordset[0];
-    const permissions = user.Permissions ? user.Permissions.split(',').filter(Boolean) : [];
-    const tokens = generateTokens(user, permissions);
+    const row = userResult.recordset[0];
+
+    // Un usuario desactivado no puede renovar su sesión.
+    if (!row.IsActive) {
+      return res.status(403).json({ error: 'Usuario inactivo' });
+    }
+
+    const user = toPublicUser(row);
+    const tokens = generateTokens(user, user.permissions);
 
     res.json({
       success: true,
@@ -146,37 +151,19 @@ router.get('/me', authenticateToken, async (req, res) => {
     const pool = await getDbConnection();
     const userResult = await pool.request()
       .input('userId', sql.Int, req.user.userId)
-      .query(`
-        SELECT
-          u.Id, u.Username, u.Email, u.Name, u.Status, u.Role_Id, r.Name as RoleName,
-          STRING_AGG(p.Code, ',') as Permissions
-        FROM MANSOLE.Users u
-        LEFT JOIN MANSOLE.Roles r ON u.Role_Id = r.Id
-        LEFT JOIN MANSOLE.Role_Permissions rp ON r.Id = rp.Role_Id
-        LEFT JOIN MANSOLE.Permissions p ON rp.Permission_Id = p.Id
-        WHERE u.Id = @userId
-        GROUP BY u.Id, u.Username, u.Email, u.Name, u.Status, u.Role_Id, r.Name
-      `);
+      .query(`${USER_SELECT} WHERE u.Id = @userId`);
 
     if (userResult.recordset.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    const user = userResult.recordset[0];
-    const permissions = user.Permissions ? user.Permissions.split(',').filter(Boolean) : [];
+    const row = userResult.recordset[0];
 
-    res.json({
-      success: true,
-      user: {
-        id: user.Id,
-        username: user.Username,
-        email: user.Email,
-        name: user.Name,
-        status: user.Status,
-        role: user.RoleName,
-        permissions: permissions
-      }
-    });
+    if (!row.IsActive) {
+      return res.status(403).json({ error: 'Usuario inactivo' });
+    }
+
+    res.json({ success: true, user: toPublicUser(row) });
   } catch (error) {
     console.error('Get me error:', error);
     res.status(500).json({ error: 'Error al obtener usuario', details: error.message });
@@ -210,14 +197,18 @@ router.post('/change-password', authenticateToken, auditLog('CHANGE_PASSWORD', '
     const pool = await getDbConnection();
     const userResult = await pool.request()
       .input('userId', sql.Int, req.user.userId)
-      .query('SELECT Password_Hash FROM MANSOLE.Users WHERE Id = @userId');
+      .query('SELECT PasswordHash FROM MANSOLE.Users WHERE Id = @userId');
 
     if (userResult.recordset.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    const user = userResult.recordset[0];
-    const validPassword = await bcrypt.compare(currentPassword, user.Password_Hash);
+    let validPassword = false;
+    try {
+      validPassword = await bcrypt.compare(currentPassword, userResult.recordset[0].PasswordHash || '');
+    } catch {
+      validPassword = false;
+    }
 
     if (!validPassword) {
       return res.status(401).json({ error: 'Contraseña actual incorrecta' });
@@ -228,143 +219,245 @@ router.post('/change-password', authenticateToken, auditLog('CHANGE_PASSWORD', '
     await pool.request()
       .input('userId', sql.Int, req.user.userId)
       .input('passwordHash', sql.NVarChar, hashedNewPassword)
-      .query('UPDATE MANSOLE.Users SET Password_Hash = @passwordHash WHERE Id = @userId');
+      .query('UPDATE MANSOLE.Users SET PasswordHash = @passwordHash WHERE Id = @userId');
 
     res.json({ success: true, message: 'Contraseña actualizada correctamente' });
   } catch (error) {
     console.error('Change password error:', error);
-    res.status(500).json({ error: 'Error al cambiar contraseña', details: error.message });
+    res.status(500).json({ error: 'Error al cambiar contraseña' });
   }
 });
 
+/* ------------------------------------------------------------------ *
+ * Administración de usuarios y roles.
+ * Contra el esquema real: MANSOLE.Users
+ * (Id, FirstName, LastName, Email, PasswordHash, RoleId, IsActive)
+ * y MANSOLE.Roles (Id, Name).
+ * ------------------------------------------------------------------ */
+
+/** 'Roberto Gómez Díaz' -> { firstName: 'Roberto', lastName: 'Gómez Díaz' } */
+function splitName(fullName) {
+  const parts = String(fullName || '').trim().split(/\s+/);
+  return {
+    firstName: parts.shift() || '',
+    lastName: parts.join(' ')
+  };
+}
+
 // GET /api/auth/users
-router.get('/users', async (req, res) => {
+router.get('/users', authenticateToken, checkPermission('mansole.users.view'), async (req, res) => {
   try {
     const pool = await getDbConnection();
     const result = await pool.request().query(`
-      SELECT u.Id, u.Name, u.Email, u.Username, u.Status, u.Role_Id, r.Name as RoleName
+      SELECT u.Id, u.FirstName, u.LastName, u.Email, u.IsActive, u.RoleId, r.Name AS RoleName
       FROM MANSOLE.Users u
-      LEFT JOIN MANSOLE.Roles r ON u.Role_Id = r.Id
+      LEFT JOIN MANSOLE.Roles r ON u.RoleId = r.Id
+      ORDER BY u.FirstName, u.LastName
     `);
-    const users = result.recordset.map(u => ({
-      id: u.Id, name: u.Name, email: u.Email, username: u.Username,
-      role: u.RoleName, isActive: u.Status === 'Activo', status: u.Status
-    }));
-    res.json(users);
-  } catch(e) {
-    res.status(500).json({ error: 'Error fetching users' });
+
+    res.json(result.recordset.map((u) => ({
+      id: u.Id,
+      name: [u.FirstName, u.LastName].filter(Boolean).join(' ').trim(),
+      email: u.Email,
+      role: u.RoleName || 'Sin Rol',
+      isActive: !!u.IsActive,
+      status: u.IsActive ? 'Activo' : 'Suspendido'
+    })));
+  } catch (e) {
+    console.error('Error GET /api/auth/users:', e.message);
+    res.status(500).json({ error: 'Error al obtener usuarios' });
   }
 });
 
 // POST /api/auth/users
-router.post('/users', async (req, res) => {
+router.post('/users', authenticateToken, checkPermission('mansole.users.create'),
+  auditLog('CREATE_USER', 'Users'), async (req, res) => {
   const { name, email, role, isActive } = req.body;
+
   try {
+    if (!name || !email) {
+      return res.status(400).json({ error: 'Nombre y email requeridos' });
+    }
+
     const pool = await getDbConnection();
-    const roleResult = await pool.request().input('roleName', sql.NVarChar, role).query('SELECT Id FROM MANSOLE.Roles WHERE Name = @roleName');
-    let roleId = roleResult.recordset.length > 0 ? roleResult.recordset[0].Id : 3;
-    const defaultPass = await bcrypt.hash('Sole2026!', 10);
-    const username = email.split('@')[0];
-    const status = isActive ? 'Activo' : 'Suspendido';
+    const roleResult = await pool.request()
+      .input('roleName', sql.NVarChar, role)
+      .query('SELECT Id FROM MANSOLE.Roles WHERE Name = @roleName');
+
+    if (roleResult.recordset.length === 0) {
+      return res.status(400).json({ error: `Rol desconocido: ${role}` });
+    }
+
+    // Contraseña inicial aleatoria que nadie conoce: la cuenta queda inutilizable
+    // hasta que un administrador le asigne una con scripts/set-password.js.
+    const unusablePassword = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+    const { firstName, lastName } = splitName(name);
 
     await pool.request()
-      .input('name', sql.NVarChar, name)
+      .input('firstName', sql.NVarChar, firstName)
+      .input('lastName', sql.NVarChar, lastName)
       .input('email', sql.NVarChar, email)
-      .input('username', sql.NVarChar, username)
-      .input('pass', sql.NVarChar, defaultPass)
-      .input('roleId', sql.Int, roleId)
-      .input('status', sql.NVarChar, status)
+      .input('pass', sql.NVarChar, unusablePassword)
+      .input('roleId', sql.Int, roleResult.recordset[0].Id)
+      .input('isActive', sql.Bit, isActive ? 1 : 0)
       .query(`
-        INSERT INTO MANSOLE.Users (Name, Email, Username, Password_Hash, Role_Id, Status)
-        VALUES (@name, @email, @username, @pass, @roleId, @status)
+        INSERT INTO MANSOLE.Users (FirstName, LastName, Email, PasswordHash, RoleId, IsActive)
+        VALUES (@firstName, @lastName, @email, @pass, @roleId, @isActive)
       `);
-    res.status(201).json({ message: 'User created' });
-  } catch(e) {
-    res.status(500).json({ error: 'Error creating user' });
+
+    res.status(201).json({
+      message: 'Usuario creado',
+      note: `Sin contraseña utilizable. Asignar con: node scripts/set-password.js ${email}`
+    });
+  } catch (e) {
+    console.error('Error POST /api/auth/users:', e.message);
+    res.status(500).json({ error: 'Error al crear usuario' });
   }
 });
 
 // PUT /api/auth/users/:id
-router.put('/users/:id', async (req, res) => {
+router.put('/users/:id', authenticateToken, checkPermission('mansole.users.edit'),
+  auditLog('UPDATE_USER', 'Users'), async (req, res) => {
   const { name, email, role, isActive } = req.body;
+
   try {
     const pool = await getDbConnection();
-    const roleResult = await pool.request().input('roleName', sql.NVarChar, role).query('SELECT Id FROM MANSOLE.Roles WHERE Name = @roleName');
-    let roleId = roleResult.recordset.length > 0 ? roleResult.recordset[0].Id : 3;
-    const status = isActive ? 'Activo' : 'Suspendido';
+    const roleResult = await pool.request()
+      .input('roleName', sql.NVarChar, role)
+      .query('SELECT Id FROM MANSOLE.Roles WHERE Name = @roleName');
+
+    if (roleResult.recordset.length === 0) {
+      return res.status(400).json({ error: `Rol desconocido: ${role}` });
+    }
+
+    const { firstName, lastName } = splitName(name);
+
     await pool.request()
       .input('id', sql.Int, req.params.id)
-      .input('name', sql.NVarChar, name)
+      .input('firstName', sql.NVarChar, firstName)
+      .input('lastName', sql.NVarChar, lastName)
       .input('email', sql.NVarChar, email)
-      .input('roleId', sql.Int, roleId)
-      .input('status', sql.NVarChar, status)
+      .input('roleId', sql.Int, roleResult.recordset[0].Id)
+      .input('isActive', sql.Bit, isActive ? 1 : 0)
       .query(`
-        UPDATE MANSOLE.Users SET Name=@name, Email=@email, Role_Id=@roleId, Status=@status
-        WHERE Id=@id
+        UPDATE MANSOLE.Users
+        SET FirstName = @firstName, LastName = @lastName, Email = @email,
+            RoleId = @roleId, IsActive = @isActive
+        WHERE Id = @id
       `);
-    res.json({ message: 'User updated' });
-  } catch(e) {
-    res.status(500).json({ error: 'Error updating user' });
+
+    res.json({ message: 'Usuario actualizado' });
+  } catch (e) {
+    console.error('Error PUT /api/auth/users/:id:', e.message);
+    res.status(500).json({ error: 'Error al actualizar usuario' });
   }
 });
 
 // PUT /api/auth/users/:id/status
-router.put('/users/:id/status', async (req, res) => {
-  const { isActive } = req.body;
+router.put('/users/:id/status', authenticateToken, checkPermission('mansole.users.edit'),
+  auditLog('TOGGLE_USER_STATUS', 'Users'), async (req, res) => {
   try {
     const pool = await getDbConnection();
-    const status = isActive ? 'Activo' : 'Suspendido';
-    await pool.request().input('id', sql.Int, req.params.id).input('status', sql.NVarChar, status)
-      .query('UPDATE MANSOLE.Users SET Status=@status WHERE Id=@id');
-    res.json({ message: 'Status updated' });
-  } catch(e) {
-    res.status(500).json({ error: 'Error updating status' });
+    await pool.request()
+      .input('id', sql.Int, req.params.id)
+      .input('isActive', sql.Bit, req.body.isActive ? 1 : 0)
+      .query('UPDATE MANSOLE.Users SET IsActive = @isActive WHERE Id = @id');
+
+    res.json({ message: 'Estado actualizado' });
+  } catch (e) {
+    console.error('Error PUT /api/auth/users/:id/status:', e.message);
+    res.status(500).json({ error: 'Error al actualizar estado' });
   }
 });
 
 // DELETE /api/auth/users/:id
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/:id', authenticateToken, checkPermission('mansole.users.delete'),
+  auditLog('DELETE_USER', 'Users'), async (req, res) => {
   try {
+    // Evitar que un administrador se borre a sí mismo y deje el sistema sin acceso.
+    if (Number(req.params.id) === Number(req.user.userId)) {
+      return res.status(400).json({ error: 'No puedes eliminar tu propio usuario' });
+    }
+
     const pool = await getDbConnection();
-    await pool.request().input('id', sql.Int, req.params.id).query('DELETE FROM MANSOLE.Users WHERE Id=@id');
-    res.json({ message: 'User deleted' });
-  } catch(e) {
-    res.status(500).json({ error: 'Error deleting user' });
+    await pool.request()
+      .input('id', sql.Int, req.params.id)
+      .query('DELETE FROM MANSOLE.Users WHERE Id = @id');
+
+    res.json({ message: 'Usuario eliminado' });
+  } catch (e) {
+    console.error('Error DELETE /api/auth/users/:id:', e.message);
+    res.status(500).json({ error: 'Error al eliminar usuario' });
   }
 });
 
 // GET /api/auth/roles
-router.get('/roles', async (req, res) => {
+router.get('/roles', authenticateToken, checkPermission('mansole.users.view'), async (req, res) => {
   try {
     const pool = await getDbConnection();
-    const result = await pool.request().query('SELECT Id, Name, Description FROM MANSOLE.Roles');
-    res.json(result.recordset);
-  } catch(e) {
-    res.status(500).json({ error: 'Error fetching roles' });
+    // MANSOLE.Roles solo tiene Id y Name; el conteo sale del mapa de permisos.
+    const result = await pool.request().query('SELECT Id, Name FROM MANSOLE.Roles ORDER BY Id');
+
+    res.json(result.recordset.map((r) => {
+      const perms = getPermissionsForRole(r.Name);
+      return {
+        id: r.Id,
+        name: r.Name,
+        permissionCount: perms.includes('*') ? ALL_PERMISSIONS.length : perms.length
+      };
+    }));
+  } catch (e) {
+    console.error('Error GET /api/auth/roles:', e.message);
+    res.status(500).json({ error: 'Error al obtener roles' });
   }
 });
 
 // POST /api/auth/roles
-router.post('/roles', async (req, res) => {
-  const { name, description } = req.body;
+router.post('/roles', authenticateToken, checkRole('Administrador'),
+  auditLog('CREATE_ROLE', 'Roles'), async (req, res) => {
   try {
+    if (!req.body.name) {
+      return res.status(400).json({ error: 'Nombre de rol requerido' });
+    }
+
     const pool = await getDbConnection();
-    await pool.request().input('name', sql.NVarChar, name).input('desc', sql.NVarChar, description)
-      .query('INSERT INTO MANSOLE.Roles (Name, Description) VALUES (@name, @desc)');
-    res.status(201).json({ message: 'Role created' });
-  } catch(e) {
-    res.status(500).json({ error: 'Error creating role' });
+    await pool.request()
+      .input('name', sql.NVarChar, req.body.name)
+      .query('INSERT INTO MANSOLE.Roles (Name) VALUES (@name)');
+
+    res.status(201).json({
+      message: 'Rol creado',
+      note: 'Sin permisos hasta agregarlo a ROLE_PERMISSIONS en Backend/src/config/permissions.js'
+    });
+  } catch (e) {
+    console.error('Error POST /api/auth/roles:', e.message);
+    res.status(500).json({ error: 'Error al crear rol' });
   }
 });
 
 // DELETE /api/auth/roles/:id
-router.delete('/roles/:id', async (req, res) => {
+router.delete('/roles/:id', authenticateToken, checkRole('Administrador'),
+  auditLog('DELETE_ROLE', 'Roles'), async (req, res) => {
   try {
     const pool = await getDbConnection();
-    await pool.request().input('id', sql.Int, req.params.id).query('DELETE FROM MANSOLE.Roles WHERE Id=@id');
-    res.json({ message: 'Role deleted' });
-  } catch(e) {
-    res.status(500).json({ error: 'Error deleting role' });
+    const inUse = await pool.request()
+      .input('id', sql.Int, req.params.id)
+      .query('SELECT COUNT(*) AS n FROM MANSOLE.Users WHERE RoleId = @id');
+
+    if (inUse.recordset[0].n > 0) {
+      return res.status(409).json({
+        error: `No se puede eliminar: ${inUse.recordset[0].n} usuario(s) tienen este rol`
+      });
+    }
+
+    await pool.request()
+      .input('id', sql.Int, req.params.id)
+      .query('DELETE FROM MANSOLE.Roles WHERE Id = @id');
+
+    res.json({ message: 'Rol eliminado' });
+  } catch (e) {
+    console.error('Error DELETE /api/auth/roles/:id:', e.message);
+    res.status(500).json({ error: 'Error al eliminar rol' });
   }
 });
 

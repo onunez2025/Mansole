@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, UserPlus, Lock, CheckCircle2, XCircle, Key, Users as UsersIcon, Edit3, Trash2, PlusCircle, ToggleLeft, ToggleRight, Check, AlertCircle, Layers, ChevronRight, UserCheck } from 'lucide-react';
+import { api } from '../services/api';
 
 export default function Users({ currentUser }) {
   const [activeTab, setActiveTab] = useState('users');
@@ -100,8 +101,7 @@ export default function Users({ currentUser }) {
   const [roleDataForm, setRoleDataForm] = useState({ name: '', description: '' });
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/auth/users')
-      .then(r => r.json())
+    api.getUsers()
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
           const safeData = data.map((u, index) => ({
@@ -118,8 +118,7 @@ export default function Users({ currentUser }) {
       })
       .catch(() => console.log('Usando datos locales para Usuarios.'));
 
-    fetch('http://localhost:5000/api/auth/roles')
-      .then(r => r.json())
+    api.getRoles()
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
           const merged = data.map((d, i) => {
@@ -201,13 +200,11 @@ export default function Users({ currentUser }) {
       const updated = usersList.map(u => u.id === editingUser.id ? { ...u, ...userDataForm, status: userDataForm.isActive ? 'Activo' : 'Suspendido' } : u);
       setUsersList(updated);
       try {
-        await fetch(`http://localhost:5000/api/auth/users/${editingUser.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(userDataForm)
-        });
-      } catch (e) {}
-      alert(`✅ Información y rol del colaborador ${userDataForm.name} actualizados exitosamente.`);
+        await api.updateUser(editingUser.id, userDataForm);
+        alert(`✅ Información y rol del colaborador ${userDataForm.name} actualizados exitosamente.`);
+      } catch (err) {
+        alert(`❌ No se pudo actualizar: ${err.response?.data?.error || err.message}`);
+      }
     } else {
       const newObj = {
         id: Date.now(),
@@ -216,13 +213,15 @@ export default function Users({ currentUser }) {
       };
       setUsersList([newObj, ...usersList]);
       try {
-        await fetch('http://localhost:5000/api/auth/users', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newObj)
-        });
-      } catch (e) {}
-      alert(`🎉 Nuevo colaborador ${newObj.name} registrado en la base de datos.`);
+        const res = await api.createUser(newObj);
+        alert(
+          `🎉 Nuevo colaborador ${newObj.name} registrado en la base de datos.\n\n` +
+          `⚠️ Aún no puede iniciar sesión: asígnale una contraseña ejecutando en Backend/\n` +
+          `node scripts/set-password.js ${newObj.email}` + (res?.note ? '' : '')
+        );
+      } catch (err) {
+        alert(`❌ No se pudo crear: ${err.response?.data?.error || err.message}`);
+      }
     }
     setShowUserModal(false);
   };
@@ -245,12 +244,11 @@ export default function Users({ currentUser }) {
       const updated = usersList.map(u => u.id === user.id ? { ...u, isActive: nextStatus, status: nextStatus ? 'Activo' : 'Suspendido' } : u);
       setUsersList(updated);
       try {
-        await fetch(`http://localhost:5000/api/auth/users/${user.id}/status`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ isActive: nextStatus })
-        });
-      } catch (e) {}
+        await api.updateUserStatus(user.id, nextStatus);
+      } catch (err) {
+        alert(`❌ No se pudo cambiar el estado: ${err.response?.data?.error || err.message}`);
+        setUsersList(usersList); // revertir el cambio optimista
+      }
     }
   };
 
@@ -258,10 +256,14 @@ export default function Users({ currentUser }) {
     if ((currentUser?.role || '') !== 'Administrador') return alert('⚠️ Acción restringida a Administradores.');
     if ((user.email || '').includes('admin@gruposole.com')) return alert('⚠️ No se puede eliminar la cuenta maestra.');
     if (window.confirm(`⚠️ ¿Deseas eliminar definitivamente el registro de ${user.name || 'este usuario'}?`)) {
+      const previous = usersList;
       setUsersList(usersList.filter(u => u.id !== user.id));
       try {
-        await fetch(`http://localhost:5000/api/auth/users/${user.id}`, { method: 'DELETE' });
-      } catch (e) {}
+        await api.deleteUser(user.id);
+      } catch (err) {
+        alert(`❌ No se pudo eliminar: ${err.response?.data?.error || err.message}`);
+        setUsersList(previous);
+      }
     }
   };
 
@@ -297,13 +299,14 @@ export default function Users({ currentUser }) {
     setRoleDataForm({ name: '', description: '' });
 
     try {
-      await fetch('http://localhost:5000/api/auth/roles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newRoleObj.name, description: newRoleObj.description })
-      });
-    } catch (e) {}
-    alert(`✅ Rol "${newRoleObj.name}" creado con éxito y añadido a la Matriz RBAC con su propio indicador.`);
+      await api.createRole({ name: newRoleObj.name, description: newRoleObj.description });
+      alert(
+        `✅ Rol "${newRoleObj.name}" creado en la base de datos.\n\n` +
+        `⚠️ Nace sin permisos: hay que declararlos en Backend/src/config/permissions.js`
+      );
+    } catch (err) {
+      alert(`❌ No se pudo crear el rol: ${err.response?.data?.error || err.message}`);
+    }
   };
 
   const handleDeleteRole = async (role) => {
@@ -316,10 +319,14 @@ export default function Users({ currentUser }) {
       return;
     }
     if (window.confirm(`¿Seguro de eliminar el rol "${role.name}" del sistema y de la matriz RBAC?`)) {
+      const previous = rolesList;
       setRolesList(rolesList.filter(r => r.id !== role.id));
       try {
-        await fetch(`http://localhost:5000/api/auth/roles/${role.id}`, { method: 'DELETE' });
-      } catch (e) {}
+        await api.deleteRole(role.id);
+      } catch (err) {
+        alert(`❌ No se pudo eliminar el rol: ${err.response?.data?.error || err.message}`);
+        setRolesList(previous);
+      }
     }
   };
 

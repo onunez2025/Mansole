@@ -1,6 +1,16 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+// Sin valor por defecto a propósito: firmar con un secreto conocido permitiría
+// a cualquiera forjar tokens de administrador.
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error(
+    'Falta JWT_SECRET en el entorno. Genera uno con: ' +
+    'node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'base64url\'))"'
+  );
+}
+
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '7d';
 
@@ -41,15 +51,16 @@ function decodeToken(token) {
  */
 function generateTokens(user, permissions) {
   const accessPayload = {
-    userId: user.Id,
-    username: user.Username,
-    email: user.Email,
-    roleId: user.Role_Id,
+    userId: user.id,
+    email: user.email,
+    name: user.name,
+    roleId: user.roleId,
+    role: user.role,
     permissions: permissions || []
   };
 
   const refreshPayload = {
-    userId: user.Id,
+    userId: user.id,
     type: 'refresh'
   };
 

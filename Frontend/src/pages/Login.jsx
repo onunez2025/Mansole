@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { Shield, UserCheck, Lock, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
-export default function Login({ onLoginSuccess, onNavigateToLanding }) {
+export default function Login({ onNavigateToLanding }) {
+  const { login, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  // Perfiles Demo Precargados para Evaluación Rápida en 1 Clic
-  const demoProfiles = [
+  // Cuentas del sistema. Hacer clic solo rellena el email: la contraseña
+  // siempre la valida el backend contra el hash de MANSOLE.Users.
+  const knownAccounts = [
     {
       name: 'Carlos Admin',
       email: 'admin@gruposole.com',
@@ -42,31 +45,27 @@ export default function Login({ onLoginSuccess, onNavigateToLanding }) {
     }
   ];
 
-  const handleManualLogin = (e) => {
+  const handleManualLogin = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     if (!email || !password) {
       setError('Por favor ingresa tus credenciales corporativas.');
       return;
     }
 
-    const found = demoProfiles.find(p => p.email.toLowerCase() === email.toLowerCase());
-    if (found) {
-      onLoginSuccess(found);
-    } else {
-      // Login genérico como supervisor por defecto en demostración
-      onLoginSuccess({
-        name: email.split('@')[0],
-        email: email,
-        role: 'Supervisor de Planta',
-        badgeClass: 'badge-info'
-      });
+    // AuthProvider guarda los tokens y App.jsx cambia de vista al haber sesión.
+    const result = await login(email, password);
+    if (!result.success) {
+      setError(result.error);
     }
   };
 
-  const handleQuickLogin = (profile) => {
-    onLoginSuccess(profile);
+  /** Rellena el email para no tener que escribirlo; no autentica. */
+  const handlePickAccount = (account) => {
+    setEmail(account.email);
+    setPassword('');
+    setError('');
   };
 
   return (
@@ -138,8 +137,13 @@ export default function Login({ onLoginSuccess, onNavigateToLanding }) {
               />
             </div>
 
-            <button type="submit" className="btn btn-primary" style={{ marginTop: 'auto', padding: '12px', fontSize: '15px' }}>
-              Iniciar Sesión Seguro <ArrowRight size={16} />
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isLoading}
+              style={{ marginTop: 'auto', padding: '12px', fontSize: '15px' }}
+            >
+              {isLoading ? 'Verificando…' : <>Iniciar Sesión Seguro <ArrowRight size={16} /></>}
             </button>
           </form>
 
@@ -154,21 +158,21 @@ export default function Login({ onLoginSuccess, onNavigateToLanding }) {
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div style={{ marginBottom: '20px' }}>
             <span style={{ fontSize: '11px', fontWeight: '700', color: '#4C5F80', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              ⚡ Pruebas de Evaluación Rápida
+              🔐 Cuentas del Sistema
             </span>
             <h3 style={{ fontSize: '24px', fontWeight: '800', color: '#1A1C1E', marginTop: '4px' }}>
-              Selecciona un Rol de Trabajo
+              Roles Configurados
             </h3>
             <p style={{ fontSize: '14px', color: '#515254', marginTop: '4px' }}>
-              Haz clic sobre cualquier perfil para iniciar sesión inmediatamente con ese nivel de privilegios y evaluar la matriz de permisos (RBAC):
+              Haz clic sobre una cuenta para rellenar el correo. La contraseña se valida contra la base de datos:
             </p>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {demoProfiles.map((p, idx) => (
-              <div 
+            {knownAccounts.map((p, idx) => (
+              <div
                 key={idx}
-                onClick={() => handleQuickLogin(p)}
+                onClick={() => handlePickAccount(p)}
                 className="siatc-card"
                 style={{ 
                   padding: '16px 20px', 
@@ -179,7 +183,7 @@ export default function Login({ onLoginSuccess, onNavigateToLanding }) {
                   border: '1px solid #E2E4E9',
                   transition: 'all 0.2s'
                 }}
-                title={`Entrar con un clic como ${p.role}`}
+                title={`Usar el correo de ${p.name}`}
               >
                 <div style={{ 
                   width: '44px', 
@@ -206,7 +210,7 @@ export default function Login({ onLoginSuccess, onNavigateToLanding }) {
                   </p>
                 </div>
                 <div style={{ color: '#4C5F80', fontWeight: '700', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  Entrar →
+                  Usar →
                 </div>
               </div>
             ))}

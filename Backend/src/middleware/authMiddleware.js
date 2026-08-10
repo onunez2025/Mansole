@@ -14,6 +14,12 @@ function authenticateToken(req, res, next) {
     }
 
     const decoded = verifyToken(token);
+
+    // Un refresh token no sirve para autenticar peticiones normales.
+    if (decoded.type === 'refresh') {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+
     req.user = decoded;
     next();
   } catch (error) {
@@ -24,7 +30,7 @@ function authenticateToken(req, res, next) {
 
 /**
  * Middleware: Verificar permisos específicos
- * Uso: router.post('/users', checkPermission('mansole.users.create'), ...)
+ * Uso: router.post('/users', authenticateToken, checkPermission('mansole.users.create'), ...)
  */
 function checkPermission(requiredPermission) {
   return (req, res, next) => {
@@ -37,7 +43,7 @@ function checkPermission(requiredPermission) {
                          userPermissions.includes('*'); // * = admin (todos los permisos)
 
     if (!hasPermission) {
-      console.warn(`Access Denied: User ${req.user.userId} tried to access ${requiredPermission}`);
+      console.warn(`Access Denied: User ${req.user.userId} intentó acceder a ${requiredPermission}`);
       return res.status(403).json({ error: 'Permiso denegado', required: requiredPermission });
     }
 
@@ -46,17 +52,18 @@ function checkPermission(requiredPermission) {
 }
 
 /**
- * Middleware: Verificar rol específico
- * Uso: router.delete('/roles/:id', checkRole('Administrador'), ...)
+ * Middleware: Verificar rol específico por nombre
+ * Uso: router.delete('/roles/:id', authenticateToken, checkRole('Administrador'), ...)
  */
-function checkRole(requiredRole) {
+function checkRole(...allowedRoles) {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ error: 'No autenticado' });
     }
 
-    if (req.user.roleId !== requiredRole && requiredRole !== 'ANY') {
-      return res.status(403).json({ error: 'Rol insuficiente' });
+    // El token guarda el nombre del rol en `role` (roleId es el entero).
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Rol insuficiente', required: allowedRoles });
     }
 
     next();
@@ -64,40 +71,39 @@ function checkRole(requiredRole) {
 }
 
 /**
- * Middleware: Logging de auditoría
- * Registra todas las acciones en la tabla Audit_Logs
+ * Middleware: Logging de auditoría en MANSOLE.AuditLogs
+ * Columnas reales: Id, UserId, Action, Entity, Timestamp, Details
  */
-function auditLog(action, tableName) {
-  return async (req, res, next) => {
-    // Guardar información original de request
+function auditLog(action, entity) {
+  return (req, res, next) => {
     res.on('finish', async () => {
       try {
+        // Sin usuario autenticado no hay a quién atribuir la acción.
         if (!req.user) return;
 
         const { sql, getDbConnection } = require('../config/db');
         const pool = await getDbConnection();
 
-        const newValues = req.body ? JSON.stringify(req.body) : null;
-        const recordId = req.params.id ? parseInt(req.params.id) : null;
+        const details = JSON.stringify({
+          status: res.statusCode,
+          result: res.statusCode < 400 ? 'Success' : 'Failed',
+          recordId: req.params.id ? String(req.params.id) : null,
+          ip: req.ip,
+          userAgent: req.get('user-agent')
+        });
 
         await pool.request()
           .input('userId', sql.Int, req.user.userId)
-          .input('username', sql.NVarChar, req.user.username)
           .input('action', sql.NVarChar, action)
-          .input('tableName', sql.NVarChar, tableName)
-          .input('recordId', sql.Int, recordId)
-          .input('recordType', sql.NVarChar, tableName)
-          .input('newValues', sql.NVarChar, newValues)
-          .input('ipAddress', sql.NVarChar, req.ip)
-          .input('userAgent', sql.NVarChar, req.get('user-agent'))
-          .input('status', sql.NVarChar, res.statusCode < 400 ? 'Success' : 'Failed')
+          .input('entity', sql.NVarChar, entity)
+          .input('details', sql.NVarChar, details)
           .query(`
-            INSERT INTO MANSOLE.Audit_Logs (User_Id, Username, Action, Table_Name, Record_Id, Record_Type, New_Values, IP_Address, User_Agent, Status)
-            VALUES (@userId, @username, @action, @tableName, @recordId, @recordType, @newValues, @ipAddress, @userAgent, @status)
+            INSERT INTO MANSOLE.AuditLogs (UserId, Action, Entity, Timestamp, Details)
+            VALUES (@userId, @action, @entity, GETDATE(), @details)
           `);
       } catch (error) {
-        console.error('Audit log error:', error);
-        // No fallar la request por auditoría
+        // La auditoría nunca debe tumbar la request.
+        console.error('Audit log error:', error.message);
       }
     });
 
@@ -106,27 +112,41 @@ function auditLog(action, tableName) {
 }
 
 /**
- * Middleware: Rate limiting simple (en memoria)
- * Para producción usar redis-express-rate-limit
+ * Middleware: Rate limiting en memoria contra fuerza bruta.
+ * Solo cuenta intentos FALLIDOS (401/403); un login correcto no consume cuota.
+ * Para producción multi-instancia hace falta un store compartido (Redis).
  */
-const loginAttempts = new Map();
+const failedAttempts = new Map();
 
 function rateLimit(maxAttempts = 5, windowMs = 15 * 60 * 1000) {
   return (req, res, next) => {
     const key = req.ip || req.connection.remoteAddress;
     const now = Date.now();
-    const attempts = loginAttempts.get(key) || [];
 
-    // Limpiar intentos viejos
-    const recentAttempts = attempts.filter(time => now - time < windowMs);
+    const recent = (failedAttempts.get(key) || []).filter((time) => now - time < windowMs);
 
-    if (recentAttempts.length >= maxAttempts) {
+    if (recent.length >= maxAttempts) {
+      failedAttempts.set(key, recent);
+      const retryAfter = Math.ceil((windowMs - (now - recent[0])) / 1000);
+      res.set('Retry-After', String(retryAfter));
       return res.status(429).json({
-        error: 'Demasiados intentos fallidos. Intenta más tarde.'
+        error: 'Demasiados intentos fallidos. Intenta más tarde.',
+        retryAfterSeconds: retryAfter
       });
     }
 
-    loginAttempts.set(key, recentAttempts);
+    // Registrar el intento solo si termina en fallo de credenciales.
+    res.on('finish', () => {
+      if (res.statusCode === 401 || res.statusCode === 403) {
+        const current = (failedAttempts.get(key) || []).filter((time) => now - time < windowMs);
+        current.push(Date.now());
+        failedAttempts.set(key, current);
+      } else if (res.statusCode < 400) {
+        failedAttempts.delete(key); // login correcto limpia el historial
+      }
+    });
+
+    failedAttempts.set(key, recent);
     next();
   };
 }

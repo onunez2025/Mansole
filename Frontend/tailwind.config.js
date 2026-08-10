@@ -1,0 +1,106 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,jsx}",
+  ],
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          50: '#f0f4f9',
+          100: '#e0eaf3',
+          200: '#c1d5e7',
+          300: '#a2c0db',
+          400: '#7aa4cc',
+          500: '#4C5F80',
+          600: '#3d4b68',
+          700: '#2e3750',
+          800: '#1f2338',
+          900: '#0f1220',
+        },
+        success: {
+          50: '#f0fdf4',
+          100: '#e7f9f0',
+          200: '#b8ebd1',
+          500: '#05B169',
+          700: '#047857',
+        },
+        error: {
+          50: '#fdf1f2',
+          100: '#fac7cd',
+          200: '#f5a1a8',
+          500: '#DF2935',
+          700: '#991b22',
+        },
+        warning: {
+          50: '#fef7ec',
+          100: '#fde3ba',
+          200: '#fbcf87',
+          500: '#E58D14',
+          700: '#a85f0b',
+        },
+        info: {
+          50: '#eaf0fb',
+          100: '#c5d6f5',
+          200: '#a0bdf0',
+          500: '#3B72D4',
+          700: '#1e40af',
+        },
+        neutral: {
+          50: '#f9fafb',
+          100: '#f3f4f6',
+          200: '#e5e7eb',
+          300: '#d1d5db',
+          400: '#9ca3af',
+          500: '#6b7280',
+          600: '#4b5563',
+          700: '#374151',
+          800: '#1f2937',
+          900: '#111827',
+        },
+      },
+      fontSize: {
+        'xs': '12px',
+        'sm': '14px',
+        'base': '16px',
+        'lg': '18px',
+        'xl': '22px',
+        '2xl': '28px',
+        '3xl': '36px',
+        '4xl': '48px',
+      },
+      spacing: {
+        'xs': '4px',
+        'sm': '8px',
+        'md': '16px',
+        'lg': '24px',
+        'xl': '32px',
+        '2xl': '48px',
+      },
+      borderRadius: {
+        'sm': '6px',
+        'md': '8px',
+        'lg': '12px',
+        'xl': '16px',
+      },
+      boxShadow: {
+        'sm': '0 1px 2px 0 rgba(5, 15, 26, 0.05)',
+        'md': '0 4px 12px rgba(5, 15, 26, 0.08)',
+        'lg': '0 12px 28px rgba(5, 15, 26, 0.12)',
+        'xl': '0 20px 40px rgba(5, 15, 26, 0.15)',
+      },
+      fontFamily: {
+        sans: ['DM Sans', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
+      transitionTimingFunction: {
+        'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
+      },
+    },
+  },
+  plugins: [
+    require('@tailwindcss/forms'),
+  ],
+}

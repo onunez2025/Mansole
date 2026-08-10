@@ -4,24 +4,24 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
 // Las credenciales viven únicamente en Backend/.env (ignorado por git).
 // Nunca poner valores por defecto reales aquí: el archivo sí se versiona.
-const requiredEnv = ['DB_USER', 'DB_PASSWORD', 'DB_SERVER', 'DB_NAME'];
+const requiredEnv = ['DB_USER', 'DB_PASSWORD', 'DB_SERVER'];
 const missingEnv = requiredEnv.filter((key) => !process.env[key]);
 
 if (missingEnv.length > 0) {
   throw new Error(
     `Faltan variables de entorno de base de datos: ${missingEnv.join(', ')}. ` +
-    'Copia Backend/.env.example a Backend/.env y complétalo.'
+    'Configúralas en el panel de entorno de Easypanel.'
   );
 }
 
 const dbConfig = {
-  user: process.env.DB_USER.trim(),
-  password: process.env.DB_PASSWORD.trim(),
-  server: process.env.DB_SERVER.trim(),
-  database: process.env.DB_NAME.trim(),
+  user: (process.env.DB_USER || '').trim(),
+  password: (process.env.DB_PASSWORD || '').trim(),
+  server: (process.env.DB_SERVER || '').trim(),
+  database: (process.env.DB_NAME || process.env.DB_DATABASE || 'soledb-puntoventa').trim(),
   options: {
-    encrypt: true, // requerido para Azure SQL Database
-    trustServerCertificate: false, // obligatorio para certificado validado en Azure SQL
+    encrypt: process.env.DB_ENCRYPT === 'false' ? false : true, // Azure SQL por defecto true
+    trustServerCertificate: process.env.DB_TRUST_CERT === 'true' ? true : false,
     enableArithAbort: true
   },
   pool: {

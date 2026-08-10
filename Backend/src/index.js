@@ -39,8 +39,22 @@ app.use('/api/schedule', require('./routes/scheduleRoutes'));
 app.use('/api/users', require('./routes/usersRoutes'));
 app.use('/api/kpi', require('./routes/kpiRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
+const path = require('path');
 
-// Manejo global de errores 404
+// Servir Frontend compilado si existe la carpeta public/dist
+const publicPath = path.join(__dirname, '../public');
+app.use(express.static(publicPath));
+
+// Cualquier ruta no-API entrega index.html para SPA React Router
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+  const indexPath = path.join(publicPath, 'index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) next();
+  });
+});
+
+// Manejo global de errores 404 (para /api)
 app.use((req, res, next) => {
   res.status(404).json({ error: 'Endpoint no encontrado (404)' });
 });

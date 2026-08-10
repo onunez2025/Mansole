@@ -459,72 +459,73 @@ export default function Users({ currentUser }) {
 
                     return (
                       <tr key={u.id} style={{ opacity: !isUserActive ? '0.6' : '1', transition: 'opacity 0.2s' }}>
-                      <td style={{ fontWeight: '700', color: '#1A1C1E' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{
-                            width: '34px', height: '34px', borderRadius: '50%', background: isUserActive ? '#4C5F80' : '#A0AEC0',
-                            color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '14px'
-                          }}>
-                            {initial}
+                        <td style={{ fontWeight: '700', color: '#1A1C1E' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{
+                              width: '34px', height: '34px', borderRadius: '50%', background: isUserActive ? '#4C5F80' : '#A0AEC0',
+                              color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '14px'
+                            }}>
+                              {initial}
+                            </div>
+                            <div>
+                              <span>{displayName}</span>
+                              {!isUserActive && <span style={{ display: 'block', fontSize: '11px', color: '#D9534F', fontWeight: '600' }}>⚠️ Acceso Suspendido</span>}
+                            </div>
                           </div>
-                          <div>
-                            <span>{displayName}</span>
-                            {!isUserActive && <span style={{ display: 'block', fontSize: '11px', color: '#D9534F', fontWeight: '600' }}>⚠️ Acceso Suspendido</span>}
+                        </td>
+                        <td style={{ color: '#515254' }}>{u.email || 'Sin correo'}</td>
+                        <td>
+                          <span className="badge badge-info" style={{ fontWeight: '700', border: '1px solid #C5D6F5' }}>
+                            {u.role || 'Técnico'}
+                          </span>
+                        </td>
+                        <td><span className="badge badge-mono">{u.ceco || 'CECO-SOL-101'}</span></td>
+                        <td style={{ textAlign: 'center' }}>
+                          <button 
+                            onClick={() => handleToggleActive(u)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                            title={isUserActive ? 'Cuenta Activa. Clic para suspender.' : 'Cuenta Suspendida. Clic para activar.'}
+                          >
+                            {isUserActive ? (
+                              <>
+                                <ToggleRight size={28} color="#2E7D32" />
+                                <span className="badge badge-success">Activo</span>
+                              </>
+                            ) : (
+                              <>
+                                <ToggleLeft size={28} color="#C62828" />
+                                <span className="badge badge-danger">Suspendido</span>
+                              </>
+                            )}
+                          </button>
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                            <button 
+                              className="btn btn-secondary" 
+                              style={{ padding: '6px 12px', fontSize: '13px' }} 
+                              onClick={() => handleOpenEditUser(u)}
+                              title="Editar usuario"
+                            >
+                              <Edit3 size={15} /> Editar
+                            </button>
+                            <button 
+                              className="btn btn-secondary" 
+                              style={{ padding: '6px 10px', color: '#D9534F' }} 
+                              onClick={() => handleDeleteUser(u)}
+                              title="Eliminar usuario"
+                            >
+                              <Trash2 size={15} />
+                            </button>
                           </div>
-                        </div>
-                      </td>
-                      <td style={{ color: '#515254' }}>{u.email || 'Sin correo'}</td>
-                      <td>
-                        <span className="badge badge-info" style={{ fontWeight: '700', border: '1px solid #C5D6F5' }}>
-                          {u.role || 'Técnico'}
-                        </span>
-                      </td>
-                      <td><span className="badge badge-mono">{u.ceco || 'CECO-SOL-101'}</span></td>
-                      <td style={{ textAlign: 'center' }}>
-                        <button 
-                          onClick={() => handleToggleActive(u)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                          title={isUserActive ? 'Cuenta Activa. Clic para suspender.' : 'Cuenta Suspendida. Clic para activar.'}
-                        >
-                          {isUserActive ? (
-                            <>
-                              <ToggleRight size={28} color="#2E7D32" />
-                              <span className="badge badge-success">Activo</span>
-                            </>
-                          ) : (
-                            <>
-                              <ToggleLeft size={28} color="#C62828" />
-                              <span className="badge badge-danger">Suspendido</span>
-                            </>
-                          )}
-                        </button>
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                          <button 
-                            className="btn btn-secondary" 
-                            style={{ padding: '6px 12px', fontSize: '13px' }} 
-                            onClick={() => handleOpenEditUser(u)}
-                            title="Editar usuario"
-                          >
-                            <Edit3 size={15} /> Editar
-                          </button>
-                          <button 
-                            className="btn btn-secondary" 
-                            style={{ padding: '6px 10px', color: '#D9534F' }} 
-                            onClick={() => handleDeleteUser(u)}
-                            title="Eliminar usuario"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

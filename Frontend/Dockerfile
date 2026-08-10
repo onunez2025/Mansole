@@ -1,5 +1,5 @@
-# Etapa 1: Construcción (Build)
-FROM node:18-alpine AS builder
+# Etapa 1: Construcción (Build - Vite 8 requiere Node 22+)
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 

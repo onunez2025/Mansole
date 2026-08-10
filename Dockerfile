@@ -2,8 +2,8 @@
 # DOCKERFILE MONOLÍTICO (UN SOLO SERVICIO PARA EASYPANEL / HOSTINGER)
 # ====================================================================
 
-# Etapa 1: Compilar Frontend (React + Vite)
-FROM node:18-alpine AS frontend-builder
+# Etapa 1: Compilar Frontend (React + Vite 8 requiere Node 22+)
+FROM node:22-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 COPY Frontend/package*.json ./
@@ -14,7 +14,7 @@ ENV VITE_API_URL=/api
 RUN npm run build
 
 # Etapa 2: Contenedor Final (Express Backend + Frontend Estático)
-FROM node:18-alpine
+FROM node:22-alpine
 WORKDIR /app
 
 COPY Backend/package*.json ./

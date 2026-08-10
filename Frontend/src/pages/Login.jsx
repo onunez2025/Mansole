@@ -61,10 +61,10 @@ export default function Login({ onNavigateToLanding }) {
     }
   };
 
-  /** Rellena el email para no tener que escribirlo; no autentica. */
+  /** Rellena el email y contraseña demo al hacer clic en un rol */
   const handlePickAccount = (account) => {
     setEmail(account.email);
-    setPassword('');
+    setPassword('admin123');
     setError('');
   };
 

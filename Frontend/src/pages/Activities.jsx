@@ -145,11 +145,7 @@ export default function Activities({ currentUser }) {
               e.preventDefault();
               try {
                 if (editingActivity) {
-                  await fetch(`http://localhost:5000/api/activities/${editingActivity.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newActivity)
-                  });
+                  await api.updateActivity(editingActivity.id, newActivity);
                   alert("✅ Actividad actualizada exitosamente en Azure SQL");
                 } else {
                   await api.createActivity(newActivity);

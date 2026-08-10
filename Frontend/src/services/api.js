@@ -1,11 +1,11 @@
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:5000/api';
+export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const TOKENS_KEY = 'tokens';
 
 const client = axios.create({
   baseURL: API_BASE,
-  timeout: 15000, // Aumentado a 15s para conexiones Azure SQL lentas
+  timeout: 15000, // 15s para conexiones Azure SQL
 });
 
 /* ------------------------------------------------------------------ *

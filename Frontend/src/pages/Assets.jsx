@@ -16,8 +16,8 @@ export default function Assets({ currentUser }) {
     setLoading(true);
     Promise.all([
       api.getAssets(),
-      fetch('http://localhost:5000/api/assets/areas').then(r => r.json()),
-      fetch('http://localhost:5000/api/assets/categories').then(r => r.json())
+      api.getAreas(),
+      api.getCategories()
     ]).then(([data, areasData, catsData]) => {
       if (Array.isArray(data)) {
         setAssets(data.map((a, i) => ({
@@ -64,11 +64,7 @@ export default function Assets({ currentUser }) {
     e.preventDefault();
     try {
       if (editingAsset) {
-        await fetch(`http://localhost:5000/api/assets/${editingAsset.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newAsset)
-        });
+        await api.updateAsset(editingAsset.id, newAsset);
         alert(`✅ Activo "${newAsset.name}" actualizado en Azure SQL.`);
       } else {
         await api.createAsset(newAsset);
@@ -84,7 +80,7 @@ export default function Assets({ currentUser }) {
   const handleDeleteAsset = async (a) => {
     if (!window.confirm(`¿Eliminar definitivamente el activo [${a.code}] ${a.name}? Esta acción no se puede deshacer.`)) return;
     try {
-      await fetch(`http://localhost:5000/api/assets/${a.id}`, { method: 'DELETE' });
+      await api.deleteAsset(a.id);
       alert(`✅ Activo "${a.name}" eliminado de Azure SQL.`);
       loadAssets();
     } catch (err) {

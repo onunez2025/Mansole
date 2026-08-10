@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../services/api';
+import { api, API_BASE } from '../services/api';
 import { Hammer, Plus, Download, Bot, Users, FileText } from 'lucide-react';
 
 export default function WorkOrders({ currentUser }) {
@@ -105,7 +105,7 @@ export default function WorkOrders({ currentUser }) {
   };
 
   const downloadPDF = (id) => {
-    window.open(`http://localhost:5000/api/workorders/${id}/pdf`, '_blank');
+    window.open(`${API_BASE}/workorders/${id}/pdf`, '_blank');
   };
 
   if (loading) {

@@ -61,11 +61,15 @@ export default function Login({ onNavigateToLanding }) {
     }
   };
 
-  /** Rellena el email y contraseña demo al hacer clic en un rol */
-  const handlePickAccount = (account) => {
+  /** Al hacer clic en 'Usar', rellena e inicia sesión automáticamente en 1-clic */
+  const handlePickAccount = async (account) => {
     setEmail(account.email);
     setPassword('admin123');
     setError('');
+    const result = await login(account.email, 'admin123');
+    if (!result.success) {
+      setError(result.error);
+    }
   };
 
   return (

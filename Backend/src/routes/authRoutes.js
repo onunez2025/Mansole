@@ -60,20 +60,16 @@ router.post('/login', rateLimit(5, 15 * 60 * 1000), async (req, res) => {
 
     const row = userResult.recordset[0];
 
-    // Verificar contraseña con bcrypt hash, con fallback para contraseñas de evaluación (admin123, 12345678, admin)
+    // La contraseña se valida SOLO contra el hash bcrypt almacenado.
+    // Nunca agregar aquí contraseñas de cortesía: un hash ausente o corrupto
+    // debe impedir el acceso, no concederlo. Para habilitar una cuenta:
+    //   node scripts/set-password.js <email>
     const storedHash = row.PasswordHash || '';
     let validPassword = false;
     try {
       validPassword = await bcrypt.compare(password, storedHash);
-      if (!validPassword && ['admin123', '12345678', 'admin', 'password', 'sole2026'].includes(password.toLowerCase())) {
-        validPassword = true;
-      }
     } catch {
-      if (['admin123', '12345678', 'admin', 'password', 'sole2026'].includes(password.toLowerCase())) {
-        validPassword = true;
-      } else {
-        validPassword = false;
-      }
+      validPassword = false;
     }
 
     if (!validPassword) {

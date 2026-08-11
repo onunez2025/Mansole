@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const { getDbConnection } = require('./config/db');
+const { requireModule } = require('./middleware/authMiddleware');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -30,15 +31,53 @@ app.get('/api/health', async (req, res) => {
 });
 
 // Rutas de Módulos (Cargando de manera modular)
+//
+// /api/auth es público por necesidad (login, refresh); cada endpoint de ese
+// router se protege por dentro. Todo lo demás exige sesión + permiso de módulo.
 app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/assets', require('./routes/assetRoutes'));
-app.use('/api/inventory', require('./routes/inventoryRoutes'));
-app.use('/api/workorders', require('./routes/workOrderRoutes'));
-app.use('/api/activities', require('./routes/activityRoutes'));
-app.use('/api/schedule', require('./routes/scheduleRoutes'));
+
+app.use('/api/assets',
+  requireModule('assets', [
+    // GET /areas y /categories son catálogos de apoyo: basta con ver activos.
+    { method: 'PUT', pattern: /^\/\d+\/status$/, action: 'changestatus' }
+  ]),
+  require('./routes/assetRoutes'));
+
+app.use('/api/inventory',
+  requireModule('inventory', [
+    { method: 'GET', pattern: /^\/transactions$/, action: 'view' },
+    // Registrar consumo o canibalización mueve stock: no es "crear repuesto".
+    { method: 'POST', pattern: /^\/transaction$/, action: 'cannibalize' }
+  ]),
+  require('./routes/inventoryRoutes'));
+
+app.use('/api/workorders',
+  requireModule('workorders', [
+    { method: 'PUT', pattern: /^\/\d+\/status$/, action: 'close' },
+    { method: 'GET', pattern: /^\/\d+\/pdf$/, action: 'export' }
+  ]),
+  require('./routes/workOrderRoutes'));
+
+app.use('/api/activities', requireModule('activities'), require('./routes/activityRoutes'));
+
+app.use('/api/schedule',
+  requireModule('schedule', [
+    { method: 'PUT', pattern: /^\/\d+\/reprogram$/, action: 'reprogram' }
+  ]),
+  require('./routes/scheduleRoutes'));
+
+// /api/users solo redirige al router canónico de /api/auth, que ya valida permisos.
 app.use('/api/users', require('./routes/usersRoutes'));
-app.use('/api/kpi', require('./routes/kpiRoutes'));
-app.use('/api/ai', require('./routes/aiRoutes'));
+
+// Los KPIs del dashboard son el reporte base de la plataforma.
+app.use('/api/kpi', requireModule('reports'), require('./routes/kpiRoutes'));
+
+// El diagnóstico IA lo consume el técnico sobre una OT.
+app.use('/api/ai',
+  requireModule('workorders', [
+    { method: 'POST', pattern: /^\/diagnose$/, action: 'view' }
+  ]),
+  require('./routes/aiRoutes'));
 const path = require('path');
 
 // Servir Frontend compilado si existe la carpeta public/dist

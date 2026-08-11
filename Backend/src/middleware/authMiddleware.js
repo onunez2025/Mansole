@@ -151,10 +151,60 @@ function rateLimit(maxAttempts = 5, windowMs = 15 * 60 * 1000) {
   };
 }
 
+/* ------------------------------------------------------------------ *
+ * Protección a nivel de módulo.
+ *
+ * Deriva el permiso del método HTTP para no repetir checkPermission en
+ * cada handler: GET->view, POST->create, PUT/PATCH->edit, DELETE->delete.
+ * Las rutas que no encajan en ese patrón se declaran como overrides.
+ * ------------------------------------------------------------------ */
+
+const METHOD_ACTIONS = {
+  GET: 'view',
+  POST: 'create',
+  PUT: 'edit',
+  PATCH: 'edit',
+  DELETE: 'delete'
+};
+
+/**
+ * Resuelve la acción de una request. `overrides` es una lista de
+ * { method, pattern, action } donde pattern se prueba contra la ruta
+ * relativa al punto de montaje (ej. '/12/reprogram').
+ */
+function resolveAction(req, overrides) {
+  const match = overrides.find(
+    (o) => o.method === req.method && o.pattern.test(req.path)
+  );
+
+  return match ? match.action : METHOD_ACTIONS[req.method];
+}
+
+/**
+ * Middleware de módulo: exige sesión válida y el permiso correspondiente.
+ * Uso: app.use('/api/assets', requireModule('assets'), assetRoutes)
+ */
+function requireModule(module, overrides = []) {
+  return [
+    authenticateToken,
+    (req, res, next) => {
+      const action = resolveAction(req, overrides);
+
+      // Método no contemplado: denegar en vez de dejar pasar sin permiso.
+      if (!action) {
+        return res.status(405).json({ error: `Método ${req.method} no permitido` });
+      }
+
+      return checkPermission(`mansole.${module}.${action}`)(req, res, next);
+    }
+  ];
+}
+
 module.exports = {
   authenticateToken,
   checkPermission,
   checkRole,
   auditLog,
-  rateLimit
+  rateLimit,
+  requireModule
 };

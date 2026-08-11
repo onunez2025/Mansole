@@ -56,14 +56,17 @@ const ROLE_PERMISSIONS = {
     p('assets', 'view'), p('assets', 'changestatus'),
     p('schedule', 'view'),
     p('inventory', 'view'), p('inventory', 'create'), p('inventory', 'cannibalize'),
-    p('activities', 'view')
+    p('activities', 'view'),
+    // El Dashboard de KPIs es la pantalla de entrada de todos los roles.
+    p('reports', 'view')
   ],
 
   Operador: [
     p('workorders', 'view'), p('workorders', 'create'), p('workorders', 'export'),
     p('assets', 'view'),
     p('schedule', 'view'),
-    p('inventory', 'view')
+    p('inventory', 'view'),
+    p('reports', 'view')
   ]
 };
 

@@ -162,7 +162,7 @@ La inglesa **gana con diferencia**. Esto es el hallazgo más serio del inventari
 
 | `Usuarios` (real, 9) | `Users` (código, 4) |
 |---|---|
-| `UsuarioID` nvarchar (`dchipana`) | `Id` int |
+| `UsuarioID` nvarchar (usuario de red, no numérico) | `Id` int |
 | `UsuarioNombre` | `FirstName` + `LastName` |
 | `UsuarioContraseña` **texto plano** | `PasswordHash` bcrypt |
 | `UsuarioPerfil` (`9fd38f4b` → `UsuariosPerfiles`) | `RoleId` → `Roles` |
@@ -172,7 +172,9 @@ La inglesa **gana con diferencia**. Esto es el hallazgo más serio del inventari
 
 Consecuencias directas:
 1. **El login por email es imposible** contra `Usuarios`: habría que autenticar por `UsuarioID`.
-2. Las contraseñas están **sin hashear** (8 de 9 tienen 3 caracteres).
+2. Las contraseñas están **sin hashear** y varias son débiles. El detalle exacto
+   no se documenta aquí porque este repositorio es público: lo reporta en vivo
+   `Backend/scripts/hash-usuarios-passwords.js` en modo lectura. **Prioridad alta.**
 3. Los perfiles reales son 6 y **no coinciden** con el mapa de `permissions.js`:
 
 | Perfil real | ¿Está en `permissions.js`? |

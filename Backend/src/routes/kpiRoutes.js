@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { getDbConnection } = require('../config/db');
 
-// GET /api/kpi — KPIs calculados 100% desde MANSOLE en Azure SQL
-router.get('/', async (req, res) => {
+// GET /api/kpi y /api/kpi/dashboard — KPIs calculados 100% desde MANSOLE en Azure SQL
+const getKpis = async (req, res) => {
   try {
     const pool = await getDbConnection();
 
@@ -113,6 +113,9 @@ router.get('/', async (req, res) => {
       overallAvailability: 0, topFailingAssets: [], expensesByCostCenter: [], sparePartsConsumption: []
     });
   }
-});
+};
+
+router.get('/', getKpis);
+router.get('/dashboard', getKpis);
 
 module.exports = router;

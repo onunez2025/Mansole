@@ -118,9 +118,15 @@ function auditLog(action, entity) {
  */
 const failedAttempts = new Map();
 
-function rateLimit(maxAttempts = 5, windowMs = 15 * 60 * 1000) {
+function resetRateLimits() {
+  failedAttempts.clear();
+}
+
+function rateLimit(maxAttempts = 15, windowMs = 3 * 60 * 1000) {
   return (req, res, next) => {
-    const key = req.ip || req.connection.remoteAddress;
+    const rawIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.connection.remoteAddress;
+    const identifier = (req.body?.email || req.body?.username || '').toLowerCase();
+    const key = `${rawIp}_${identifier}`;
     const now = Date.now();
 
     const recent = (failedAttempts.get(key) || []).filter((time) => now - time < windowMs);
@@ -206,5 +212,6 @@ module.exports = {
   checkRole,
   auditLog,
   rateLimit,
+  resetRateLimits,
   requireModule
 };

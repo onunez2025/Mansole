@@ -51,7 +51,9 @@ router.get('/transactions', async (req, res) => {
 
 // POST /api/inventory/transaction
 router.post('/transaction', async (req, res) => {
-  const { sparePartId, transactionType, reason, quantity, unitCost, reference, newPart } = req.body;
+  const sparePartId = req.body.sparePartId || req.body.partId || req.body.spId;
+  const transactionType = req.body.transactionType || req.body.type || req.body.txType;
+  const { reason, quantity, unitCost, reference, newPart } = req.body;
   try {
     let partId = sparePartId;
     const pool = await getDbConnection();

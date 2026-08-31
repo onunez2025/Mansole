@@ -53,7 +53,12 @@ router.put('/:id/reprogram', async (req, res) => {
 
 // POST /api/schedule (Programar nueva en MANSOLE)
 router.post('/', async (req, res) => {
-  const { assetId, areaId, activityId, frequencyType, frequencyValue, nextDueDate } = req.body;
+  const assetId = req.body.assetId;
+  const areaId = req.body.areaId || null;
+  const activityId = req.body.activityId;
+  const frequencyType = req.body.frequencyType || req.body.type || 'Mensual';
+  const frequencyValue = req.body.frequencyValue !== undefined ? req.body.frequencyValue : (req.body.value || 1);
+  const nextDueDate = req.body.nextDueDate || req.body.dueDate || req.body.nextDue;
   try {
     const pool = await getDbConnection();
     const query = `

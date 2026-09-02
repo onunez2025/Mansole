@@ -48,10 +48,10 @@ client.interceptors.response.use(
   async (error) => {
     const original = error.config || {};
     const status = error.response?.status;
-    const isAuthCall = String(original.url || '').startsWith('/auth/');
+    const isNoRefreshCall = ['/auth/login', '/auth/refresh'].some(p => String(original.url || '').includes(p));
 
     // El access token dura 15 min: ante un 401 se intenta refrescar una sola vez.
-    if (status === 401 && !original._retried && !isAuthCall) {
+    if (status === 401 && !original._retried && !isNoRefreshCall) {
       const tokens = getTokens();
 
       if (tokens?.refreshToken) {
@@ -76,7 +76,11 @@ client.interceptors.response.use(
       notifySessionExpired();
     }
 
-    console.error('❌ API Error:', error.message, error.response?.data);
+    if (status !== 401) {
+      console.error('❌ API Error:', error.message, error.response?.data);
+    } else {
+      console.warn('⚠️ Auth 401:', error.message);
+    }
     return Promise.reject(error);
   }
 );

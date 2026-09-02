@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api, API_BASE } from '../services/api';
 import { Hammer, Plus, Download, Bot, Users, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function WorkOrders({ currentUser }) {
   const [workOrders, setWorkOrders] = useState([]);
@@ -97,10 +98,10 @@ export default function WorkOrders({ currentUser }) {
       
       const response = await api.createWorkOrder(payload);
       setShowCreateModal(false);
-      alert(`✅ ${response.message || 'OT creada con éxito'} (Código: ${response.code})`);
+      toast.success(`${response.message || 'OT creada con éxito'} (Código: ${response.code})`);
       loadOrders(); // Recargar de BD real
     } catch (error) {
-      alert(`❌ Error al crear OT: ${error.response?.data?.error || error.message}`);
+      toast.error(`Error al crear OT: ${error.response?.data?.error || error.message}`);
     }
   };
 

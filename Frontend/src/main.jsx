@@ -27,11 +27,15 @@ if (typeof window !== 'undefined') {
   };
 }
 
+import { ToastProvider } from './providers/ToastProvider.jsx'
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>
       <AuthProvider>
-        <App />
+        <ToastProvider>
+          <App />
+        </ToastProvider>
       </AuthProvider>
     </ErrorBoundary>
   </StrictMode>,

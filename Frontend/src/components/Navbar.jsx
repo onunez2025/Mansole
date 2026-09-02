@@ -1,29 +1,56 @@
 import React from 'react';
-import { Bell, Search, Database, ShieldCheck, User, CheckCircle2 } from 'lucide-react';
+import { Bell, Search, Database, Menu, X } from 'lucide-react';
 
-export default function Navbar({ currentUser, activeTabTitle }) {
+export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu, isMobileOpen }) {
   return (
-    <header style={{
-      height: '74px',
+    <header className="px-4 md:px-9" style={{
+      minHeight: '74px',
       background: '#FFFFFF',
       borderBottom: '1px solid #E2E4E9',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 36px',
       position: 'sticky',
       top: 0,
       zIndex: 90,
-      boxShadow: '0 1px 3px rgba(5, 15, 26, 0.03)'
+      boxShadow: '0 1px 3px rgba(5, 15, 26, 0.03)',
+      flexWrap: 'wrap',
+      gap: '12px',
+      paddingTop: '10px',
+      paddingBottom: '10px'
     }}>
-      {/* Título de la vista activa */}
-      <div>
-        <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#1A1C1E', letterSpacing: '-0.2px' }}>
-          {activeTabTitle}
-        </h2>
-        <p style={{ fontSize: '12px', color: '#8A919E', fontWeight: '500' }}>
-          Corporación Rinnai • Área Producción & Mantenimiento Industrial
-        </p>
+      {/* Botón Hamburguesa Móvil + Título de la vista activa */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '240px' }}>
+        <button
+          onClick={onToggleMobileMenu}
+          className="lg:hidden"
+          style={{
+            padding: '8px',
+            borderRadius: '8px',
+            background: '#F1F3F7',
+            border: '1px solid #D9E1F2',
+            color: '#4C5F80',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minWidth: '40px',
+            minHeight: '40px'
+          }}
+          title="Menú de Navegación"
+          aria-label="Abrir menú de navegación"
+        >
+          {isMobileOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+
+        <div>
+          <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#1A1C1E', letterSpacing: '-0.2px', margin: 0 }}>
+            {activeTabTitle}
+          </h2>
+          <p style={{ fontSize: '11px', color: '#8A919E', fontWeight: '500', margin: 0 }}>
+            Corporación Rinnai • Mantenimiento & Planta
+          </p>
+        </div>
       </div>
 
       {/* Acciones del Navbar */}

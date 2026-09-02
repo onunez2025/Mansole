@@ -31,6 +31,7 @@ export default function App() {
   // Vista pública: 'landing' o 'login'. Con sesión activa se muestra el CMMS.
   const [publicView, setPublicView] = useState('landing');
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   // Si el usuario pierde acceso al módulo abierto (logout, cambio de rol), volver al dashboard.
   useEffect(() => {
@@ -57,6 +58,7 @@ export default function App() {
     await logout();
     setPublicView('login');
     setActiveTab('dashboard');
+    setIsMobileOpen(false);
   };
 
   // Mientras se valida el token guardado, evitar el parpadeo del landing.
@@ -106,12 +108,16 @@ export default function App() {
         currentUser={user}
         onLogout={handleLogout}
         hasModule={hasModule}
+        isMobileOpen={isMobileOpen}
+        onCloseMobile={() => setIsMobileOpen(false)}
       />
 
       <main className="main-content">
         <Navbar
           currentUser={user}
           activeTabTitle={getTabTitle()}
+          isMobileOpen={isMobileOpen}
+          onToggleMobileMenu={() => setIsMobileOpen(!isMobileOpen)}
         />
 
         <div className="page-container">

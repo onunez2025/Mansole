@@ -6,14 +6,13 @@ import {
   ClipboardList, 
   CalendarClock, 
   Hammer, 
-  ShieldCheck,
   Bot,
   Users,
   LogOut,
-  ChevronRight
+  X
 } from 'lucide-react';
 
-export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout, hasModule }) {
+export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout, hasModule, isMobileOpen, onCloseMobile }) {
   const allMenuItems = [
     { id: 'dashboard', label: 'Dashboard & KPIs', icon: <LayoutDashboard size={19} /> },
     { id: 'workOrders', label: 'Órdenes de Trabajo (OT)', icon: <Hammer size={19} />, highlight: 'PRO', module: 'workorders' },
@@ -30,64 +29,89 @@ export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout
     ? allMenuItems.filter(item => !item.module || hasModule(item.module))
     : allMenuItems;
 
+  const handleSelectTab = (id) => {
+    setActiveTab(id);
+    if (onCloseMobile) onCloseMobile();
+  };
+
   return (
-    <aside style={{
-      width: '260px',
-      position: 'fixed',
-      left: 0,
-      top: 0,
-      height: '100vh',
-      background: '#FFFFFF',
-      borderRight: '1px solid #E2E4E9',
-      display: 'flex',
-      flexDirection: 'column',
-      zIndex: 100,
-      boxShadow: '1px 0 3px rgba(5, 15, 26, 0.03)'
-    }}>
-      {/* Branding Grupo SOLE - SIATC Style */}
-      <div style={{ padding: '24px', borderBottom: '1px solid #E2E4E9' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{
-            background: '#4C5F80',
-            width: '38px',
-            height: '38px',
-            borderRadius: '8px',
+    <>
+      {/* Telón oscuro para celular/tableta */}
+      <div 
+        className={`sidebar-backdrop ${isMobileOpen ? 'open' : ''}`} 
+        onClick={onCloseMobile} 
+      />
+
+      <aside className={`sidebar-container ${isMobileOpen ? 'open' : ''}`}>
+        {/* Branding Grupo SOLE - SIATC Style */}
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2E4E9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              background: '#4C5F80',
+              width: '38px',
+              height: '38px',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#FFFFFF',
+              fontWeight: '800',
+              fontSize: '20px',
+              boxShadow: '0 2px 6px rgba(76, 95, 128, 0.2)'
+            }}>
+              S
+            </div>
+            <div>
+              <h1 style={{ fontSize: '16px', fontWeight: '800', color: '#1A1C1E', letterSpacing: '0.2px' }}>
+                GRUPO SOLE
+              </h1>
+              <p style={{ fontSize: '11px', color: '#4C5F80', fontWeight: '700', letterSpacing: '0.5px' }}>
+                CMMS CORPORACIÓN RINNAI
+              </p>
+            </div>
+          </div>
+
+          {/* Botón cerrar para vista móvil */}
+          {onCloseMobile && (
+            <button 
+              onClick={onCloseMobile}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#515254',
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              className="lg:hidden"
+              title="Cerrar menú"
+            >
+              <X size={20} />
+            </button>
+          )}
+        </div>
+
+        {/* Subheader Status SIATC */}
+        <div style={{ padding: '0 24px 16px 24px', borderBottom: '1px solid #E2E4E9' }}>
+          <div style={{ 
+            marginTop: '12px', 
+            padding: '6px 10px', 
+            background: '#F3F5F9', 
+            borderRadius: '6px',
+            border: '1px solid #D8DCE5',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            color: '#FFFFFF',
-            fontWeight: '800',
-            fontSize: '20px',
-            boxShadow: '0 2px 6px rgba(76, 95, 128, 0.2)'
+            justifyContent: 'space-between',
+            fontSize: '11px',
+            fontWeight: '700',
+            color: '#4C5F80'
           }}>
-            S
-          </div>
-          <div>
-            <h1 style={{ fontSize: '16px', fontWeight: '800', color: '#1A1C1E', letterSpacing: '0.2px' }}>
-              GRUPO SOLE
-            </h1>
-            <p style={{ fontSize: '11px', color: '#4C5F80', fontWeight: '700', letterSpacing: '0.5px' }}>
-              CMMS CORPORACIÓN RINNAI
-            </p>
+            <span>SIATC CLOUD MONOLITH</span>
+            <span style={{ color: '#05B169' }}>● ACTIVO</span>
           </div>
         </div>
-        <div style={{ 
-          marginTop: '14px', 
-          padding: '6px 10px', 
-          background: '#F3F5F9', 
-          borderRadius: '6px',
-          border: '1px solid #D8DCE5',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          fontSize: '11px',
-          fontWeight: '700',
-          color: '#4C5F80'
-        }}>
-          <span>SIATC CLOUD MONOLITH</span>
-          <span style={{ color: '#05B169' }}>● ACTIVO</span>
-        </div>
-      </div>
 
       {/* Navegación por Módulos */}
       <nav style={{ flex: 1, padding: '18px 12px', display: 'flex', flexDirection: 'column', gap: '4px', overflowY: 'auto' }}>
@@ -99,7 +123,7 @@ export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout
           return (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => handleSelectTab(item.id)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -168,5 +192,6 @@ export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout
         </div>
       </div>
     </aside>
-  );
+  </>
+);
 }

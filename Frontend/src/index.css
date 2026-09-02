@@ -99,10 +99,12 @@
   }
 }
 
-/* SIATC Layout Shell (Sidebar fijo de 260px + contenido) */
+/* SIATC Layout Shell (Responsive Sidebar + Main Content) */
 .app-container {
   min-height: 100vh;
   background: #F5F6F8;
+  position: relative;
+  overflow-x: hidden;
 }
 
 .main-content {
@@ -110,11 +112,83 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  transition: margin-left 0.3s ease;
 }
 
 .page-container {
   flex: 1;
   padding: 28px 36px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Sidebar Drawer & Mobile Backdrop */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 99;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.sidebar-container {
+  width: 260px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  background: #FFFFFF;
+  border-right: 1px solid #E2E4E9;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  box-shadow: 1px 0 3px rgba(5, 15, 26, 0.03);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Media Queries para Pantallas Celulares y Tabletas (< 1024px) */
+@media (max-width: 1023px) {
+  .main-content {
+    margin-left: 0 !important;
+  }
+
+  .page-container {
+    padding: 16px 14px !important;
+  }
+
+  .sidebar-backdrop.open {
+    display: block !important;
+  }
+
+  .sidebar-container {
+    transform: translateX(-100%);
+  }
+
+  .sidebar-container.open {
+    transform: translateX(0) !important;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .modal-content {
+    padding: 18px !important;
+    max-height: 94vh !important;
+    border-radius: 12px !important;
+  }
+
+  .siatc-card {
+    padding: 14px !important;
+  }
+
+  .btn {
+    min-height: 44px; /* Tamaño táctil optimizado para dedos en móvil */
+  }
 }
 
 /* SIATC Custom Component Styles */

@@ -9,8 +9,8 @@ export function Input({
   id,
   label,
   required,
-  aria-label: ariaLabel,
-  aria-describedby: ariaDescribedBy,
+  'aria-label': ariaLabel,
+  'aria-describedby': ariaDescribedBy,
   ...props
 }) {
   const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;

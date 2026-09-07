@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../services/api';
-import { Boxes, AlertCircle, Plus, RefreshCw, CheckCircle2, Edit3, Trash2, Search } from 'lucide-react';
+import { Boxes, AlertCircle, Plus, RefreshCw, CheckCircle2, Edit3, Trash2, Search, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { TableSkeleton } from '../components/UI';
+import HelpModal from '../components/HelpModal';
 
 // Caché en cliente para transiciones instantáneas (0ms)
 let cachedInventoryList = null;
@@ -11,6 +12,7 @@ export default function Inventory({ currentUser }) {
   const [inventory, setInventory] = useState(cachedInventoryList || []);
   const [loading, setLoading] = useState(!cachedInventoryList);
   const [showModal, setShowModal] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeConditionFilter, setActiveConditionFilter] = useState('Todos');
@@ -140,6 +142,13 @@ export default function Inventory({ currentUser }) {
           <p className="text-sm text-slate-500 mt-0.5">Control de inventario estándar y componentes de <strong className="text-emerald-600 font-semibold">Canibalización</strong> ($0 USD contable)</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={() => setShowHelpModal(true)}
+            className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-2 transition-all shadow-xs"
+          >
+            <HelpCircle size={15} className="text-emerald-600" />
+            <span>Guía Repuestos $0</span>
+          </button>
           <button className="btn btn-secondary text-xs" onClick={loadInventory}>
             <RefreshCw size={14} /> Sincronizar
           </button>
@@ -381,6 +390,9 @@ export default function Inventory({ currentUser }) {
           </div>
         </div>
       )}
+
+      {/* Modal de Ayuda & SOP */}
+      <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} initialModule="inventory" />
     </div>
   );
 }

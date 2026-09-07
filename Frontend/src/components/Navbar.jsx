@@ -1,7 +1,7 @@
 import React from 'react';
 import { Bell, Search, Menu, X, Database } from 'lucide-react';
 
-export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu, isMobileOpen }) {
+export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu, isMobileOpen, onOpenHelp }) {
   return (
     <header className="h-16 px-4 md:px-8 bg-white border-b border-slate-200/80 sticky top-0 z-40 flex items-center justify-between gap-4">
       {/* Botón Hamburguesa Móvil + Título de la vista activa */}
@@ -45,6 +45,16 @@ export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu
             ⌘K
           </kbd>
         </div>
+
+        {/* Botón Central de Ayuda y Procedimientos */}
+        <button
+          onClick={onOpenHelp}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 text-xs font-semibold transition-all shadow-xs"
+          title="Manual de Procedimientos y Guías SOP"
+        >
+          <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+          <span>Manual SOP</span>
+        </button>
 
         {/* Alertas y Notificaciones */}
         <button 

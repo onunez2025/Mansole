@@ -21,6 +21,7 @@ export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout
     { id: 'assets', label: 'Activos y CECOs', icon: <Wrench size={18} />, module: 'assets' },
     { id: 'inventory', label: 'Repuestos / Almacén', icon: <Boxes size={18} />, module: 'inventory' },
     { id: 'activities', label: 'Catálogo Actividades', icon: <ClipboardList size={18} />, module: 'activities' },
+    { id: 'catalogs', label: 'Configuración & Catálogos', icon: <Settings size={18} />, module: 'assets', badge: 'Admin' },
     { id: 'users', label: 'Usuarios & RBAC', icon: <Users size={18} />, module: 'users' }
   ];
 

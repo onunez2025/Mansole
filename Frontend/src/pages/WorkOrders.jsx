@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { api, API_BASE } from '../services/api';
-import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle2, AlertTriangle, Filter, CheckCircle, Clock } from 'lucide-react';
+import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle2, AlertTriangle, Filter, CheckCircle, Clock, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { OrderCardSkeleton } from '../components/UI';
+import HelpModal from '../components/HelpModal';
 
 // Caché en cliente para que al volver a OTs cargue de inmediato (0ms)
 let cachedWorkOrdersList = null;
@@ -14,6 +15,7 @@ export default function WorkOrders({ currentUser }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiDiagnosis, setAiDiagnosis] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const [availableAssets, setAvailableAssets] = useState([]);
 
   // Filtros de Proceso y Búsqueda
@@ -191,9 +193,18 @@ export default function WorkOrders({ currentUser }) {
             Flujo de mantenimiento: Solicitud → En Planta → Finalizada → Cierre Contable
           </p>
         </div>
-        <button className="btn btn-primary text-xs" onClick={() => setShowCreateModal(true)}>
-          <Plus size={15} /> Emitir Nueva OT
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowHelpModal(true)}
+            className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-2 transition-all shadow-xs"
+          >
+            <HelpCircle size={15} className="text-blue-600" />
+            <span>Guía LOTO & Proceso OT</span>
+          </button>
+          <button className="btn btn-primary text-xs" onClick={() => setShowCreateModal(true)}>
+            <Plus size={15} /> Emitir Nueva OT
+          </button>
+        </div>
       </div>
 
       {/* Barra de Pipeline Operativo y Buscador */}
@@ -615,6 +626,9 @@ export default function WorkOrders({ currentUser }) {
           </div>
         </div>
       )}
+
+      {/* Modal de Ayuda Contextual y Procedimiento LOTO */}
+      <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} initialModule="workOrders" />
     </div>
   );
 }

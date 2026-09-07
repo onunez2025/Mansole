@@ -73,6 +73,9 @@ app.use('/api/users', require('./routes/usersRoutes'));
 // Los KPIs del dashboard son el reporte base de la plataforma.
 app.use('/api/kpi', requireModule('reports'), require('./routes/kpiRoutes'));
 
+// Catálogos Maestros de Configuración (Áreas, CECOs, Categorías)
+app.use('/api/catalogs', requireModule('assets'), require('./routes/catalogRoutes'));
+
 // El diagnóstico IA lo consume el técnico sobre una OT.
 app.use('/api/ai',
   requireModule('workorders', [

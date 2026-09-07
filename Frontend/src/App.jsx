@@ -9,9 +9,11 @@ import Activities from './pages/Activities';
 import Schedule from './pages/Schedule';
 import WorkOrders from './pages/WorkOrders';
 import Users from './pages/Users';
+import Catalogs from './pages/Catalogs';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import AccessDeniedPage from './pages/AccessDeniedPage';
+import HelpModal from './components/HelpModal';
 import { useAuth } from './hooks/useAuth';
 import './index.css';
 
@@ -23,6 +25,7 @@ const TAB_MODULES = {
   assets: 'assets',
   inventory: 'inventory',
   activities: 'activities',
+  catalogs: 'assets',
   users: 'users'
 };
 
@@ -33,6 +36,7 @@ export default function App() {
   const [publicView, setPublicView] = useState('landing');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [showGlobalHelp, setShowGlobalHelp] = useState(false);
 
   // Si el usuario pierde acceso al módulo abierto (logout, cambio de rol), volver al dashboard.
   useEffect(() => {
@@ -50,6 +54,7 @@ export default function App() {
       case 'assets': return 'Gestión de Activos, Áreas y CECOs';
       case 'inventory': return 'Repuestos, Almacén & Canibalización';
       case 'activities': return 'Catálogo Maestro de Actividades';
+      case 'catalogs': return 'Configuración & Catálogos Maestros (CRUD)';
       case 'users': return 'Gestión de Usuarios & Seguridad RBAC';
       default: return 'Plataforma CMMS Grupo SOLE';
     }
@@ -116,6 +121,7 @@ export default function App() {
       case 'assets': return <Assets currentUser={user} />;
       case 'inventory': return <Inventory currentUser={user} />;
       case 'activities': return <Activities currentUser={user} />;
+      case 'catalogs': return <Catalogs currentUser={user} />;
       case 'users': return <Users currentUser={user} />;
       default: return <Dashboard currentUser={user} />;
     }
@@ -139,6 +145,7 @@ export default function App() {
           activeTabTitle={getTabTitle()}
           isMobileOpen={isMobileOpen}
           onToggleMobileMenu={() => setIsMobileOpen(!isMobileOpen)}
+          onOpenHelp={() => setShowGlobalHelp(true)}
         />
 
         <div className="page-container">
@@ -155,6 +162,13 @@ export default function App() {
           </AnimatePresence>
         </div>
       </main>
+
+      {/* Modal Global de Ayuda y Procedimientos */}
+      <HelpModal 
+        isOpen={showGlobalHelp} 
+        onClose={() => setShowGlobalHelp(false)} 
+        initialModule={activeTab === 'catalogs' ? 'catalogs' : (activeTab === 'inventory' ? 'inventory' : (activeTab === 'schedule' ? 'schedule' : (activeTab === 'assets' ? 'assets' : 'workOrders')))} 
+      />
     </div>
   );
 }

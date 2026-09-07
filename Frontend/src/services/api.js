@@ -137,4 +137,20 @@ export const api = {
   // === IA ===
   diagnoseWithAI: async (assetName, symptom, assetCode) =>
     await client.post('/ai/diagnose', { assetName, symptom, assetCode }),
+
+  // === Catálogos Maestros (CRUD) ===
+  getCatalogAreas:        async () => await client.get('/catalogs/areas'),
+  createCatalogArea:     async (data) => await client.post('/catalogs/areas', data),
+  updateCatalogArea:     async (id, data) => await client.put(`/catalogs/areas/${id}`, data),
+  deleteCatalogArea:     async (id) => await client.delete(`/catalogs/areas/${id}`),
+
+  getCatalogCategories:   async () => await client.get('/catalogs/categories'),
+  createCatalogCategory: async (data) => await client.post('/catalogs/categories', data),
+  updateCatalogCategory: async (id, data) => await client.put(`/catalogs/categories/${id}`, data),
+  deleteCatalogCategory: async (id) => await client.delete(`/catalogs/categories/${id}`),
+
+  getCatalogCostCenters:   async () => await client.get('/catalogs/cost-centers'),
+  createCatalogCostCenter: async (data) => await client.post('/catalogs/cost-centers', data),
+  updateCatalogCostCenter: async (code, data) => await client.put(`/catalogs/cost-centers/${code}`, data),
+  deleteCatalogCostCenter: async (code) => await client.delete(`/catalogs/cost-centers/${code}`),
 };

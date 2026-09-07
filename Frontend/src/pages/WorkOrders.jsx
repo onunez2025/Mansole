@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { api, API_BASE } from '../services/api';
-import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle2, AlertTriangle, Filter, CheckCircle, Clock, HelpCircle } from 'lucide-react';
+import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle2, AlertTriangle, Filter, CheckCircle, Clock, HelpCircle, Timer, Trash2, PlusCircle, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { OrderCardSkeleton } from '../components/UI';
 import HelpModal from '../components/HelpModal';
@@ -17,6 +17,11 @@ export default function WorkOrders({ currentUser }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [availableAssets, setAvailableAssets] = useState([]);
+  const [catalogActivities, setCatalogActivities] = useState([]);
+  const [selectedActivityId, setSelectedActivityId] = useState('');
+  const [taskComments, setTaskComments] = useState('');
+  const [otTasks, setOtTasks] = useState([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
 
   // Filtros de Proceso y Búsqueda
   const [activeStage, setActiveStage] = useState('Todas');
@@ -74,8 +79,79 @@ export default function WorkOrders({ currentUser }) {
     });
   };
 
+  const loadCatalogActivities = () => {
+    api.getActivities().then(data => {
+      if (Array.isArray(data)) {
+        setCatalogActivities(data);
+        if (data.length > 0) setSelectedActivityId(data[0].Id || data[0].id);
+      }
+    }).catch(() => {});
+  };
+
+  const loadOtTasks = async (orderId) => {
+    setTasksLoading(true);
+    try {
+      const tasks = await api.getOrderTasks(orderId);
+      setOtTasks(Array.isArray(tasks) ? tasks : []);
+    } catch (e) {
+      setOtTasks([]);
+    } finally {
+      setTasksLoading(false);
+    }
+  };
+
+  const handleAddTaskToOT = async (e) => {
+    e.preventDefault();
+    if (!selectedOT || !selectedActivityId) return;
+    try {
+      await api.addOrderTask(selectedOT.id || selectedOT.Id, {
+        activityId: selectedActivityId,
+        technicianName: currentUser?.firstName ? `${currentUser.firstName} ${currentUser.lastName || ''}`.trim() : 'Técnico de Planta',
+        comments: taskComments
+      });
+      toast.success('Actividad asignada a la OT con éxito');
+      setTaskComments('');
+      loadOtTasks(selectedOT.id || selectedOT.Id);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al agregar tarea');
+    }
+  };
+
+  const handleStartTask = async (taskId) => {
+    try {
+      const techName = currentUser?.firstName ? `${currentUser.firstName} ${currentUser.lastName || ''}`.trim() : 'Técnico de Planta';
+      await api.startOrderTask(taskId, techName);
+      toast.success('⏱️ Tarea iniciada. Cronómetro en marcha.');
+      if (selectedOT) loadOtTasks(selectedOT.id || selectedOT.Id);
+    } catch (err) {
+      toast.error('Error al iniciar tarea');
+    }
+  };
+
+  const handleFinishTask = async (taskId) => {
+    try {
+      await api.finishOrderTask(taskId, 'Trabajo completado según procedimiento estándar.');
+      toast.success('✅ Tarea finalizada. Tiempo registrado en Azure SQL.');
+      if (selectedOT) loadOtTasks(selectedOT.id || selectedOT.Id);
+    } catch (err) {
+      toast.error('Error al finalizar tarea');
+    }
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    if (!window.confirm('¿Eliminar esta tarea de la OT?')) return;
+    try {
+      await api.deleteOrderTask(taskId);
+      toast.success('Tarea removida de la OT');
+      if (selectedOT) loadOtTasks(selectedOT.id || selectedOT.Id);
+    } catch (err) {
+      toast.error('Error al eliminar tarea');
+    }
+  };
+
   useEffect(() => {
     loadOrders();
+    loadCatalogActivities();
     // Cargar activos disponibles para el formulario de nueva OT
     api.getAssets().then(data => {
       if (Array.isArray(data)) setAvailableAssets(data);
@@ -349,6 +425,7 @@ export default function WorkOrders({ currentUser }) {
                     onClick={() => {
                       setSelectedOT(ot);
                       setAiDiagnosis(ot.aiDiagnosis || null);
+                      loadOtTasks(ot.id);
                     }}
                   >
                     <FileText size={14} /> Detalle & Checklist
@@ -466,43 +543,173 @@ export default function WorkOrders({ currentUser }) {
               )}
             </div>
 
-            {/* Checklist en Planta y Repuestos Consumidos */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-              <div className="bg-white p-4 rounded-xl border border-slate-200 text-xs">
-                <strong className="text-slate-900 block mb-2.5 font-bold uppercase tracking-wider text-[11px]">Checklist de Tareas en Planta</strong>
-                <div className="space-y-2">
-                  {(selectedOT.tasks && selectedOT.tasks.length > 0 ? selectedOT.tasks : [
-                    { name: '1. Inspeccionar conexiones y cableado eléctrico', completed: true },
-                    { name: '2. Verificar lubricación y niveles de fluido', completed: false },
-                    { name: '3. Realizar prueba de funcionamiento en vacío', completed: false }
-                  ]).map((t, idx) => (
-                    <label key={idx} className="flex items-center gap-2 text-slate-700 cursor-pointer">
-                      <input type="checkbox" defaultChecked={t.completed} className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4" />
-                      <span className={t.completed ? 'text-slate-400 line-through' : 'text-slate-800 font-medium'}>
-                        {t.name}
-                      </span>
-                    </label>
-                  ))}
+            {/* Control de Tareas con Catálogo de Actividades y Tiempos de Inicio/Fin */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs mb-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                    <Timer className="text-blue-600" size={18} />
+                    <span>Control Cronometrado de Tareas por Actividad</span>
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    El técnico selecciona cada actividad del catálogo, la inicia al momento de intervenir y la finaliza al concluir.
+                  </p>
                 </div>
+
+                {/* Formulario para Asignar Actividad a la OT */}
+                <form onSubmit={handleAddTaskToOT} className="flex items-center gap-2 flex-wrap">
+                  <select
+                    value={selectedActivityId}
+                    onChange={e => setSelectedActivityId(e.target.value)}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-slate-900 max-w-xs"
+                  >
+                    {catalogActivities.map(act => (
+                      <option key={act.Id || act.id} value={act.Id || act.id}>
+                        [{act.Type || 'Mecánico'}] {act.Name || act.name} ({act.EstimatedMinutes || 30}m)
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="submit"
+                    className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs"
+                  >
+                    <PlusCircle size={14} />
+                    <span>Asignar Tarea</span>
+                  </button>
+                </form>
               </div>
 
-              <div className="bg-white p-4 rounded-xl border border-slate-200 text-xs">
-                <strong className="text-slate-900 block mb-2.5 font-bold uppercase tracking-wider text-[11px]">Repuestos Consumidos del Almacén</strong>
-                <div className="space-y-2">
-                  {(selectedOT.spareParts && selectedOT.spareParts.length > 0 ? selectedOT.spareParts : [
-                    { name: 'REP-VLM-001 Válvula Proporcional Hidráulica', quantity: 1, cost: 350.00 }
-                  ]).map((p, idx) => (
-                    <div key={idx} className="pb-2 border-b border-slate-100 last:border-0 flex justify-between items-center">
-                      <div>
-                        <div className="font-semibold text-slate-900">{p.name}</div>
-                        <div className="text-[11px] text-slate-500">Cantidad: {p.quantity}</div>
-                      </div>
-                      <div className={`font-mono font-bold text-xs ${p.cost === 0 ? 'text-emerald-600' : 'text-slate-800'}`}>
-                        ${p.cost ? p.cost.toFixed(2) : '0.00'} USD
-                      </div>
-                    </div>
-                  ))}
+              {/* Lista de Tareas con Tiempos y Estado */}
+              {tasksLoading ? (
+                <div className="py-6 text-center text-slate-400 text-xs">Cargando tareas de la OT...</div>
+              ) : otTasks.length === 0 ? (
+                <div className="py-8 text-center bg-slate-50/60 rounded-xl border border-dashed border-slate-200">
+                  <p className="text-xs text-slate-500 font-medium">Aún no hay tareas asignadas a esta orden.</p>
+                  <span className="text-[11px] text-slate-400 mt-0.5 block">Selecciona una actividad del catálogo superior y pulsa "Asignar Tarea".</span>
                 </div>
+              ) : (
+                <div className="space-y-3">
+                  {otTasks.map(task => {
+                    const isPending = !task.StartedAt && !task.IsCompleted;
+                    const isRunning = task.StartedAt && !task.IsCompleted;
+                    const isDone = task.IsCompleted;
+
+                    return (
+                      <div 
+                        key={task.Id}
+                        className={`p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                          isRunning 
+                            ? 'bg-blue-50/50 border-blue-200 ring-1 ring-blue-100' 
+                            : (isDone ? 'bg-slate-50/40 border-slate-200' : 'bg-white border-slate-200')
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="font-bold text-slate-900 text-xs">
+                              {task.ActivityName || 'Actividad Industrial'}
+                            </span>
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                              isRunning 
+                                ? 'bg-blue-100 text-blue-800 border-blue-300 animate-pulse'
+                                : (isDone 
+                                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                    : 'bg-slate-100 text-slate-700 border-slate-200')
+                            }`}>
+                              {isRunning ? '⏳ En Ejecución' : (isDone ? '✅ Completada' : '🟡 Por Iniciar')}
+                            </span>
+                            {task.ActivityType && (
+                              <span className="text-[10px] text-slate-500 font-medium">
+                                ({task.ActivityType})
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Tiempos de Inicio y Fin */}
+                          <div className="flex items-center gap-4 text-[11px] text-slate-500 flex-wrap">
+                            <span>
+                              <strong>Inicio:</strong> {task.StartedAt ? new Date(task.StartedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'}
+                            </span>
+                            <span>
+                              <strong>Fin:</strong> {task.CompletedAt ? new Date(task.CompletedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'}
+                            </span>
+                            {task.DurationMinutes !== null && task.DurationMinutes !== undefined && (
+                              <span className="font-bold text-slate-800 font-mono bg-white px-2 py-0.5 rounded border border-slate-200">
+                                ⏱️ Duración: {task.DurationMinutes} mins
+                              </span>
+                            )}
+                            {task.TechnicianName && (
+                              <span className="text-slate-600">
+                                👤 {task.TechnicianName}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Botones de Acción para el Técnico */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {isPending && (
+                            <button
+                              type="button"
+                              onClick={() => handleStartTask(task.Id)}
+                              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs"
+                            >
+                              <Play size={13} />
+                              <span>INICIAR TAREA</span>
+                            </button>
+                          )}
+
+                          {isRunning && (
+                            <button
+                              type="button"
+                              onClick={() => handleFinishTask(task.Id)}
+                              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs"
+                            >
+                              <Check size={13} />
+                              <span>FINALIZAR TAREA</span>
+                            </button>
+                          )}
+
+                          {isDone && (
+                            <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
+                              <CheckCircle2 size={15} /> Registrado
+                            </span>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTask(task.Id)}
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Eliminar tarea"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Repuestos Consumidos del Almacén */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs mb-5">
+              <strong className="text-slate-900 block mb-2.5 font-bold uppercase tracking-wider text-[11px]">
+                Repuestos Consumidos del Almacén
+              </strong>
+              <div className="space-y-2">
+                {(selectedOT.spareParts && selectedOT.spareParts.length > 0 ? selectedOT.spareParts : [
+                  { name: 'REP-VLM-001 Válvula Proporcional Hidráulica', quantity: 1, cost: 350.00 }
+                ]).map((p, idx) => (
+                  <div key={idx} className="pb-2 border-b border-slate-100 last:border-0 flex justify-between items-center text-xs">
+                    <div>
+                      <div className="font-semibold text-slate-900">{p.name}</div>
+                      <div className="text-[11px] text-slate-500">Cantidad: {p.quantity}</div>
+                    </div>
+                    <div className={`font-mono font-bold text-xs ${p.cost === 0 ? 'text-emerald-600' : 'text-slate-800'}`}>
+                      ${p.cost ? p.cost.toFixed(2) : '0.00'} USD
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 

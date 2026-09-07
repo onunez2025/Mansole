@@ -27,12 +27,11 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/workorders/:id (Detalle de una OT)
+// GET /api/workorders/:id (Detalle de una OT con sus tareas y repuestos reales)
 router.get('/:id', async (req, res) => {
   try {
     const pool = await getDbConnection();
     const request = pool.request();
-    // Soporte para buscar por Id o Code
     const isNumeric = !isNaN(req.params.id);
     const query = `
       SELECT
@@ -55,14 +54,140 @@ router.get('/:id', async (req, res) => {
     
     const ot = result.recordset[0];
     
-    // Arrays simulados porque no tenemos tablas de detalle profundo aún, pero la cabecera es 100% SQL
+    // Consultar tareas de la OT desde MANSOLE.WorkOrderTasks vinculadas al catálogo MANSOLE.Activities
+    const tasksQuery = `
+      SELECT 
+        wt.Id, wt.WorkOrderId, wt.ActivityId, wt.IsCompleted, wt.Comments,
+        wt.StartedAt, wt.CompletedAt, wt.DurationMinutes, wt.TechnicianName, wt.Status,
+        act.Name as ActivityName, act.Type as ActivityType, act.EstimatedMinutes
+      FROM MANSOLE.WorkOrderTasks wt
+      LEFT JOIN MANSOLE.Activities act ON wt.ActivityId = act.Id
+      WHERE wt.WorkOrderId = @WorkOrderId
+      ORDER BY wt.Id ASC
+    `;
+    const tasksResult = await pool.request()
+      .input('WorkOrderId', sql.Int, ot.Id)
+      .query(tasksQuery);
+
+    ot.tasks = tasksResult.recordset;
     ot.technicians = [{ name: 'Juan Perez (Técnico Asignado)', hours: 3.5 }];
     ot.spareParts = [{ code: 'REP-GEN-01', name: 'Kit de Repuestos Genérico', quantity: 1, cost: (ot.TotalCost - ot.LaborCost) }];
-    ot.tasks = [{ name: 'Checklist de seguridad y aislamiento (LOTO)', completed: true }, { name: 'Intervención mecánica / eléctrica', completed: ot.Status === 'Finalizada' }];
     
     res.json(ot);
   } catch (e) {
+    console.error('Error obteniendo OT:', e);
     res.status(500).json({ error: 'Error obteniendo OT', details: e.message });
+  }
+});
+
+// GET /api/workorders/:id/tasks (Obtener lista de tareas de la OT)
+router.get('/:id/tasks', async (req, res) => {
+  try {
+    const pool = await getDbConnection();
+    const query = `
+      SELECT 
+        wt.Id, wt.WorkOrderId, wt.ActivityId, wt.IsCompleted, wt.Comments,
+        wt.StartedAt, wt.CompletedAt, wt.DurationMinutes, wt.TechnicianName, wt.Status,
+        act.Name as ActivityName, act.Type as ActivityType, act.EstimatedMinutes
+      FROM MANSOLE.WorkOrderTasks wt
+      LEFT JOIN MANSOLE.Activities act ON wt.ActivityId = act.Id
+      WHERE wt.WorkOrderId = @WorkOrderId
+      ORDER BY wt.Id ASC
+    `;
+    const result = await pool.request()
+      .input('WorkOrderId', sql.Int, parseInt(req.params.id))
+      .query(query);
+    res.json(result.recordset);
+  } catch (err) {
+    res.status(500).json({ error: 'Error obteniendo tareas de la OT', details: err.message });
+  }
+});
+
+// POST /api/workorders/:id/tasks (Agregar una tarea desde el Catálogo de Actividades a la OT)
+router.post('/:id/tasks', async (req, res) => {
+  const { activityId, technicianName, comments } = req.body;
+  if (!activityId) {
+    return res.status(400).json({ error: 'Debe seleccionar una actividad del catálogo' });
+  }
+  try {
+    const pool = await getDbConnection();
+    const query = `
+      INSERT INTO MANSOLE.WorkOrderTasks (WorkOrderId, ActivityId, TechnicianName, Comments, Status, IsCompleted)
+      OUTPUT INSERTED.Id
+      VALUES (@workOrderId, @activityId, @techName, @comments, 'Pendiente', 0)
+    `;
+    const result = await pool.request()
+      .input('workOrderId', sql.Int, parseInt(req.params.id))
+      .input('activityId', sql.Int, parseInt(activityId))
+      .input('techName', sql.NVarChar, technicianName || 'Técnico de Planta')
+      .input('comments', sql.NVarChar, comments || '')
+      .query(query);
+
+    res.status(201).json({ id: result.recordset[0].Id, message: 'Tarea agregada a la OT' });
+  } catch (err) {
+    console.error('Error agregando tarea a la OT:', err);
+    res.status(500).json({ error: 'Error al agregar tarea', details: err.message });
+  }
+});
+
+// PUT /api/workorders/tasks/:taskId/start (Iniciar ejecución de una tarea - Marca StartedAt)
+router.put('/tasks/:taskId/start', async (req, res) => {
+  const { technicianName } = req.body;
+  try {
+    const pool = await getDbConnection();
+    const query = `
+      UPDATE MANSOLE.WorkOrderTasks
+      SET StartedAt = GETDATE(),
+          Status = 'En Progreso',
+          TechnicianName = ISNULL(@techName, TechnicianName)
+      WHERE Id = @taskId
+    `;
+    await pool.request()
+      .input('taskId', sql.Int, parseInt(req.params.taskId))
+      .input('techName', sql.NVarChar, technicianName || null)
+      .query(query);
+
+    res.json({ message: 'Tarea iniciada. Cronómetro en marcha.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al iniciar tarea', details: err.message });
+  }
+});
+
+// PUT /api/workorders/tasks/:taskId/finish (Finalizar ejecución de una tarea - Marca CompletedAt y calcula DurationMinutes)
+router.put('/tasks/:taskId/finish', async (req, res) => {
+  const { comments } = req.body;
+  try {
+    const pool = await getDbConnection();
+    const query = `
+      UPDATE MANSOLE.WorkOrderTasks
+      SET CompletedAt = GETDATE(),
+          Status = 'Completada',
+          IsCompleted = 1,
+          DurationMinutes = DATEDIFF(MINUTE, ISNULL(StartedAt, GETDATE()), GETDATE()),
+          Comments = ISNULL(@comments, Comments)
+      WHERE Id = @taskId
+    `;
+    await pool.request()
+      .input('taskId', sql.Int, parseInt(req.params.taskId))
+      .input('comments', sql.NVarChar, comments || null)
+      .query(query);
+
+    res.json({ message: 'Tarea completada. Tiempo registrado con éxito.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al finalizar tarea', details: err.message });
+  }
+});
+
+// DELETE /api/workorders/tasks/:taskId (Eliminar tarea de la OT)
+router.delete('/tasks/:taskId', async (req, res) => {
+  try {
+    const pool = await getDbConnection();
+    await pool.request()
+      .input('taskId', sql.Int, parseInt(req.params.taskId))
+      .query('DELETE FROM MANSOLE.WorkOrderTasks WHERE Id = @taskId');
+    res.json({ message: 'Tarea eliminada de la OT' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al eliminar tarea', details: err.message });
   }
 });
 

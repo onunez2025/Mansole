@@ -134,6 +134,13 @@ export const api = {
   deleteActivity:      async (id) => await client.delete(`/activities/${id}`),
   deleteScheduleEntry: async (id) => await client.delete(`/schedule/${id}`),
 
+  // === Tareas de la Orden de Trabajo (Control de Tiempos & Catálogo) ===
+  getOrderTasks:       async (orderId) => await client.get(`/workorders/${orderId}/tasks`),
+  addOrderTask:        async (orderId, data) => await client.post(`/workorders/${orderId}/tasks`, data),
+  startOrderTask:      async (taskId, technicianName) => await client.put(`/workorders/tasks/${taskId}/start`, { technicianName }),
+  finishOrderTask:     async (taskId, comments) => await client.put(`/workorders/tasks/${taskId}/finish`, { comments }),
+  deleteOrderTask:     async (taskId) => await client.delete(`/workorders/tasks/${taskId}`),
+
   // === IA ===
   diagnoseWithAI: async (assetName, symptom, assetCode) =>
     await client.post('/ai/diagnose', { assetName, symptom, assetCode }),

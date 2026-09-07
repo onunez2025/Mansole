@@ -30,36 +30,81 @@ export class ErrorBoundary extends React.Component {
         }}>
           <div style={{
             backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
+            borderRadius: '16px',
             padding: '32px',
-            maxWidth: '480px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-            border: '1px solid #E5E7EB'
+            maxWidth: '560px',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04)',
+            border: '1px solid #E5E7EB',
+            textAlign: 'left'
           }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#111827', marginBottom: '12px' }}>
-              Se detectó un cambio en el navegador
-            </h2>
-            <p style={{ fontSize: '14px', color: '#4B5563', marginBottom: '24px', lineHeight: 1.5 }}>
-              Una extensión o la traducción automática de tu navegador modificó los elementos de la página. Hemos preparado la sesión para ti.
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+              <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#EF4444' }}></span>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0 }}>
+                Interrupción en el Navegador
+              </h2>
+            </div>
+            <p style={{ fontSize: '13px', color: '#4B5563', marginBottom: '16px', lineHeight: 1.5 }}>
+              La aplicación se pausó temporalmente debido a una intervención del navegador (traductor automático o extensión) o a un dato imprevisto.
             </p>
-            <button
-              onClick={() => {
-                this.setState({ hasError: false, error: null });
-                window.location.reload();
-              }}
-              style={{
-                backgroundColor: '#4C5F80',
-                color: '#FFFFFF',
-                fontWeight: 600,
-                padding: '10px 20px',
+
+            {this.state.error && (
+              <div style={{
+                backgroundColor: '#F8FAFC',
+                border: '1px solid #E2E8F0',
                 borderRadius: '8px',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              Recargar Aplicación
-            </button>
+                padding: '12px',
+                marginBottom: '20px',
+                fontFamily: 'monospace',
+                fontSize: '11px',
+                color: '#DC2626',
+                maxHeight: '140px',
+                overflowY: 'auto',
+                wordBreak: 'break-word'
+              }}>
+                <strong>Detalle:</strong> {this.state.error.toString()}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => {
+                  try {
+                    localStorage.removeItem('tokens');
+                  } catch (e) {}
+                  window.location.reload();
+                }}
+                style={{
+                  backgroundColor: '#F1F5F9',
+                  color: '#475569',
+                  fontWeight: 600,
+                  padding: '9px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid #CBD5E1',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Limpiar Caché y Reiniciar
+              </button>
+              <button
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  window.location.reload();
+                }}
+                style={{
+                  backgroundColor: '#0F172A',
+                  color: '#FFFFFF',
+                  fontWeight: 600,
+                  padding: '9px 18px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Recargar Aplicación
+              </button>
+            </div>
           </div>
         </div>
       );

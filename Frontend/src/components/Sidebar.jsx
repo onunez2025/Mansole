@@ -10,7 +10,8 @@ import {
   Users,
   LogOut,
   X,
-  Sparkles
+  Sparkles,
+  Settings
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout, hasModule, isMobileOpen, onCloseMobile }) {

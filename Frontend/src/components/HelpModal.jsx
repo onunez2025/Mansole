@@ -148,113 +148,113 @@ export default function HelpModal({ isOpen, onClose, initialModule = 'workOrders
   const currentGuide = GUIDES[activeTab] || GUIDES.workOrders;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden">
         {/* Cabecera del Modal */}
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="p-3.5 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold shadow-xs">
-              <BookOpen size={20} />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold shadow-xs flex-shrink-0">
+              <BookOpen size={18} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <span>Centro de Ayuda & Procedimientos Estándar (SOP)</span>
+              <h2 className="text-sm sm:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <span>Centro de Ayuda & Guías SOP</span>
               </h2>
-              <p className="text-xs text-slate-500">
-                Guías paso a paso para operar con máxima seguridad y rigor técnico en Grupo SOLE
+              <p className="text-[11px] sm:text-xs text-slate-500">
+                Guías paso a paso para operar con máxima seguridad en Grupo SOLE
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="p-1.5 sm:p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Barra de Pestañas de Módulos */}
-        <div className="flex items-center gap-2 p-3 border-b border-slate-100 bg-white overflow-x-auto text-xs font-medium">
+        <div className="flex items-center gap-1.5 p-2 sm:p-3 border-b border-slate-100 bg-white overflow-x-auto no-scrollbar text-xs font-medium">
           <button
             onClick={() => setActiveTab('workOrders')}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap flex-shrink-0 ${
               activeTab === 'workOrders' 
                 ? 'bg-slate-900 text-white shadow-xs font-semibold' 
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Hammer size={14} />
-            <span>Órdenes de Trabajo & LOTO</span>
+            <span>OTs & LOTO</span>
           </button>
 
           <button
             onClick={() => setActiveTab('inventory')}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap flex-shrink-0 ${
               activeTab === 'inventory' 
                 ? 'bg-slate-900 text-white shadow-xs font-semibold' 
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Boxes size={14} />
-            <span>Almacén & Repuestos $0</span>
+            <span>Repuestos $0</span>
           </button>
 
           <button
             onClick={() => setActiveTab('schedule')}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap flex-shrink-0 ${
               activeTab === 'schedule' 
                 ? 'bg-slate-900 text-white shadow-xs font-semibold' 
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <CalendarClock size={14} />
-            <span>Preventivos & Reprogramación</span>
+            <span>Preventivos</span>
           </button>
 
           <button
             onClick={() => setActiveTab('assets')}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap flex-shrink-0 ${
               activeTab === 'assets' 
                 ? 'bg-slate-900 text-white shadow-xs font-semibold' 
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Wrench size={14} />
-            <span>Activos & CECOs</span>
+            <span>Activos</span>
           </button>
 
           <button
             onClick={() => setActiveTab('catalogs')}
-            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap flex-shrink-0 ${
               activeTab === 'catalogs' 
                 ? 'bg-slate-900 text-white shadow-xs font-semibold' 
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Users size={14} />
-            <span>Configuración Catálogos</span>
+            <span>Catálogos</span>
           </button>
         </div>
 
         {/* Contenido de la Guía */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-slate-50/40">
-          <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
+        <div className="p-3.5 sm:p-6 overflow-y-auto space-y-4 sm:space-y-6 flex-1 bg-slate-50/40">
+          <div className="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200/80 shadow-xs">
             <div className="flex items-center gap-2 mb-2">
               <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${currentGuide.badgeStyle}`}>
                 {currentGuide.badge}
               </span>
             </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-1 flex items-center gap-2">
+            <h3 className="text-base sm:text-xl font-bold text-slate-900 mb-1 flex items-center gap-2">
               {currentGuide.icon}
               <span>{currentGuide.title}</span>
             </h3>
-            <p className="text-sm text-slate-600">
+            <p className="text-xs sm:text-sm text-slate-600">
               {currentGuide.summary}
             </p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2.5 sm:space-y-3">
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">
               Pasos del Procedimiento de Planta
             </h4>
@@ -262,13 +262,13 @@ export default function HelpModal({ isOpen, onClose, initialModule = 'workOrders
             {currentGuide.steps.map((step, idx) => (
               <div 
                 key={idx}
-                className="p-4 rounded-xl border border-slate-200/80 bg-white hover:border-slate-300 transition-all shadow-xs"
+                className="p-3.5 sm:p-4 rounded-xl border border-slate-200/80 bg-white hover:border-slate-300 transition-all shadow-xs"
               >
-                <h5 className="text-sm font-bold text-slate-900 mb-1 flex items-center gap-2">
-                  <CheckCircle2 size={16} className="text-blue-600 flex-shrink-0" />
+                <h5 className="text-xs sm:text-sm font-bold text-slate-900 mb-1 flex items-center gap-2">
+                  <CheckCircle2 size={15} className="text-blue-600 flex-shrink-0" />
                   <span>{step.title}</span>
                 </h5>
-                <p className="text-xs text-slate-600 leading-relaxed pl-6">
+                <p className="text-xs text-slate-600 leading-relaxed pl-5 sm:pl-6">
                   {step.desc}
                 </p>
               </div>
@@ -276,7 +276,7 @@ export default function HelpModal({ isOpen, onClose, initialModule = 'workOrders
           </div>
 
           {/* Nota de Seguridad */}
-          <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-3">
+          <div className="p-3.5 sm:p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
             <ShieldAlert size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
               <span className="font-bold block mb-0.5">Norma de Seguridad Industrial Grupo SOLE</span>
@@ -286,11 +286,11 @@ export default function HelpModal({ isOpen, onClose, initialModule = 'workOrders
         </div>
 
         {/* Footer del Modal */}
-        <div className="p-4 border-t border-slate-100 bg-white flex items-center justify-between text-xs text-slate-500">
-          <span>Manual de Procedimientos v4.2 • División Rinnai Perú</span>
+        <div className="p-3.5 sm:p-4 border-t border-slate-100 bg-white flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs text-slate-500">
+          <span className="text-center sm:text-left">Manual de Procedimientos v4.2 • División Rinnai Perú</span>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-lg transition-all shadow-xs"
+            className="w-full sm:w-auto px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-lg transition-all shadow-xs text-center"
           >
             Entendido, volver a la plataforma
           </button>

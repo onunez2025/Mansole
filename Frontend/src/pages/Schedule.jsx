@@ -87,20 +87,20 @@ export default function Schedule({ currentUser }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
           <h3 className="text-xl font-bold text-slate-900 tracking-tight">Cronograma de Mantenimientos Preventivos</h3>
           <p className="text-sm text-slate-500 mt-0.5">
             Cálculo por horómetro/frecuencia con reprogramación trazable para supervisores
           </p>
         </div>
-        <button className="btn btn-secondary text-xs" onClick={() => loadSchedule(false)}>
+        <button className="btn btn-secondary text-xs self-start sm:self-auto" onClick={() => loadSchedule(false)}>
           <RefreshCw size={14} /> Sincronizar
         </button>
       </div>
 
       {/* Barra de Filtros y Buscador */}
-      <div className="bg-white border border-slate-200/90 rounded-xl p-3 sm:p-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 shadow-xs">
+      <div className="bg-white border border-slate-200/90 rounded-xl p-3 sm:p-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 sm:gap-4 shadow-xs">
         <div className="pipeline-container">
           <button 
             className={`pipeline-tab text-xs ${activeFilter === 'Todos' ? 'active' : ''}`}
@@ -143,7 +143,7 @@ export default function Schedule({ currentUser }) {
       {loading && !schedule.length ? (
         <TableSkeleton rows={5} cols={6} />
       ) : (
-        <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs">
+        <div className="bg-white border border-slate-200/90 rounded-xl p-3.5 sm:p-5 shadow-xs">
           <div className="table-container">
             <table className="custom-table">
               <thead>
@@ -211,37 +211,37 @@ export default function Schedule({ currentUser }) {
       {selectedItem && (
         <div className="modal-overlay" onClick={() => setSelectedItem(null)}>
           <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-200">
-              <h3 className="text-lg font-bold text-slate-900">Reprogramación de Preventivo</h3>
-              <button onClick={() => setSelectedItem(null)} className="text-slate-400 hover:text-slate-700 text-lg leading-none">✕</button>
+            <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">Reprogramación de Preventivo</h3>
+              <button onClick={() => setSelectedItem(null)} className="text-slate-400 hover:text-slate-700 text-lg leading-none p-1">✕</button>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 p-3.5 rounded-xl mb-5 text-xs text-blue-800 leading-relaxed">
+            <div className="bg-blue-50 border border-blue-200 p-3 sm:p-3.5 rounded-xl mb-4 text-xs text-blue-800 leading-relaxed">
               Estás modificando la fecha programada de <strong>"{selectedItem.activityName}"</strong> en el activo <strong>[{selectedItem.assetCode}] {selectedItem.assetName}</strong>. La reprogramación quedará registrada con justificación para la auditoría de CECO.
             </div>
 
-            <form onSubmit={handleReprogram}>
-              <div className="form-group mb-4">
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Fecha Actualmente Programada</label>
-                <input className="form-input bg-slate-50 text-slate-500 font-mono" disabled value={selectedItem.nextDueDate} />
+            <form onSubmit={handleReprogram} className="space-y-3">
+              <div className="form-group mb-0">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Fecha Actualmente Programada</label>
+                <input className="form-input text-xs bg-slate-50 text-slate-500 font-mono" disabled value={selectedItem.nextDueDate} />
               </div>
 
-              <div className="form-group mb-4">
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Nueva Fecha Propuesta *</label>
+              <div className="form-group mb-0">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Nueva Fecha Propuesta *</label>
                 <input 
                   type="date" 
-                  className="form-input font-mono" 
+                  className="form-input text-xs font-mono" 
                   required 
                   value={newDate} 
                   onChange={e => setNewDate(e.target.value)} 
                 />
               </div>
 
-              <div className="form-group mb-5">
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Motivo de Reprogramación *</label>
+              <div className="form-group mb-0">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Motivo de Reprogramación *</label>
                 <textarea 
                   className="form-textarea text-xs" 
-                  rows="3" 
+                  rows="2" 
                   required
                   value={reprogramReason} 
                   onChange={e => setReprogramReason(e.target.value)} 
@@ -249,9 +249,9 @@ export default function Schedule({ currentUser }) {
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
-                <button type="button" className="btn btn-secondary text-xs" onClick={() => setSelectedItem(null)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary text-xs">Guardar Nueva Fecha</button>
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-200">
+                <button type="button" className="btn btn-secondary text-xs justify-center" onClick={() => setSelectedItem(null)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary text-xs justify-center">Guardar Nueva Fecha</button>
               </div>
             </form>
           </div>

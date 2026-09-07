@@ -262,29 +262,29 @@ export default function WorkOrders({ currentUser }) {
   return (
     <div className="space-y-6">
       {/* Cabecera y botón de acción */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
           <h3 className="text-xl font-bold text-slate-900 tracking-tight">Órdenes de Trabajo (OT)</h3>
           <p className="text-sm text-slate-500 mt-0.5">
             Flujo de mantenimiento: Solicitud → En Planta → Finalizada → Cierre Contable
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           <button
             onClick={() => setShowHelpModal(true)}
-            className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-2 transition-all shadow-xs"
+            className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-xs"
           >
-            <HelpCircle size={15} className="text-blue-600" />
-            <span>Guía LOTO & Proceso OT</span>
+            <HelpCircle size={15} className="text-blue-600 flex-shrink-0" />
+            <span className="whitespace-nowrap">Guía LOTO</span>
           </button>
-          <button className="btn btn-primary text-xs" onClick={() => setShowCreateModal(true)}>
-            <Plus size={15} /> Emitir Nueva OT
+          <button className="flex-1 sm:flex-initial btn btn-primary text-xs justify-center" onClick={() => setShowCreateModal(true)}>
+            <Plus size={15} /> <span className="whitespace-nowrap">Emitir Nueva OT</span>
           </button>
         </div>
       </div>
 
       {/* Barra de Pipeline Operativo y Buscador */}
-      <div className="bg-white border border-slate-200/90 rounded-xl p-3 sm:p-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 shadow-xs">
+      <div className="bg-white border border-slate-200/90 rounded-xl p-3 sm:p-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 sm:gap-4 shadow-xs">
         {/* Pestañas de Proceso */}
         <div className="pipeline-container">
           <button 
@@ -353,11 +353,11 @@ export default function WorkOrders({ currentUser }) {
             const isClosed = ot.status === 'Cerrada';
 
             return (
-              <div key={ot.id} className={`bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs flex items-center justify-between flex-wrap gap-4 transition-all hover:border-slate-300 ${
+              <div key={ot.id} className={`bg-white border border-slate-200/90 rounded-xl p-4 sm:p-5 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 transition-all hover:border-slate-300 ${
                 isInProgress ? 'border-l-4 border-l-blue-500' : isFinished ? 'border-l-4 border-l-emerald-500' : isClosed ? 'border-l-4 border-l-slate-400' : 'border-l-4 border-l-amber-500'
               }`}>
                 {/* Datos Principales */}
-                <div className="max-w-xl flex-1 min-w-[280px]">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className="text-sm font-bold text-slate-900 font-mono">{ot.code}</span>
                     <span className={`badge ${ot.type === 'Preventivo' ? 'badge-info' : 'badge-danger'} text-[11px]`}>{ot.type}</span>
@@ -368,7 +368,7 @@ export default function WorkOrders({ currentUser }) {
                       ● {ot.priority}
                     </span>
                   </div>
-                  <h4 className="text-base font-bold text-slate-900 mb-1 leading-tight">
+                  <h4 className="text-sm sm:text-base font-bold text-slate-900 mb-1 leading-tight">
                     [{ot.assetCode}] {ot.assetName}
                   </h4>
                   <p className="text-xs text-slate-500 mb-1.5">
@@ -380,13 +380,13 @@ export default function WorkOrders({ currentUser }) {
                 </div>
 
                 {/* Múltiples técnicos y costos */}
-                <div className="flex flex-col gap-1.5 min-w-[220px] bg-slate-50 p-3.5 rounded-lg border border-slate-200/80 text-xs">
+                <div className="w-full lg:w-64 flex flex-col gap-1.5 bg-slate-50 p-3 rounded-lg border border-slate-200/80 text-xs">
                   <div className="text-[11px] text-slate-600 flex items-center gap-1.5 font-bold uppercase tracking-wider">
                     <Users size={13} className="text-slate-500" /> 
                     <span>Técnicos ({ot.technicians ? ot.technicians.length : 0}):</span>
                   </div>
                   {ot.technicians && ot.technicians.map((t, idx) => (
-                    <div key={idx} className="text-slate-700 pl-4 font-medium">
+                    <div key={idx} className="text-slate-700 pl-3 font-medium truncate">
                       • {t.name} (<strong className="text-slate-900">{t.hours}h</strong>)
                     </div>
                   ))}
@@ -397,11 +397,11 @@ export default function WorkOrders({ currentUser }) {
                 </div>
 
                 {/* Acciones Rápidas del Proceso */}
-                <div className="flex gap-2 items-center flex-wrap">
+                <div className="flex gap-2 items-center flex-wrap w-full lg:w-auto pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
                   {/* Botón rápido para Iniciar OT si está pendiente */}
                   {isPending && (
                     <button
-                      className="btn text-xs bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 font-semibold py-1.5 px-3"
+                      className="btn text-xs bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 font-semibold py-1.5 px-3 flex-1 sm:flex-initial"
                       onClick={() => handleQuickStatusChange(ot.id, 'En Progreso')}
                       title="Pasar OT a En Proceso"
                     >
@@ -412,7 +412,7 @@ export default function WorkOrders({ currentUser }) {
                   {/* Botón rápido para Finalizar OT si está en proceso */}
                   {isInProgress && (
                     <button
-                      className="btn text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 font-semibold py-1.5 px-3"
+                      className="btn text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 font-semibold py-1.5 px-3 flex-1 sm:flex-initial"
                       onClick={() => handleQuickStatusChange(ot.id, 'Finalizada')}
                       title="Marcar OT como Finalizada"
                     >
@@ -421,18 +421,18 @@ export default function WorkOrders({ currentUser }) {
                   )}
 
                   <button 
-                    className="btn btn-secondary text-xs py-1.5 px-3"
+                    className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center"
                     onClick={() => {
                       setSelectedOT(ot);
                       setAiDiagnosis(ot.aiDiagnosis || null);
                       loadOtTasks(ot.id);
                     }}
                   >
-                    <FileText size={14} /> Detalle & Checklist
+                    <FileText size={14} /> Detalle & Tareas
                   </button>
 
                   <button 
-                    className="btn btn-secondary text-xs py-1.5 px-2.5 text-slate-700"
+                    className="btn btn-secondary text-xs py-1.5 px-2.5 text-slate-700 justify-center"
                     onClick={() => downloadPDF(ot.id)}
                     title="Descargar Acta Formal en PDF"
                   >
@@ -449,23 +449,22 @@ export default function WorkOrders({ currentUser }) {
       {selectedOT && (
         <div className="modal-overlay" onClick={() => { setSelectedOT(null); setAiDiagnosis(null); }}>
           <div className="modal-content" style={{ maxWidth: '760px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', borderBottom: '1px solid #E2E4E9', paddingBottom: '16px' }}>
-              <div>
-                <span style={{ fontSize: '13px', fontWeight: '800', color: '#4C5F80' }}>{selectedOT.code} • {selectedOT.type}</span>
-                <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#1A1C1E', marginTop: '2px' }}>{selectedOT.assetName}</h3>
-                <p style={{ fontSize: '13px', color: '#515254', fontWeight: '600' }}>Área: {selectedOT.areaName} | CECO: {selectedOT.costCenterCode}</p>
+            <div className="flex justify-between items-start mb-4 pb-3 border-b border-slate-200 gap-2">
+              <div className="min-w-0 flex-1">
+                <span className="text-xs font-extrabold text-slate-500">{selectedOT.code} • {selectedOT.type}</span>
+                <h3 className="text-lg sm:text-xl font-bold text-slate-900 mt-0.5 truncate">{selectedOT.assetName}</h3>
+                <p className="text-xs text-slate-500 font-semibold truncate">Área: {selectedOT.areaName} | CECO: {selectedOT.costCenterCode}</p>
               </div>
-              <button onClick={() => { setSelectedOT(null); setAiDiagnosis(null); }} style={{ fontSize: '20px', color: '#8A919E', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => { setSelectedOT(null); setAiDiagnosis(null); }} className="text-slate-400 hover:text-slate-700 text-lg leading-none p-1">✕</button>
             </div>
 
-            <div style={{ background: '#F9FAFB', padding: '16px', borderRadius: '12px', border: '1px solid #E2E4E9', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <strong style={{ color: '#4C5F80', fontSize: '13px', textTransform: 'uppercase' }}>📝 Descripción de Trabajo en Planta:</strong>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: '700', color: '#515254' }}>Estado OT:</label>
+            <div className="bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200 mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-2.5">
+                <strong className="text-slate-600 text-xs uppercase tracking-wider">📝 Descripción de Trabajo en Planta:</strong>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold text-slate-600">Estado OT:</label>
                   <select 
-                    className="form-select"
-                    style={{ padding: '4px 10px', fontSize: '12px', fontWeight: '700', width: 'auto' }}
+                    className="form-select py-1 px-2.5 text-xs font-bold w-auto"
                     value={selectedOT.status || 'Iniciado en Planta'}
                     onChange={e => setSelectedOT({ ...selectedOT, status: e.target.value })}
                   >
@@ -477,13 +476,12 @@ export default function WorkOrders({ currentUser }) {
                   </select>
                 </div>
               </div>
-              <p style={{ fontSize: '14px', color: '#1A1C1E', lineHeight: '1.5', margin: 0 }}>{selectedOT.description}</p>
-              <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#DF2935', fontWeight: '700' }}>
-                <span>⏱️ Tiempo de parada de máquina (Downtime KPI):</span>
+              <p className="text-xs sm:text-sm text-slate-800 leading-relaxed m-0">{selectedOT.description}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-red-600 font-bold">
+                <span>⏱️ Tiempo de parada (Downtime):</span>
                 <input 
                   type="number" 
-                  className="form-input" 
-                  style={{ width: '90px', padding: '4px 8px', fontSize: '13px', fontWeight: '700' }}
+                  className="form-input w-20 py-1 px-2 text-xs font-bold"
                   value={selectedOT.downtimeMinutes || 0} 
                   onChange={e => setSelectedOT({ ...selectedOT, downtimeMinutes: parseInt(e.target.value) || 0 })}
                 />
@@ -492,20 +490,20 @@ export default function WorkOrders({ currentUser }) {
             </div>
 
             {/* ASISTENTE DE INTELIGENCIA ARTIFICIAL (Módulo 8) */}
-            <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-5 mb-5 shadow-xs">
-              <div className="flex items-center justify-between gap-4 mb-3">
+            <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-3.5 sm:p-5 mb-4 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center flex-shrink-0">
                     <Bot size={18} />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900 leading-tight">Asistente IA para Diagnóstico en Planta</h4>
-                    <span className="text-xs text-slate-500 font-medium">Recomendaciones predictivas y heurística de averías</span>
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">Asistente IA para Diagnóstico en Planta</h4>
+                    <span className="text-[11px] text-slate-500 font-medium">Recomendaciones predictivas y heurística de averías</span>
                   </div>
                 </div>
                 {!aiDiagnosis && (
                   <button 
-                    className="btn btn-primary text-xs py-1.5 px-3" 
+                    className="btn btn-primary text-xs py-1.5 px-3 self-start sm:self-auto" 
                     disabled={aiLoading}
                     onClick={() => triggerAiHelp(selectedOT.assetName, selectedOT.description, selectedOT.assetCode)}
                   >
@@ -515,10 +513,10 @@ export default function WorkOrders({ currentUser }) {
               </div>
 
               {aiDiagnosis ? (
-                <div className="mt-4 pt-4 border-t border-slate-200 text-xs space-y-3 leading-relaxed">
+                <div className="mt-3 pt-3 border-t border-slate-200 text-xs space-y-2.5 leading-relaxed">
                   <div>
                     <strong className="text-red-700 block mb-1 font-semibold">⚠️ Posibles Causas Raíz:</strong>
-                    <ul className="list-disc pl-5 text-slate-600 space-y-1">
+                    <ul className="list-disc pl-5 text-slate-600 space-y-0.5">
                       {aiDiagnosis.possibleCauses && aiDiagnosis.possibleCauses.map((c, i) => (
                         <li key={i}>{c}</li>
                       ))}
@@ -526,7 +524,7 @@ export default function WorkOrders({ currentUser }) {
                   </div>
                   <div>
                     <strong className="text-emerald-700 block mb-1 font-semibold">🔧 Pasos Recomendados:</strong>
-                    <ol className="list-decimal pl-5 text-slate-700 space-y-1 font-medium">
+                    <ol className="list-decimal pl-5 text-slate-700 space-y-0.5 font-medium">
                       {aiDiagnosis.recommendedSteps && aiDiagnosis.recommendedSteps.map((r, i) => (
                         <li key={i}>{r}</li>
                       ))}
@@ -544,24 +542,24 @@ export default function WorkOrders({ currentUser }) {
             </div>
 
             {/* Control de Tareas con Catálogo de Actividades y Tiempos de Inicio/Fin */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs mb-5">
+            <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-xs mb-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                    <Timer className="text-blue-600" size={18} />
-                    <span>Control Cronometrado de Tareas por Actividad</span>
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                    <Timer className="text-blue-600 flex-shrink-0" size={17} />
+                    <span>Control Cronometrado de Tareas</span>
                   </h4>
-                  <p className="text-xs text-slate-500">
-                    El técnico selecciona cada actividad del catálogo, la inicia al momento de intervenir y la finaliza al concluir.
+                  <p className="text-[11px] sm:text-xs text-slate-500">
+                    Selecciona cada actividad del catálogo, iníciala al intervenir y finalízala al concluir.
                   </p>
                 </div>
 
                 {/* Formulario para Asignar Actividad a la OT */}
-                <form onSubmit={handleAddTaskToOT} className="flex items-center gap-2 flex-wrap">
+                <form onSubmit={handleAddTaskToOT} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                   <select
                     value={selectedActivityId}
                     onChange={e => setSelectedActivityId(e.target.value)}
-                    className="text-xs px-3 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-slate-900 max-w-xs"
+                    className="text-xs px-3 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-slate-900 w-full sm:max-w-xs"
                   >
                     {catalogActivities.map(act => (
                       <option key={act.Id || act.id} value={act.Id || act.id}>
@@ -571,7 +569,7 @@ export default function WorkOrders({ currentUser }) {
                   </select>
                   <button
                     type="submit"
-                    className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs"
+                    className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs flex-shrink-0"
                   >
                     <PlusCircle size={14} />
                     <span>Asignar Tarea</span>
@@ -583,12 +581,12 @@ export default function WorkOrders({ currentUser }) {
               {tasksLoading ? (
                 <div className="py-6 text-center text-slate-400 text-xs">Cargando tareas de la OT...</div>
               ) : otTasks.length === 0 ? (
-                <div className="py-8 text-center bg-slate-50/60 rounded-xl border border-dashed border-slate-200">
+                <div className="py-6 text-center bg-slate-50/60 rounded-xl border border-dashed border-slate-200">
                   <p className="text-xs text-slate-500 font-medium">Aún no hay tareas asignadas a esta orden.</p>
                   <span className="text-[11px] text-slate-400 mt-0.5 block">Selecciona una actividad del catálogo superior y pulsa "Asignar Tarea".</span>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {otTasks.map(task => {
                     const isPending = !task.StartedAt && !task.IsCompleted;
                     const isRunning = task.StartedAt && !task.IsCompleted;
@@ -597,7 +595,7 @@ export default function WorkOrders({ currentUser }) {
                     return (
                       <div 
                         key={task.Id}
-                        className={`p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                        className={`p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                           isRunning 
                             ? 'bg-blue-50/50 border-blue-200 ring-1 ring-blue-100' 
                             : (isDone ? 'bg-slate-50/40 border-slate-200' : 'bg-white border-slate-200')
@@ -625,7 +623,7 @@ export default function WorkOrders({ currentUser }) {
                           </div>
 
                           {/* Tiempos de Inicio y Fin */}
-                          <div className="flex items-center gap-4 text-[11px] text-slate-500 flex-wrap">
+                          <div className="flex items-center gap-2.5 sm:gap-4 text-[11px] text-slate-500 flex-wrap">
                             <span>
                               <strong>Inicio:</strong> {task.StartedAt ? new Date(task.StartedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'}
                             </span>
@@ -633,12 +631,12 @@ export default function WorkOrders({ currentUser }) {
                               <strong>Fin:</strong> {task.CompletedAt ? new Date(task.CompletedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'}
                             </span>
                             {task.DurationMinutes !== null && task.DurationMinutes !== undefined && (
-                              <span className="font-bold text-slate-800 font-mono bg-white px-2 py-0.5 rounded border border-slate-200">
-                                ⏱️ Duración: {task.DurationMinutes} mins
+                              <span className="font-bold text-slate-800 font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                                ⏱️ {task.DurationMinutes}m
                               </span>
                             )}
                             {task.TechnicianName && (
-                              <span className="text-slate-600">
+                              <span className="text-slate-600 truncate">
                                 👤 {task.TechnicianName}
                               </span>
                             )}
@@ -646,15 +644,15 @@ export default function WorkOrders({ currentUser }) {
                         </div>
 
                         {/* Botones de Acción para el Técnico */}
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                           {isPending && (
                             <button
                               type="button"
                               onClick={() => handleStartTask(task.Id)}
-                              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs"
+                              className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs"
                             >
                               <Play size={13} />
-                              <span>INICIAR TAREA</span>
+                              <span>INICIAR</span>
                             </button>
                           )}
 
@@ -662,10 +660,10 @@ export default function WorkOrders({ currentUser }) {
                             <button
                               type="button"
                               onClick={() => handleFinishTask(task.Id)}
-                              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs"
+                              className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs"
                             >
                               <Check size={13} />
-                              <span>FINALIZAR TAREA</span>
+                              <span>FINALIZAR</span>
                             </button>
                           )}
 
@@ -678,7 +676,7 @@ export default function WorkOrders({ currentUser }) {
                           <button
                             type="button"
                             onClick={() => handleDeleteTask(task.Id)}
-                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-auto sm:ml-0"
                             title="Eliminar tarea"
                           >
                             <Trash2 size={14} />
@@ -692,8 +690,8 @@ export default function WorkOrders({ currentUser }) {
             </div>
 
             {/* Repuestos Consumidos del Almacén */}
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs mb-5">
-              <strong className="text-slate-900 block mb-2.5 font-bold uppercase tracking-wider text-[11px]">
+            <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-xs mb-4">
+              <strong className="text-slate-900 block mb-2 font-bold uppercase tracking-wider text-[11px]">
                 Repuestos Consumidos del Almacén
               </strong>
               <div className="space-y-2">
@@ -713,11 +711,11 @@ export default function WorkOrders({ currentUser }) {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
-              <button className="btn btn-secondary text-xs" onClick={() => downloadPDF(selectedOT.id)}>
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-3 border-t border-slate-200">
+              <button className="btn btn-secondary text-xs justify-center" onClick={() => downloadPDF(selectedOT.id)}>
                 <Download size={14} /> Acta PDF
               </button>
-              <button className="btn btn-primary text-xs" onClick={async () => {
+              <button className="btn btn-primary text-xs justify-center" onClick={async () => {
                 try {
                   await api.updateWorkOrderStatus(selectedOT.id || selectedOT.Id, { 
                     status: selectedOT.status || 'En Progreso', 
@@ -741,36 +739,36 @@ export default function WorkOrders({ currentUser }) {
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div className="modal-content max-w-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-200">
-              <h3 className="text-lg font-bold text-slate-900">Emisión de Orden de Trabajo</h3>
-              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-700 text-lg leading-none">✕</button>
+            <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">Emisión de Orden de Trabajo</h3>
+              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-700 text-lg leading-none p-1">✕</button>
             </div>
 
-            <form onSubmit={handleCreateOT}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div className="form-group">
-                  <label>Tipo de Mantenimiento</label>
-                  <select className="form-select" value={newOT.type} onChange={e => setNewOT({...newOT, type: e.target.value})}>
-                    <option value="Correctivo">🚨 Correctivo (Reporte de Falla)</option>
+            <form onSubmit={handleCreateOT} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Tipo de Mantenimiento</label>
+                  <select className="form-select text-xs" value={newOT.type} onChange={e => setNewOT({...newOT, type: e.target.value})}>
+                    <option value="Correctivo">🚨 Correctivo (Falla)</option>
                     <option value="Preventivo">📅 Preventivo (Rutinario)</option>
                   </select>
                 </div>
-                <div className="form-group">
-                  <label>Prioridad Operativa</label>
-                  <select className="form-select" value={newOT.priority} onChange={e => setNewOT({...newOT, priority: e.target.value})}>
-                    <option value="Urgente">🔥 Urgente (Parada de línea)</option>
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Prioridad Operativa</label>
+                  <select className="form-select text-xs" value={newOT.priority} onChange={e => setNewOT({...newOT, priority: e.target.value})}>
+                    <option value="Urgente">🔥 Urgente (Parada)</option>
                     <option value="Alta">⚡ Alta</option>
                     <option value="Normal">🟢 Normal</option>
                   </select>
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div className="form-group">
-                  <label>Seleccionar Activo / Máquina *</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Seleccionar Activo *</label>
                   {availableAssets.length > 0 ? (
                     <select 
-                      className="form-select"
+                      className="form-select text-xs"
                       value={newOT.assetCode}
                       onChange={e => {
                         const selected = availableAssets.find(a => (a.code || a.Code) === e.target.value);
@@ -787,47 +785,47 @@ export default function WorkOrders({ currentUser }) {
                     >
                       {availableAssets.map(a => (
                         <option key={a.id || a.Id} value={a.code || a.Code}>
-                          [{a.code || a.Code}] {a.name || a.Name} ({a.areaName || a.AreaName || 'Planta'})
+                          [{a.code || a.Code}] {a.name || a.Name}
                         </option>
                       ))}
                     </select>
                   ) : (
-                    <input className="form-input" value={newOT.assetName} onChange={e => setNewOT({...newOT, assetName: e.target.value})} />
+                    <input className="form-input text-xs" value={newOT.assetName} onChange={e => setNewOT({...newOT, assetName: e.target.value})} />
                   )}
                 </div>
-                <div className="form-group">
-                  <label>CECO Imputable (Autocompletado)</label>
-                  <input className="form-input" value={newOT.costCenterCode} readOnly style={{ background: '#F4F6F9', color: '#4C5F80', fontWeight: '700' }} />
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">CECO Imputable</label>
+                  <input className="form-input text-xs bg-slate-50 text-slate-600 font-bold" value={newOT.costCenterCode} readOnly />
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>Descripción de Incidencia / Síntoma *</label>
-                <textarea className="form-textarea" required rows="3" value={newOT.description} onChange={e => setNewOT({...newOT, description: e.target.value})} placeholder="Ej. Pérdida de presión en circuito primario de prensa..." />
+              <div className="form-group mb-0">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Descripción de Incidencia *</label>
+                <textarea className="form-textarea text-xs" required rows="2" value={newOT.description} onChange={e => setNewOT({...newOT, description: e.target.value})} placeholder="Ej. Pérdida de presión en circuito primario de prensa..." />
               </div>
 
-              <div className="form-group">
-                <label>Tiempo de Parada (Minutos para KPI Downtime)</label>
-                <input type="number" className="form-input" value={newOT.downtimeMinutes} onChange={e => setNewOT({...newOT, downtimeMinutes: e.target.value})} />
+              <div className="form-group mb-0">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Tiempo de Parada (Minutos KPI)</label>
+                <input type="number" className="form-input text-xs" value={newOT.downtimeMinutes} onChange={e => setNewOT({...newOT, downtimeMinutes: e.target.value})} />
               </div>
 
-              <div style={{ background: '#F3F5F9', padding: '16px', borderRadius: '12px', border: '1px solid #E2E4E9', marginBottom: '16px' }}>
-                <strong style={{ fontSize: '13px', color: '#4C5F80', display: 'block', marginBottom: '12px', fontWeight: '800' }}>
-                  👥 Asignación de Múltiples Técnicos (Req. 3):
+              <div className="bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-200">
+                <strong className="text-xs text-slate-700 block mb-2 font-bold uppercase tracking-wider">
+                  👥 Asignación de Múltiples Técnicos:
                 </strong>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px', marginBottom: '10px' }}>
-                  <input className="form-input" placeholder="Nombre Técnico 1" value={newOT.tech1} onChange={e => setNewOT({...newOT, tech1: e.target.value})} />
-                  <input type="number" step="0.5" className="form-input" placeholder="Horas" value={newOT.tech1Hours} onChange={e => setNewOT({...newOT, tech1Hours: e.target.value})} />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
+                  <input className="form-input text-xs sm:col-span-2" placeholder="Nombre Técnico 1" value={newOT.tech1} onChange={e => setNewOT({...newOT, tech1: e.target.value})} />
+                  <input type="number" step="0.5" className="form-input text-xs" placeholder="Horas" value={newOT.tech1Hours} onChange={e => setNewOT({...newOT, tech1Hours: e.target.value})} />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px' }}>
-                  <input className="form-input" placeholder="Nombre Técnico 2 (Opcional)" value={newOT.tech2} onChange={e => setNewOT({...newOT, tech2: e.target.value})} />
-                  <input type="number" step="0.5" className="form-input" placeholder="Horas" value={newOT.tech2Hours} onChange={e => setNewOT({...newOT, tech2Hours: e.target.value})} />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <input className="form-input text-xs sm:col-span-2" placeholder="Nombre Técnico 2 (Opcional)" value={newOT.tech2} onChange={e => setNewOT({...newOT, tech2: e.target.value})} />
+                  <input type="number" step="0.5" className="form-input text-xs" placeholder="Horas" value={newOT.tech2Hours} onChange={e => setNewOT({...newOT, tech2Hours: e.target.value})} />
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '16px', borderTop: '1px solid #E2E4E9' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowCreateModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary">Emitir Orden de Trabajo</button>
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-200">
+                <button type="button" className="btn btn-secondary text-xs justify-center" onClick={() => setShowCreateModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary text-xs justify-center">Emitir Orden de Trabajo</button>
               </div>
             </form>
           </div>

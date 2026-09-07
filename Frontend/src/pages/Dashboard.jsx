@@ -70,19 +70,19 @@ export default function Dashboard({ currentUser }) {
   return (
     <div className="space-y-6">
       {/* Encabezado */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
           <h3 className="text-xl font-bold text-slate-900 tracking-tight">Indicadores Clave de Desempeño (KPIs)</h3>
           <p className="text-sm text-slate-500 mt-0.5">Monitoreo en tiempo real de disponibilidad, confiabilidad y costos en planta</p>
         </div>
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-600 shadow-xs">
+        <div className="inline-flex items-center self-start sm:self-auto gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-600 shadow-xs">
           <span>Período:</span>
           <strong className="text-slate-900 font-semibold">Julio - Agosto 2026</strong>
         </div>
       </div>
 
       {/* Grid de Métricas Principales */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {cards.map((c, i) => (
           <div key={i} className="stat-card">
             <div className="flex items-center justify-between mb-3">
@@ -91,7 +91,7 @@ export default function Dashboard({ currentUser }) {
                 {c.icon}
               </div>
             </div>
-            <div className="text-3xl font-bold text-slate-900 tracking-tight mb-2">{c.value}</div>
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mb-2">{c.value}</div>
             <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-auto">
               <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
               <span>{c.desc}</span>
@@ -101,12 +101,12 @@ export default function Dashboard({ currentUser }) {
       </div>
 
       {/* Grid de Tablas: Top Fallas y Gastos por CECO */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
         
         {/* Ranking Máquinas con más fallas */}
-        <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs">
+        <div className="bg-white border border-slate-200/90 rounded-xl p-3.5 sm:p-5 shadow-xs">
           <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-slate-100">
-            <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center border border-red-200">
+            <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center border border-red-200 flex-shrink-0">
               <AlertTriangle size={17} />
             </div>
             <div>
@@ -149,10 +149,10 @@ export default function Dashboard({ currentUser }) {
         </div>
 
         {/* Gasto por Centro de Costo (CECO) */}
-        <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs">
-          <div className="flex items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-100">
+        <div className="bg-white border border-slate-200/90 rounded-xl p-3.5 sm:p-5 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-4 pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200">
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200 flex-shrink-0">
                 <DollarSign size={17} />
               </div>
               <div>
@@ -160,7 +160,7 @@ export default function Dashboard({ currentUser }) {
                 <p className="text-xs text-slate-500">Distribución de costos de mantenimiento</p>
               </div>
             </div>
-            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md font-mono">
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md font-mono self-start sm:self-auto">
               Total: ${kpi.totalMaintenanceCost.toLocaleString()} USD
             </span>
           </div>
@@ -203,9 +203,9 @@ export default function Dashboard({ currentUser }) {
       </div>
 
       {/* Trazabilidad Almacén y Canibalización */}
-      <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs">
+      <div className="bg-white border border-slate-200/90 rounded-xl p-3.5 sm:p-5 shadow-xs">
         <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-slate-100">
-          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200">
+          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200 flex-shrink-0">
             <Boxes size={17} />
           </div>
           <div>

@@ -343,13 +343,13 @@ export default function Users({ currentUser }) {
           </p>
         </div>
         {(currentUser?.role || '') === 'Administrador' && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
             {activeTab === 'users' ? (
-              <button className="btn btn-primary text-xs" onClick={handleOpenCreateUser}>
+              <button className="btn btn-primary text-xs flex-1 sm:flex-initial justify-center" onClick={handleOpenCreateUser}>
                 <UserPlus size={15} /> Nuevo Colaborador
               </button>
             ) : (
-              <button className="btn btn-primary text-xs" onClick={() => setShowRoleModal(true)}>
+              <button className="btn btn-primary text-xs flex-1 sm:flex-initial justify-center" onClick={() => setShowRoleModal(true)}>
                 <PlusCircle size={15} /> Crear Rol
               </button>
             )}
@@ -357,7 +357,7 @@ export default function Users({ currentUser }) {
         )}
       </div>
 
-      <div className="stat-card border-l-4 border-l-blue-600 flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="stat-card border-l-4 border-l-blue-600 flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 sm:p-5">
         <div className="flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200 flex-shrink-0">
             <Shield size={20} />
@@ -397,10 +397,10 @@ export default function Users({ currentUser }) {
       </div>
 
       {activeTab === 'users' && (
-        <div className="siatc-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h4 style={{ fontSize: '17px', fontWeight: '800', color: '#1A1C1E' }}>Directorio de Usuarios y Control de Acceso</h4>
-            <span style={{ fontSize: '13px', color: '#515254' }}>Haz clic en "Editar" para cambiar roles o en el interruptor para suspender cuentas</span>
+        <div className="stat-card p-3.5 sm:p-5 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-4">
+            <h4 className="text-sm sm:text-base font-bold text-slate-900">Directorio de Usuarios y Control de Acceso</h4>
+            <span className="text-xs text-slate-500">Haz clic en "Editar" para cambiar roles o en el interruptor para suspender cuentas</span>
           </div>
 
           {usersError && (
@@ -510,40 +510,40 @@ export default function Users({ currentUser }) {
 
       {activeTab === 'roles' && (
         <>
-          <div className="siatc-card" style={{ marginBottom: '32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+          <div className="stat-card p-3.5 sm:p-5 mb-6 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-4">
               <div>
-                <h4 style={{ fontSize: '17px', fontWeight: '800', color: '#1A1C1E' }}>Catálogo de Roles Corporativos</h4>
-                <span style={{ fontSize: '13px', color: '#515254' }}>Crea roles personalizados y asígnalos a los colaboradores de Grupo SOLE</span>
+                <h4 className="text-base sm:text-lg font-bold text-slate-900">Catálogo de Roles Corporativos</h4>
+                <span className="text-xs text-slate-500">Crea roles personalizados y asígnalos a los colaboradores de Grupo SOLE</span>
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {rolesList.map(r => {
                 const count = usersList.filter(u => u.role === r.name).length;
                 return (
-                  <div key={r.id} style={{ border: '1px solid #D9E1F2', borderRadius: '12px', padding: '16px', background: '#FAFAFD', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div key={r.id} className="border border-slate-200 rounded-xl p-3.5 sm:p-4 bg-slate-50/60 flex flex-col justify-between gap-3">
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <span style={{ fontWeight: '800', fontSize: '16px', color: '#1B365D' }}>{r.name}</span>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-bold text-sm sm:text-base text-slate-900">{r.name}</span>
                         {r.isSystem ? (
-                          <span className="badge badge-mono" style={{ fontSize: '11px' }}>🔒 Sistema</span>
+                          <span className="badge badge-mono text-[11px]">🔒 Sistema</span>
                         ) : (
-                          <span className="badge badge-success" style={{ fontSize: '11px' }}>✨ Custom</span>
+                          <span className="badge badge-success text-[11px]">✨ Custom</span>
                         )}
                       </div>
-                      <p style={{ fontSize: '13px', color: '#515254', marginBottom: '14px', lineHeight: '1.4' }}>
+                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
                         {r.description}
                       </p>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #EEF2F8', paddingTop: '12px', marginTop: 'auto' }}>
-                      <span style={{ fontSize: '13px', fontWeight: '700', color: '#4C5F80' }}>
+                    <div className="flex justify-between items-center border-t border-slate-200/80 pt-2.5 mt-auto">
+                      <span className="text-xs font-bold text-slate-600">
                         👥 {count} {count === 1 ? 'colaborador' : 'colaboradores'}
                       </span>
                       {!r.isSystem && (currentUser?.role || '') === 'Administrador' && (
                         <button 
                           onClick={() => handleDeleteRole(r)} 
-                          style={{ background: '#FFEBEB', color: '#C62828', border: 'none', padding: '5px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          className="px-2 py-1 rounded bg-red-50 text-red-700 text-xs font-bold hover:bg-red-100 flex items-center gap-1 transition-colors"
                         >
                           <Trash2 size={13} /> Eliminar
                         </button>
@@ -555,23 +555,27 @@ export default function Users({ currentUser }) {
             </div>
           </div>
 
-          <div className="siatc-card" style={{ padding: '28px', background: '#FFFFFF' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
-              <div style={{ background: '#1E293B', padding: '10px', borderRadius: '10px', color: '#FFF' }}>
-                <Layers size={24} />
+          <div className="stat-card p-3.5 sm:p-6 bg-white shadow-xs">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-9 h-9 rounded-lg bg-slate-900 text-white flex items-center justify-center flex-shrink-0">
+                <Layers size={18} />
               </div>
               <div>
-                <h4 style={{ fontSize: '20px', fontWeight: '800', color: '#1E293B', margin: 0 }}>
+                <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
                   Matriz Interactiva de Privilegios por Rol & Módulo
                 </h4>
-                <span style={{ fontSize: '14px', color: '#64748B', fontWeight: '500' }}>
-                  Cada recuadro muestra el <strong>Rol Exacto</strong> al que se otorga o deniega el permiso. Haz clic en el recuadro para alternar.
+                <span className="text-xs text-slate-500">
+                  Haz clic en el recuadro para alternar los permisos en tiempo real.
                 </span>
               </div>
             </div>
 
-            <div style={{ overflowX: 'auto', border: '2px solid #CBD5E1', borderRadius: '14px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '900px' }}>
+            <div className="text-[11px] text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg mb-3 flex items-center gap-1.5 font-medium sm:hidden">
+              <span>👉 Desliza horizontalmente la tabla para ver todos los roles y permisos</span>
+            </div>
+
+            <div className="table-container border border-slate-300 rounded-xl overflow-x-auto shadow-xs">
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '850px' }}>
                 <thead>
                   <tr style={{ background: '#0F172A', color: '#FFFFFF' }}>
                     <th style={{ padding: '18px 22px', fontSize: '15px', fontWeight: '800', color: '#FFFFFF', width: '38%', borderBottom: '3px solid #334155' }}>
@@ -730,26 +734,28 @@ export default function Users({ currentUser }) {
                 </select>
               </div>
 
-              <div className="form-group" style={{ marginBottom: '20px', background: '#F8FAFC', padding: '12px 14px', borderRadius: '8px', border: '1px solid #E2E4E9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div className="bg-slate-50 p-3 sm:p-3.5 rounded-xl border border-slate-200 mb-4 flex items-center justify-between gap-2">
                 <div>
-                  <strong style={{ fontSize: '14px', color: '#1A1C1E', display: 'block' }}>Estado de Acceso al Sistema</strong>
-                  <span style={{ fontSize: '12px', color: '#64748B' }}>
+                  <strong className="text-xs sm:text-sm font-bold text-slate-900 block">Estado de Acceso al Sistema</strong>
+                  <span className="text-[11px] text-slate-500">
                     {userDataForm.isActive ? 'Cuenta habilitada para iniciar sesión' : 'Cuenta suspendida/bloqueada del sistema'}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setUserDataForm({ ...userDataForm, isActive: !userDataForm.isActive })}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '700', color: userDataForm.isActive ? '#2E7D32' : '#C62828' }}
+                  className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg border transition-colors ${
+                    userDataForm.isActive ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-red-700 bg-red-50 border-red-200'
+                  }`}
                 >
-                  {userDataForm.isActive ? <ToggleRight size={32} /> : <ToggleLeft size={32} />}
-                  {userDataForm.isActive ? 'ACTIVA' : 'SUSPENDIDA'}
+                  {userDataForm.isActive ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
+                  <span>{userDataForm.isActive ? 'ACTIVA' : 'SUSPENDIDA'}</span>
                 </button>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid #E4E7ED', paddingTop: '16px' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowUserModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary">{editingUser ? 'Guardar Cambios' : 'Registrar Colaborador'}</button>
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-200">
+                <button type="button" className="btn btn-secondary text-xs justify-center" onClick={() => setShowUserModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary text-xs justify-center">{editingUser ? 'Guardar Cambios' : 'Registrar Colaborador'}</button>
               </div>
             </form>
           </div>
@@ -758,17 +764,17 @@ export default function Users({ currentUser }) {
 
       {showRoleModal && (
         <div className="modal-overlay" onClick={() => setShowRoleModal(false)}>
-          <div className="modal-content" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', borderBottom: '1px solid #E4E7ED', paddingBottom: '14px' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1B365D' }}>Crear Nuevo Rol Corporativo</h3>
-              <button onClick={() => setShowRoleModal(false)} style={{ fontSize: '20px', color: '#8A919E', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+          <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">Crear Nuevo Rol Corporativo</h3>
+              <button onClick={() => setShowRoleModal(false)} className="text-slate-400 hover:text-slate-700 text-lg leading-none p-1">✕</button>
             </div>
 
-            <form onSubmit={handleCreateRole}>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#1A1C1E' }}>Nombre del Rol *</label>
+            <form onSubmit={handleCreateRole} className="space-y-3">
+              <div className="form-group mb-0">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Nombre del Rol *</label>
                 <input 
-                  className="form-input" 
+                  className="form-input text-xs" 
                   required 
                   placeholder="Ej. Inspector de Calidad, Jefe de Almacén..." 
                   value={roleDataForm.name} 
@@ -776,11 +782,11 @@ export default function Users({ currentUser }) {
                 />
               </div>
 
-              <div className="form-group" style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#1A1C1E' }}>Descripción *</label>
+              <div className="form-group mb-0">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Descripción *</label>
                 <textarea 
-                  className="form-input" 
-                  rows={3}
+                  className="form-textarea text-xs" 
+                  rows="2"
                   required 
                   placeholder="Explica las funciones o alcance de seguridad que tendrá este perfil..." 
                   value={roleDataForm.description} 
@@ -788,13 +794,13 @@ export default function Users({ currentUser }) {
                 />
               </div>
 
-              <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '13px', color: '#1E40AF' }}>
+              <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl text-xs text-blue-800 leading-relaxed">
                 ℹ️ Al crear un rol, se añadirá instantáneamente como una nueva columna interactiva con el nombre del rol explícito en cada celda.
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid #E4E7ED', paddingTop: '16px' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowRoleModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary">Crear Rol e Integrar</button>
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-200">
+                <button type="button" className="btn btn-secondary text-xs justify-center" onClick={() => setShowRoleModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary text-xs justify-center">Crear Rol e Integrar</button>
               </div>
             </form>
           </div>

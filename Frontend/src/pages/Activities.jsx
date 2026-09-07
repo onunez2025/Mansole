@@ -82,9 +82,9 @@ export default function Activities({ currentUser }) {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {filtered.map((a, idx) => (
-          <div key={a.id || idx} className="siatc-card flex flex-col p-5 hover:border-slate-300 transition-all">
+          <div key={a.id || idx} className="stat-card flex flex-col p-4 sm:p-5 hover:border-slate-300 transition-all">
             <div className="flex items-center justify-between mb-2">
               <span className={`badge ${a.type === 'Mecánico' ? 'badge-info' : a.type === 'Eléctrico' ? 'badge-warning' : 'badge-success'} text-[11px]`}>
                 {a.type || 'General'}
@@ -94,7 +94,7 @@ export default function Activities({ currentUser }) {
               </span>
             </div>
 
-            <h4 className="text-base font-bold text-slate-900 mb-2 leading-tight">
+            <h4 className="text-sm sm:text-base font-bold text-slate-900 mb-2 leading-tight">
               {a.name}
             </h4>
 
@@ -104,8 +104,8 @@ export default function Activities({ currentUser }) {
             </div>
 
             <div className="mt-auto pt-3 border-t border-slate-100 flex justify-between items-center gap-2">
-              <span className="text-[11px] text-slate-400 font-mono">CECO & MÁQUINAS</span>
-              <div className="flex gap-1.5">
+              <span className="text-[11px] text-slate-400 font-mono truncate">CECO & MÁQUINAS</span>
+              <div className="flex gap-1.5 flex-shrink-0">
                 <button className="btn btn-secondary text-xs py-1 px-2.5" onClick={() => {
                   setEditingActivity(a);
                   setNewActivity({ name: a.name, type: a.type, estimatedMinutes: a.estimatedMinutes, resources: a.resources });
@@ -125,11 +125,11 @@ export default function Activities({ currentUser }) {
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-200">
-              <h3 className="text-lg font-bold text-slate-900">
+            <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">
                 {editingActivity ? 'Editar Actividad Maestra' : 'Crear Actividad Maestra'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-700 text-lg leading-none">✕</button>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-700 text-lg leading-none p-1">✕</button>
             </div>
             
             <form onSubmit={async (e) => {
@@ -148,41 +148,41 @@ export default function Activities({ currentUser }) {
                 toast.error("Error al procesar actividad: " + err.message);
               }
             }}>
-              <div className="form-group mb-4">
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Nombre de la Actividad *</label>
-                <input className="form-input" required value={newActivity.name} onChange={e => setNewActivity({...newActivity, name: e.target.value})} placeholder="Ej. Inspección de Válvulas y Líneas" />
+              <div className="form-group mb-3">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Nombre de la Actividad *</label>
+                <input className="form-input text-xs" required value={newActivity.name} onChange={e => setNewActivity({...newActivity, name: e.target.value})} placeholder="Ej. Inspección de Válvulas y Líneas" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="form-group">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Tipo *</label>
-                  <select className="form-select" value={newActivity.type} onChange={e => setNewActivity({...newActivity, type: e.target.value})}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Tipo *</label>
+                  <select className="form-select text-xs" value={newActivity.type} onChange={e => setNewActivity({...newActivity, type: e.target.value})}>
                     <option value="Mecánico">Mecánico</option>
                     <option value="Eléctrico">Eléctrico</option>
                     <option value="Instrumentación">Instrumentación</option>
                     <option value="Infraestructura">Infraestructura</option>
                   </select>
                 </div>
-                <div className="form-group">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Tiempo Estimado (Minutos) *</label>
-                  <input type="number" required className="form-input" value={newActivity.estimatedMinutes} onChange={e => setNewActivity({...newActivity, estimatedMinutes: e.target.value})} />
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Tiempo Estimado (Mins) *</label>
+                  <input type="number" required className="form-input text-xs" value={newActivity.estimatedMinutes} onChange={e => setNewActivity({...newActivity, estimatedMinutes: e.target.value})} />
                 </div>
               </div>
 
-              <div className="form-group mb-5">
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Herramientas y Recursos Necesarios</label>
+              <div className="form-group mb-4">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Herramientas y Recursos Necesarios</label>
                 <textarea 
                   className="form-textarea text-xs" 
-                  rows="3" 
+                  rows="2" 
                   value={newActivity.resources} 
                   onChange={e => setNewActivity({...newActivity, resources: e.target.value})} 
                   placeholder="Ej. Llave dinamométrica, multímetro, grasa dieléctrica..."
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
-                <button type="button" className="btn btn-secondary text-xs" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary text-xs">Guardar Actividad</button>
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-200">
+                <button type="button" className="btn btn-secondary text-xs justify-center" onClick={() => setShowModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary text-xs justify-center">Guardar Actividad</button>
               </div>
             </form>
           </div>

@@ -141,20 +141,20 @@ export default function Inventory({ currentUser }) {
           <h3 className="text-xl font-bold text-slate-900 tracking-tight">Almacén y Trazabilidad de Repuestos</h3>
           <p className="text-sm text-slate-500 mt-0.5">Control de inventario estándar y componentes de <strong className="text-emerald-600 font-semibold">Canibalización</strong> ($0 USD contable)</p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           <button
             onClick={() => setShowHelpModal(true)}
-            className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-2 transition-all shadow-xs"
+            className="flex-1 sm:flex-initial px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs"
           >
-            <HelpCircle size={15} className="text-emerald-600" />
-            <span>Guía Repuestos $0</span>
+            <HelpCircle size={15} className="text-emerald-600 flex-shrink-0" />
+            <span className="whitespace-nowrap">Guía $0</span>
           </button>
-          <button className="btn btn-secondary text-xs" onClick={loadInventory}>
-            <RefreshCw size={14} /> Sincronizar
+          <button className="flex-1 sm:flex-initial btn btn-secondary text-xs justify-center" onClick={loadInventory}>
+            <RefreshCw size={14} /> <span className="whitespace-nowrap">Sincronizar</span>
           </button>
           {canRegister ? (
-            <button className="btn btn-primary text-xs" onClick={openCreate}>
-              <Plus size={15} /> Ingresar Repuesto
+            <button className="flex-1 sm:flex-initial btn btn-primary text-xs justify-center" onClick={openCreate}>
+              <Plus size={15} /> <span className="whitespace-nowrap">Ingresar Repuesto</span>
             </button>
           ) : (
             <button className="btn btn-secondary text-xs opacity-50 cursor-not-allowed" disabled title="Bloqueado por RBAC para Operarios">
@@ -308,66 +308,66 @@ export default function Inventory({ currentUser }) {
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-200">
-              <h3 className="text-lg font-bold text-slate-900">
+            <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">
                 {editingItem ? `Editar Repuesto: ${editingItem.code}` : 'Ingreso de Repuesto / Canibalización'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-700 text-lg leading-none">✕</button>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-700 text-lg leading-none p-1">✕</button>
             </div>
 
-            <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl mb-5 text-xs text-emerald-800 leading-relaxed">
+            <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl mb-4 text-xs text-emerald-800 leading-relaxed">
               ℹ️ Al seleccionar <strong>Canibalización</strong> o <strong>Hallazgo</strong>, el costo del repuesto se fijará automáticamente en <strong>$0.00 USD</strong> para preservar los balances contables en SAP.
             </div>
 
-            <form onSubmit={handleRegister}>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', marginBottom: '6px' }}>Motivo de Ingreso</label>
+            <form onSubmit={handleRegister} className="space-y-3">
+              <div className="form-group mb-0">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Motivo de Ingreso</label>
                 <select 
-                  className="form-select" 
+                  className="form-select text-xs" 
                   value={formData.reason} 
                   onChange={(e) => {
                     const val = e.target.value;
                     setFormData({ ...formData, reason: val, unitCost: (val === 'Canibalización' || val === 'Hallazgo') ? 0 : formData.unitCost });
                   }}
                 >
-                  <option value="Canibalización">♻️ Canibalización (Retirado de máquina en desuso) - $0 USD</option>
-                  <option value="Hallazgo">🔍 Hallazgo en Taller / Residual de producción - $0 USD</option>
+                  <option value="Canibalización">♻️ Canibalización (Retirado de máquina) - $0 USD</option>
+                  <option value="Hallazgo">🔍 Hallazgo en Taller / Residual - $0 USD</option>
                   <option value="Compra SAP">📦 Compra / Recepción Oficial SAP</option>
                   <option value="Ajuste">⚙️ Ajuste de Inventario positivo</option>
                 </select>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px', marginBottom: '16px' }}>
-                <div className="form-group">
-                  <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', marginBottom: '6px' }}>Código</label>
-                  <input className="form-input" placeholder="REP-CANIB-99" value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Código</label>
+                  <input className="form-input text-xs" placeholder="REP-CANIB-99" value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} />
                 </div>
-                <div className="form-group">
-                  <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', marginBottom: '6px' }}>Nombre del Repuesto *</label>
-                  <input className="form-input" required placeholder="Motor Neumático Recondicionado" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                <div className="form-group mb-0 sm:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nombre del Repuesto *</label>
+                  <input className="form-input text-xs" required placeholder="Motor Neumático Recondicionado" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                 </div>
               </div>
 
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', marginBottom: '6px' }}>Descripción / Origen</label>
-                <input className="form-input" placeholder="Retirado de cinta Línea 1" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+              <div className="form-group mb-0">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Descripción / Origen</label>
+                <input className="form-input text-xs" placeholder="Retirado de cinta Línea 1" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                <div className="form-group">
-                  <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', marginBottom: '6px' }}>Cantidad *</label>
-                  <input type="number" min="1" className="form-input" required value={formData.currentStock} onChange={e => setFormData({...formData, currentStock: e.target.value})} />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Cantidad *</label>
+                  <input type="number" min="1" className="form-input text-xs" required value={formData.currentStock} onChange={e => setFormData({...formData, currentStock: e.target.value})} />
                 </div>
-                <div className="form-group">
-                  <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', marginBottom: '6px' }}>Stock Mínimo</label>
-                  <input type="number" min="0" className="form-input" value={formData.minStock} onChange={e => setFormData({...formData, minStock: e.target.value})} />
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Stock Mínimo</label>
+                  <input type="number" min="0" className="form-input text-xs" value={formData.minStock} onChange={e => setFormData({...formData, minStock: e.target.value})} />
                 </div>
-                <div className="form-group">
-                  <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', marginBottom: '6px' }}>Costo Unit. USD</label>
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Costo Unit. USD</label>
                   <input 
                     type="number" 
                     step="0.01" 
-                    className="form-input" 
+                    className="form-input text-xs" 
                     disabled={formData.reason === 'Canibalización' || formData.reason === 'Hallazgo'} 
                     value={formData.unitCost} 
                     onChange={e => setFormData({...formData, unitCost: e.target.value})} 
@@ -375,14 +375,14 @@ export default function Inventory({ currentUser }) {
                 </div>
               </div>
 
-              <div className="form-group" style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', marginBottom: '6px' }}>Ubicación</label>
-                <input className="form-input" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
+              <div className="form-group mb-0">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Ubicación</label>
+                <input className="form-input text-xs" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '16px', borderTop: '1px solid #E2E4E9' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-200">
+                <button type="button" className="btn btn-secondary text-xs justify-center" onClick={() => setShowModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary text-xs justify-center">
                   {editingItem ? 'Guardar Cambios' : 'Registrar en Almacén'}
                 </button>
               </div>

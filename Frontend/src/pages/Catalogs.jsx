@@ -206,15 +206,15 @@ export default function Catalogs({ currentUser }) {
   return (
     <div className="space-y-6 pb-12">
       {/* Header con botón de ayuda */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
               Administración Central
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <Settings className="text-slate-900" size={24} />
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+            <Settings className="text-slate-900 flex-shrink-0" size={22} />
             <span>Configuración de Catálogos Maestros</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
@@ -222,13 +222,13 @@ export default function Catalogs({ currentUser }) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           <button
             onClick={() => setShowHelp(true)}
-            className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-2 transition-all shadow-xs"
+            className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs"
           >
-            <HelpCircle size={15} className="text-blue-600" />
-            <span>Guía & SOP</span>
+            <HelpCircle size={15} className="text-blue-600 flex-shrink-0" />
+            <span className="whitespace-nowrap">Guía SOP</span>
           </button>
 
           <button
@@ -237,13 +237,13 @@ export default function Catalogs({ currentUser }) {
               if (activeTab === 'categories') handleOpenCatModal();
               if (activeTab === 'cecos') handleOpenCecoModal();
             }}
-            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-2 transition-all shadow-xs"
+            className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs"
           >
             <Plus size={15} />
-            <span>
+            <span className="whitespace-nowrap">
               {activeTab === 'areas' && 'Nueva Área'}
               {activeTab === 'categories' && 'Nueva Categoría'}
-              {activeTab === 'cecos' && 'Nuevo Centro de Costo'}
+              {activeTab === 'cecos' && 'Nuevo CECO'}
             </span>
           </button>
         </div>
@@ -251,41 +251,41 @@ export default function Catalogs({ currentUser }) {
 
       {/* Tabs y Buscador */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 rounded-xl max-w-fit">
+        <div className="w-full sm:w-auto overflow-x-auto no-scrollbar flex items-center gap-1.5 p-1 bg-slate-200/60 rounded-xl">
           <button
             onClick={() => { setActiveTab('areas'); setSearch(''); }}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+            className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 sm:gap-2 transition-all whitespace-nowrap flex-shrink-0 ${
               activeTab === 'areas' 
                 ? 'bg-white text-slate-900 shadow-xs' 
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Factory size={15} />
-            <span>Áreas de Planta ({areas.length})</span>
+            <Factory size={14} />
+            <span>Áreas ({areas.length})</span>
           </button>
 
           <button
             onClick={() => { setActiveTab('categories'); setSearch(''); }}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+            className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 sm:gap-2 transition-all whitespace-nowrap flex-shrink-0 ${
               activeTab === 'categories' 
                 ? 'bg-white text-slate-900 shadow-xs' 
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Tag size={15} />
-            <span>Categorías de Activos ({categories.length})</span>
+            <Tag size={14} />
+            <span>Categorías ({categories.length})</span>
           </button>
 
           <button
             onClick={() => { setActiveTab('cecos'); setSearch(''); }}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+            className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 sm:gap-2 transition-all whitespace-nowrap flex-shrink-0 ${
               activeTab === 'cecos' 
                 ? 'bg-white text-slate-900 shadow-xs' 
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Building2 size={15} />
-            <span>Centros de Costo CECO ({costCenters.length})</span>
+            <Building2 size={14} />
+            <span>CECOs ({costCenters.length})</span>
           </button>
         </div>
 
@@ -506,7 +506,7 @@ export default function Catalogs({ currentUser }) {
 
             {/* Formulario Área */}
             {activeTab === 'areas' && (
-              <form onSubmit={handleSaveArea} className="p-6 space-y-4">
+              <form onSubmit={handleSaveArea} className="space-y-3 pt-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Nombre del Área</label>
                   <input
@@ -535,23 +535,23 @@ export default function Catalogs({ currentUser }) {
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Descripción</label>
                   <textarea
-                    rows={3}
+                    rows={2}
                     placeholder="Detalles de la ubicación o línea de producción..."
                     value={areaForm.description}
                     onChange={e => setAreaForm({ ...areaForm, description: e.target.value })}
                     className="w-full px-3.5 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:border-slate-900"
                   />
                 </div>
-                <div className="pt-2 flex justify-end gap-2">
-                  <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
-                  <button type="submit" className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800">Guardar en Azure SQL</button>
+                <div className="pt-3 border-t border-slate-200 flex flex-col-reverse sm:flex-row justify-end gap-2">
+                  <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg text-center">Cancelar</button>
+                  <button type="submit" className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800 text-center">Guardar en Azure SQL</button>
                 </div>
               </form>
             )}
 
             {/* Formulario Categoría */}
             {activeTab === 'categories' && (
-              <form onSubmit={handleSaveCategory} className="p-6 space-y-4">
+              <form onSubmit={handleSaveCategory} className="space-y-3 pt-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Nombre de la Categoría</label>
                   <input
@@ -566,24 +566,24 @@ export default function Catalogs({ currentUser }) {
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Descripción Técnica</label>
                   <textarea
-                    rows={3}
+                    rows={2}
                     placeholder="Equipos comprendidos y características..."
                     value={catForm.description}
                     onChange={e => setCatForm({ ...catForm, description: e.target.value })}
                     className="w-full px-3.5 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:border-slate-900"
                   />
                 </div>
-                <div className="pt-2 flex justify-end gap-2">
-                  <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
-                  <button type="submit" className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800">Guardar en Azure SQL</button>
+                <div className="pt-3 border-t border-slate-200 flex flex-col-reverse sm:flex-row justify-end gap-2">
+                  <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg text-center">Cancelar</button>
+                  <button type="submit" className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800 text-center">Guardar en Azure SQL</button>
                 </div>
               </form>
             )}
 
             {/* Formulario Centro de Costos */}
             {activeTab === 'cecos' && (
-              <form onSubmit={handleSaveCeco} className="p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-3">
+              <form onSubmit={handleSaveCeco} className="space-y-3 pt-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Código CECO</label>
                     <input
@@ -627,9 +627,9 @@ export default function Catalogs({ currentUser }) {
                     className="w-full px-3.5 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:border-slate-900"
                   />
                 </div>
-                <div className="pt-2 flex justify-end gap-2">
-                  <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
-                  <button type="submit" className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800">Guardar en Azure SQL</button>
+                <div className="pt-3 border-t border-slate-200 flex flex-col-reverse sm:flex-row justify-end gap-2">
+                  <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg text-center">Cancelar</button>
+                  <button type="submit" className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800 text-center">Guardar en Azure SQL</button>
                 </div>
               </form>
             )}

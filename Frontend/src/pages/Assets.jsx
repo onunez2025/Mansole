@@ -115,8 +115,8 @@ export default function Assets({ currentUser }) {
           <h3 className="text-xl font-bold text-slate-900 tracking-tight">Activos Industriales & CECOs</h3>
           <p className="text-sm text-slate-500 mt-0.5">Jerarquía de costos: Planta Industrial → Áreas de Producción → Equipos</p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative w-64">
+        <div className="flex items-center gap-2.5 flex-wrap w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-64">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input 
               type="text" 
@@ -126,16 +126,16 @@ export default function Assets({ currentUser }) {
               className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all"
             />
           </div>
-          <button className="btn btn-primary text-xs" onClick={openCreate}>
+          <button className="btn btn-primary text-xs flex-shrink-0" onClick={openCreate}>
             <Plus size={15} /> Registrar Activo
           </button>
         </div>
       </div>
 
       {loading && !assets.length ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="siatc-card h-72 flex flex-col gap-3 p-4">
+            <div key={i} className="stat-card h-72 flex flex-col gap-3 p-4">
               <div className="skeleton h-36 w-full rounded-lg" />
               <div className="skeleton h-5 w-3/4" />
               <div className="skeleton h-4 w-1/2" />
@@ -144,9 +144,9 @@ export default function Assets({ currentUser }) {
           ))}
         </div>
       ) : (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
         {filteredAssets.map((a, idx) => (
-          <div key={a.id || idx} className="siatc-card flex flex-col p-0 overflow-hidden hover:border-slate-300 transition-all">
+          <div key={a.id || idx} className="stat-card flex flex-col p-0 overflow-hidden hover:border-slate-300 transition-all">
             <div className="h-44 w-full relative bg-slate-100 border-b border-slate-200">
               <img
                 src={a.imageUrl || '/images/prensa.jpg'}
@@ -197,15 +197,15 @@ export default function Assets({ currentUser }) {
       {selectedAsset && (
         <div className="modal-overlay" onClick={() => setSelectedAsset(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-start mb-5 pb-4 border-b border-slate-200">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">Ficha Técnica y Hoja de Vida</h3>
-                <p className="text-xs text-slate-500 font-mono mt-0.5">[{selectedAsset.code}] {selectedAsset.name} • {selectedAsset.costCenterCode}</p>
+            <div className="flex justify-between items-start mb-4 pb-3 border-b border-slate-200">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900">Ficha Técnica y Hoja de Vida</h3>
+                <p className="text-xs text-slate-500 font-mono mt-0.5 truncate">[{selectedAsset.code}] {selectedAsset.name} • {selectedAsset.costCenterCode}</p>
               </div>
-              <button onClick={() => setSelectedAsset(null)} className="text-slate-400 hover:text-slate-700 text-lg leading-none">✕</button>
+              <button onClick={() => setSelectedAsset(null)} className="text-slate-400 hover:text-slate-700 text-lg leading-none p-1">✕</button>
             </div>
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-5 text-xs leading-relaxed text-slate-700">
-              <div className="grid grid-cols-2 gap-3">
+            <div className="bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200 mb-4 text-xs leading-relaxed text-slate-700">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                 <div><span className="text-slate-500">Marca:</span> <strong className="text-slate-900">{selectedAsset.brand || '—'}</strong></div>
                 <div><span className="text-slate-500">Modelo:</span> <strong className="text-slate-900">{selectedAsset.model || '—'}</strong></div>
                 <div><span className="text-slate-500">Num. Serie:</span> <strong className="text-slate-900 font-mono">{selectedAsset.serialNumber || '—'}</strong></div>
@@ -214,20 +214,20 @@ export default function Assets({ currentUser }) {
                 <div><span className="text-slate-500">Estado Actual:</span> <span className="badge badge-success ml-1">{selectedAsset.status}</span></div>
               </div>
             </div>
-            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2.5 flex items-center gap-2">
               <Layers size={15} className="text-slate-500" /> Archivos y Planos Adjuntos (Azure Blob Storage)
             </h4>
-            <div className="space-y-2 mb-6">
+            <div className="space-y-2 mb-4">
               {[`Manual_Operacion_${selectedAsset.brand || 'Equipo'}.pdf`, `Plano_LOTO_${selectedAsset.code}.dwg`].map(f => (
-                <div key={f} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 text-xs">
-                  <span className="font-medium text-slate-800">📄 {f}</span>
-                  <button className="btn btn-secondary text-xs py-1 px-2.5">Descargar Blob</button>
+                <div key={f} className="flex items-center justify-between p-2.5 sm:p-3 bg-white rounded-lg border border-slate-200 text-xs gap-2">
+                  <span className="font-medium text-slate-800 truncate">📄 {f}</span>
+                  <button className="btn btn-secondary text-xs py-1 px-2.5 flex-shrink-0">Descargar Blob</button>
                 </div>
               ))}
             </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
-              <button className="btn btn-secondary text-xs" onClick={() => setSelectedAsset(null)}>Cerrar</button>
-              <button className="btn btn-primary text-xs" onClick={() => { setSelectedAsset(null); openEdit(selectedAsset); }}>
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-200">
+              <button className="btn btn-secondary text-xs justify-center" onClick={() => setSelectedAsset(null)}>Cerrar</button>
+              <button className="btn btn-primary text-xs justify-center" onClick={() => { setSelectedAsset(null); openEdit(selectedAsset); }}>
                 <Wrench size={14} /> Editar Activo
               </button>
             </div>
@@ -239,38 +239,38 @@ export default function Assets({ currentUser }) {
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-200">
-              <h3 className="text-lg font-bold text-slate-900">
+            <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">
                 {editingAsset ? `Editar Activo: ${editingAsset.code}` : 'Registrar Nuevo Activo'}
               </h3>
-              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-700 text-lg leading-none">✕</button>
+              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-700 text-lg leading-none p-1">✕</button>
             </div>
 
-            <form onSubmit={handleSaveAsset}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                <div className="form-group">
-                  <label>Código Activo *</label>
-                  <input className="form-input" required value={newAsset.code} onChange={e => setNewAsset({...newAsset, code: e.target.value})} placeholder="Ej. PRENSA-03" />
+            <form onSubmit={handleSaveAsset} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Código Activo *</label>
+                  <input className="form-input text-xs" required value={newAsset.code} onChange={e => setNewAsset({...newAsset, code: e.target.value})} placeholder="Ej. PRENSA-03" />
                 </div>
-                <div className="form-group">
-                  <label>Nombre del Equipo *</label>
-                  <input className="form-input" required value={newAsset.name} onChange={e => setNewAsset({...newAsset, name: e.target.value})} placeholder="Ej. Prensa Hidráulica 100T" />
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                <div className="form-group">
-                  <label>Marca</label>
-                  <input className="form-input" value={newAsset.brand} onChange={e => setNewAsset({...newAsset, brand: e.target.value})} placeholder="Ej. Rexroth" />
-                </div>
-                <div className="form-group">
-                  <label>Modelo</label>
-                  <input className="form-input" value={newAsset.model} onChange={e => setNewAsset({...newAsset, model: e.target.value})} placeholder="Ej. HV-200" />
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nombre del Equipo *</label>
+                  <input className="form-input text-xs" required value={newAsset.name} onChange={e => setNewAsset({...newAsset, name: e.target.value})} placeholder="Ej. Prensa Hidráulica 100T" />
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                <div className="form-group">
-                  <label>Área / CECO *</label>
-                  <select className="form-select" required value={newAsset.areaId} onChange={e => setNewAsset({...newAsset, areaId: e.target.value})}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Marca</label>
+                  <input className="form-input text-xs" value={newAsset.brand} onChange={e => setNewAsset({...newAsset, brand: e.target.value})} placeholder="Ej. Rexroth" />
+                </div>
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Modelo</label>
+                  <input className="form-input text-xs" value={newAsset.model} onChange={e => setNewAsset({...newAsset, model: e.target.value})} placeholder="Ej. HV-200" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Área / CECO *</label>
+                  <select className="form-select text-xs" required value={newAsset.areaId} onChange={e => setNewAsset({...newAsset, areaId: e.target.value})}>
                     <option value="">— Seleccionar Área —</option>
                     {areas.map(a => (
                       <option key={a.Id || a.id} value={a.Id || a.id}>
@@ -279,9 +279,9 @@ export default function Assets({ currentUser }) {
                     ))}
                   </select>
                 </div>
-                <div className="form-group">
-                  <label>Categoría *</label>
-                  <select className="form-select" required value={newAsset.categoryId} onChange={e => setNewAsset({...newAsset, categoryId: e.target.value})}>
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Categoría *</label>
+                  <select className="form-select text-xs" required value={newAsset.categoryId} onChange={e => setNewAsset({...newAsset, categoryId: e.target.value})}>
                     <option value="">— Seleccionar Categoría —</option>
                     {categories.map(c => (
                       <option key={c.Id || c.id} value={c.Id || c.id}>{c.Name || c.name}</option>
@@ -289,23 +289,23 @@ export default function Assets({ currentUser }) {
                   </select>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                <div className="form-group">
-                  <label>Número de Serie</label>
-                  <input className="form-input" value={newAsset.serialNumber} onChange={e => setNewAsset({...newAsset, serialNumber: e.target.value})} placeholder="SN-XXXXXX" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Número de Serie</label>
+                  <input className="form-input text-xs" value={newAsset.serialNumber} onChange={e => setNewAsset({...newAsset, serialNumber: e.target.value})} placeholder="SN-XXXXXX" />
                 </div>
-                <div className="form-group">
-                  <label>Estado</label>
-                  <select className="form-select" value={newAsset.status} onChange={e => setNewAsset({...newAsset, status: e.target.value})}>
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Estado</label>
+                  <select className="form-select text-xs" value={newAsset.status} onChange={e => setNewAsset({...newAsset, status: e.target.value})}>
                     <option value="Operativo">✅ Operativo</option>
                     <option value="En Mantenimiento">🔧 En Mantenimiento</option>
                     <option value="Fuera de Servicio">❌ Fuera de Servicio</option>
                   </select>
                 </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '16px', borderTop: '1px solid #E2E4E9' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowCreateModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-200">
+                <button type="button" className="btn btn-secondary text-xs justify-center" onClick={() => setShowCreateModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary text-xs justify-center">
                   {editingAsset ? 'Guardar Cambios' : 'Registrar en Azure SQL'}
                 </button>
               </div>

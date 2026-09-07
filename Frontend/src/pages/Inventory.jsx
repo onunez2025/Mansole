@@ -134,21 +134,25 @@ export default function Inventory({ currentUser }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
         <div>
-          <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1A1C1E' }}>Almacén y Trazabilidad de Repuestos</h3>
-          <p style={{ fontSize: '14px', color: '#515254' }}>Soporte nativo para componentes de <strong>Canibalización</strong> y hallazgos en planta (Fuera de SAP con costo $0)</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span className="cyber-badge" style={{ fontSize: '10px' }}>KARDEX & ALMACÉN</span>
+            <span style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace' }}>// GESTIÓN DE REPUESTOS & CANIBALIZACIÓN $0</span>
+          </div>
+          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#FFFFFF', margin: 0, letterSpacing: '-0.3px' }}>Almacén y Trazabilidad de Repuestos</h3>
+          <p style={{ fontSize: '13px', color: '#94A3B8', margin: '4px 0 0 0' }}>Soporte nativo para componentes de <strong style={{ color: '#10B981' }}>Canibalización</strong> y hallazgos en planta (Fuera de SAP con costo $0 USD)</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="btn btn-secondary" onClick={loadInventory}>
-            <RefreshCw size={16} /> Sincronizar
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <button className="btn-secondary" onClick={loadInventory}>
+            <RefreshCw size={15} /> Sincronizar
           </button>
           {canRegister ? (
-            <button className="btn btn-primary" onClick={openCreate}>
-              <Plus size={18} /> Ingresar Repuesto / Canibaliza
+            <button className="btn-cyber" onClick={openCreate}>
+              <Plus size={16} /> Ingresar Repuesto / Canibaliza
             </button>
           ) : (
-            <button className="btn btn-secondary" disabled title="Bloqueado por RBAC para Operarios">
+            <button className="btn-secondary" disabled title="Bloqueado por RBAC para Operarios">
               🚫 Ingreso Bloqueado
             </button>
           )}
@@ -156,26 +160,26 @@ export default function Inventory({ currentUser }) {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        <div className="siatc-card" style={{ padding: '18px 22px', borderLeft: '4px solid #05B169', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <Boxes color="#05B169" size={28} />
+        <div className="siatc-card" style={{ padding: '18px 22px', borderLeft: '4px solid #10B981', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <Boxes color="#10B981" size={26} />
           <div>
-            <div style={{ fontSize: '12px', color: '#8A919E', fontWeight: '700' }}>TOTAL CATÁLOGO ALMACÉN</div>
-            <div style={{ fontSize: '22px', fontWeight: '800', color: '#1A1C1E' }}>{totalItems} referencias</div>
+            <div style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '800', fontFamily: 'monospace' }}>TOTAL CATÁLOGO ALMACÉN</div>
+            <div style={{ fontSize: '22px', fontWeight: '900', color: '#FFFFFF', fontFamily: 'monospace' }}>{totalItems} referencias</div>
           </div>
         </div>
-        <div className="siatc-card" style={{ padding: '18px 22px', borderLeft: '4px solid #E58D14', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <AlertCircle color="#E58D14" size={28} />
+        <div className="siatc-card" style={{ padding: '18px 22px', borderLeft: '4px solid #F59E0B', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <AlertCircle color="#F59E0B" size={26} />
           <div>
-            <div style={{ fontSize: '12px', color: '#E58D14', fontWeight: '700' }}>ALERTA STOCK MÍNIMO</div>
-            <div style={{ fontSize: '22px', fontWeight: '800', color: '#1A1C1E' }}>
-              {lowStockCount} repuestos bajo mínimo
+            <div style={{ fontSize: '11px', color: '#F59E0B', fontWeight: '800', fontFamily: 'monospace' }}>ALERTA STOCK MÍNIMO</div>
+            <div style={{ fontSize: '22px', fontWeight: '900', color: '#FFFFFF', fontFamily: 'monospace' }}>
+              {lowStockCount} bajo mínimo
             </div>
           </div>
         </div>
       </div>
 
       {/* Filtros de Tipo y Búsqueda */}
-      <div style={{ background: '#FFFFFF', padding: '16px 20px', borderRadius: '12px', border: '1px solid #E2E4E9', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+      <div className="siatc-card" style={{ padding: '14px 18px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
         <div className="pipeline-container">
           <button 
             className={`pipeline-tab ${activeConditionFilter === 'Todos' ? 'active' : ''}`}
@@ -193,18 +197,18 @@ export default function Inventory({ currentUser }) {
             className={`pipeline-tab ${activeConditionFilter === 'Reusado' ? 'active' : ''}`}
             onClick={() => setActiveConditionFilter('Reusado')}
           >
-            ♻️ Canibalizados / Reusados $0 ({inventory.filter(i => i.condition === 'Reusado').length})
+            ♻️ Canibalizados $0 ({inventory.filter(i => i.condition === 'Reusado').length})
           </button>
           <button 
             className={`pipeline-tab ${activeConditionFilter === 'BajoStock' ? 'active' : ''}`}
             onClick={() => setActiveConditionFilter('BajoStock')}
           >
-            ⚠️ Bajo Stock Mínimo ({lowStockCount})
+            ⚠️ Bajo Mínimo ({lowStockCount})
           </button>
         </div>
 
         <div style={{ position: 'relative', width: '260px' }}>
-          <Search size={16} color="#8A919E" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+          <Search size={15} color="#64748B" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
           <input 
             type="text" 
             placeholder="Buscar repuesto, código o estante..." 
@@ -214,9 +218,10 @@ export default function Inventory({ currentUser }) {
               width: '100%',
               padding: '8px 12px 8px 36px',
               borderRadius: '8px',
-              border: '1px solid #D8DCE5',
-              fontSize: '13px',
-              background: '#F9FAFB',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              fontSize: '12px',
+              background: '#0B1120',
+              color: '#F8FAFC',
               outline: 'none'
             }}
           />
@@ -244,7 +249,7 @@ export default function Inventory({ currentUser }) {
             <tbody>
               {filteredInventory.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: '#8A919E' }}>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: '#64748B' }}>
                     No se encontraron repuestos para el criterio seleccionado.
                   </td>
                 </tr>
@@ -259,22 +264,22 @@ export default function Inventory({ currentUser }) {
                 return (
                   <tr key={item.id || idx}>
                     <td>
-                      <div style={{ fontWeight: '800', color: '#1A1C1E' }}>[{item.code}] {item.name}</div>
-                      <div style={{ fontSize: '12px', color: '#515254' }}>{item.description || 'Sin descripción'}</div>
+                      <div style={{ fontWeight: '800', color: '#FFFFFF', fontFamily: 'monospace' }}>[{item.code}] {item.name}</div>
+                      <div style={{ fontSize: '12px', color: '#94A3B8' }}>{item.description || 'Sin descripción'}</div>
                     </td>
                     <td>
                       {isReused ? (
-                        <span className="badge badge-success" title="No altera costos contables">♻️ Canibalizado / Reusado</span>
+                        <span className="badge badge-success" title="No altera costos contables">♻️ Canibalizado $0</span>
                       ) : (
-                        <span className="badge badge-info">📦 Compra SAP (Nuevo)</span>
+                        <span className="badge badge-info">📦 Compra SAP</span>
                       )}
                     </td>
-                    <td style={{ fontWeight: '800', fontSize: '15px', color: '#1A1C1E' }}>{stock} {item.unitOfMeasure || 'Pieza'}s</td>
-                    <td style={{ color: '#515254', fontWeight: '600' }}>{min}</td>
+                    <td style={{ fontWeight: '800', fontSize: '14px', color: '#FFFFFF', fontFamily: 'monospace' }}>{stock} {item.unitOfMeasure || 'Pieza'}s</td>
+                    <td style={{ color: '#94A3B8', fontWeight: '600', fontFamily: 'monospace' }}>{min}</td>
                     <td><span className="badge badge-mono">{item.location}</span></td>
-                    <td style={{ fontWeight: '800', color: isReused ? '#05B169' : '#1A1C1E' }}>
+                    <td style={{ fontWeight: '800', color: isReused ? '#10B981' : '#FFFFFF', fontFamily: 'monospace' }}>
                       ${Number(cost).toFixed(2)}
-                      {isReused && <span style={{ display: 'block', fontSize: '11px', color: '#05B169', fontWeight: '700' }}>Imputar: $0 al CECO</span>}
+                      {isReused && <span style={{ display: 'block', fontSize: '10px', color: '#10B981', fontWeight: '800' }}>CECO: $0 USD</span>}
                     </td>
                     <td>
                       {isAlert ? (
@@ -288,7 +293,7 @@ export default function Inventory({ currentUser }) {
                         <button className="btn btn-secondary" style={{ padding: '5px 9px' }} onClick={() => openEdit(item)} title="Editar">
                           <Edit3 size={13} />
                         </button>
-                        <button className="btn btn-secondary" style={{ padding: '5px 9px', color: '#DF2935' }} onClick={() => handleDeleteItem(item)} title="Eliminar">
+                        <button className="btn btn-secondary" style={{ padding: '5px 9px', color: '#EF4444' }} onClick={() => handleDeleteItem(item)} title="Eliminar">
                           <Trash2 size={13} />
                         </button>
                       </div>
@@ -305,14 +310,14 @@ export default function Inventory({ currentUser }) {
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #E2E4E9', paddingBottom: '14px' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1A1C1E' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '14px' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#FFFFFF', margin: 0 }}>
                 {editingItem ? `Editar Repuesto: ${editingItem.code}` : 'Ingreso de Repuesto / Canibalización'}
               </h3>
-              <button onClick={() => setShowModal(false)} style={{ fontSize: '20px', color: '#8A919E', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setShowModal(false)} style={{ fontSize: '20px', color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
             </div>
 
-            <div style={{ background: '#E7F9F0', border: '1px solid #B8EBD1', padding: '14px', borderRadius: '10px', marginBottom: '20px', fontSize: '13px', color: '#05B169', fontWeight: '600', lineHeight: '1.4' }}>
+            <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '14px', borderRadius: '10px', marginBottom: '20px', fontSize: '12px', color: '#10B981', fontWeight: '600', lineHeight: '1.4' }}>
               ℹ️ Al seleccionar el motivo <strong>Canibalización</strong> o <strong>Hallazgo</strong>, el costo del repuesto se fijará automáticamente en <strong>$0.00 USD</strong> para preservar los balances contables en SAP.
             </div>
 

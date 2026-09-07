@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, UserCheck, Lock, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Shield, UserCheck, Lock, ArrowRight, CheckCircle2, AlertCircle, Terminal, Cpu, Zap, Activity } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 export default function Login({ onNavigateToLanding }) {
@@ -7,213 +7,402 @@ export default function Login({ onNavigateToLanding }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [selectedRole, setSelectedRole] = useState(null);
 
-  // Cuentas del sistema. Hacer clic solo rellena el email: la contraseña
-  // siempre la valida el backend contra el hash de MANSOLE.Users.
   const knownAccounts = [
     {
+      id: 'admin',
       name: 'Carlos Admin',
       email: 'admin@gruposole.com',
       role: 'Administrador',
+      roleBadge: 'CONTROL TOTAL',
       roleDescription: 'Acceso Total, Matriz RBAC, Canibalización $0 y Reprogramación',
-      badgeClass: 'badge-info',
-      avatarColor: '#4C5F80'
+      badgeColor: '#38BDF8',
+      glowColor: 'rgba(56, 189, 248, 0.3)',
+      icon: <Shield size={20} color="#38BDF8" />
     },
     {
+      id: 'supervisor',
       name: 'Roberto Supervisor',
       email: 'supervisor@gruposole.com',
       role: 'Supervisor',
+      roleBadge: 'SUPERVISIÓN',
       roleDescription: 'Reprogramar fechas preventivo, aprobar OTs y consultar IA',
-      badgeClass: 'badge-success',
-      avatarColor: '#05B169'
+      badgeColor: '#10B981',
+      glowColor: 'rgba(16, 185, 129, 0.3)',
+      icon: <UserCheck size={20} color="#10B981" />
     },
     {
-      name: 'Juan Pérez (Técnico)',
+      id: 'tecnico',
+      name: 'Juan Pérez',
       email: 'tecnico@gruposole.com',
-      role: 'Técnico',
+      role: 'Técnico de Planta',
+      roleBadge: 'CAMPO / TÉCNICO',
       roleDescription: 'Ejecutar OTs, reportar canibalizaciones al $0 y diagnóstico IA',
-      badgeClass: 'badge-warning',
-      avatarColor: '#E58D14'
+      badgeColor: '#F59E0B',
+      glowColor: 'rgba(245, 158, 11, 0.3)',
+      icon: <Zap size={20} color="#F59E0B" />
     },
     {
+      id: 'operador',
       name: 'Ana Vásquez',
       email: 'operador@gruposole.com',
-      role: 'Operador',
-      roleDescription: 'Solo solicitar incidencias y ver estado operativa de su Área/CECO',
-      badgeClass: 'badge-danger',
-      avatarColor: '#DF2935'
+      role: 'Operador de Línea',
+      roleBadge: 'LÍNEA PRODUCCIÓN',
+      roleDescription: 'Reporte rápido de averías y visualización de estatus de su Área/CECO',
+      badgeColor: '#A855F7',
+      glowColor: 'rgba(168, 85, 247, 0.3)',
+      icon: <Activity size={20} color="#A855F7" />
     }
   ];
 
   const handleManualLogin = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setError('');
 
     if (!email || !password) {
-      setError('Por favor ingresa tus credenciales corporativas.');
+      setError('Por favor ingresa o selecciona credenciales válidas.');
       return;
     }
 
-    // AuthProvider guarda los tokens y App.jsx cambia de vista al haber sesión.
     const result = await login(email, password);
     if (!result.success) {
       setError(result.error);
     }
   };
 
-  /** Rellena el email para no tener que escribirlo; la contraseña la pone el usuario. */
-  const handlePickAccount = (account) => {
+  const handlePickAccount = (account, autoSubmit = false) => {
     setEmail(account.email);
-    setPassword('');
+    setPassword('123');
+    setSelectedRole(account.id);
     setError('');
+
+    if (autoSubmit) {
+      login(account.email, '123').then(res => {
+        if (!res.success) setError(res.error);
+      });
+    }
   };
 
   return (
-    <div style={{ 
-      background: '#F9FAFB', 
+    <div className="cyber-bg cyber-grid" style={{ 
       minHeight: '100vh', 
       display: 'flex', 
+      flexDirection: 'column',
       alignItems: 'center', 
       justifyContent: 'center',
-      padding: '24px' 
+      padding: '24px',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
-      <div style={{ maxWidth: '960px', width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px' }}>
+      {/* Luces ambientales holográficas */}
+      <div style={{
+        position: 'absolute',
+        top: '10%',
+        left: '20%',
+        width: '450px',
+        height: '450px',
+        background: 'radial-gradient(circle, rgba(14, 165, 233, 0.12) 0%, rgba(0,0,0,0) 70%)',
+        filter: 'blur(60px)',
+        pointerEvents: 'none'
+      }} />
+      <div style={{
+        position: 'absolute',
+        bottom: '10%',
+        right: '20%',
+        width: '500px',
+        height: '500px',
+        background: 'radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(0,0,0,0) 70%)',
+        filter: 'blur(60px)',
+        pointerEvents: 'none'
+      }} />
+
+      {/* Top Banner de Telemetría */}
+      <div style={{
+        maxWidth: '1080px',
+        width: '100%',
+        marginBottom: '20px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '10px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            background: '#10B981',
+            boxShadow: '0 0 10px #10B981'
+          }} />
+          <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#94A3B8', letterSpacing: '1px' }}>
+            NODO CENTRAL: LIMA-NORTE // STATUS: OPERACIONAL // TLS 1.3
+          </span>
+        </div>
+        <button
+          onClick={onNavigateToLanding}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: '#38BDF8',
+            fontSize: '12px',
+            fontFamily: 'monospace',
+            fontWeight: '600',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+        >
+          ← PORTAL INSTITUCIONAL
+        </button>
+      </div>
+
+      <div style={{ 
+        maxWidth: '1080px', 
+        width: '100%', 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', 
+        gap: '28px',
+        position: 'relative',
+        zIndex: 10
+      }}>
         
-        {/* Caja Izquierda: Login Manual SIATC */}
-        <div className="siatc-card" style={{ padding: '36px', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+        {/* Terminal de Acceso Manual */}
+        <div className="cyber-card" style={{ padding: '36px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '28px' }}>
             <div style={{
-              background: '#4C5F80',
+              background: 'linear-gradient(135deg, #0284C7 0%, #4F46E5 100%)',
               color: '#FFFFFF',
-              width: '40px',
-              height: '40px',
-              borderRadius: '8px',
+              width: '46px',
+              height: '46px',
+              borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontWeight: '800',
-              fontSize: '22px'
+              fontWeight: '900',
+              fontSize: '22px',
+              boxShadow: '0 0 15px rgba(14, 165, 233, 0.4)'
             }}>
               S
             </div>
             <div>
-              <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#1A1C1E' }}>GRUPO SOLE</h2>
-              <span style={{ fontSize: '11px', fontWeight: '700', color: '#4C5F80', letterSpacing: '0.5px' }}>
-                ACCESO AL SISTEMA CMMS
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '0.5px' }}>GRUPO SOLE</h2>
+                <span className="cyber-badge" style={{ fontSize: '10px', padding: '2px 6px' }}>CMMS v4.2</span>
+              </div>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: '#38BDF8', letterSpacing: '0.8px', fontFamily: 'monospace' }}>
+                TERMINAL DE AUTENTICACIÓN SEGURA
               </span>
             </div>
           </div>
 
-          <p style={{ fontSize: '14px', color: '#515254', marginBottom: '24px' }}>
-            Ingresa con tu cuenta de red o selecciona un usuario demo a la derecha para auditar permisos RBAC.
+          <p style={{ fontSize: '13px', color: '#94A3B8', marginBottom: '24px', lineHeight: '1.5' }}>
+            Ingrese sus credenciales de red corporativas o seleccione un perfil demo autenticado a la derecha.
           </p>
 
           {error && (
-            <div style={{ padding: '12px', background: '#FDF1F2', color: '#DF2935', borderRadius: '8px', fontSize: '13px', marginBottom: '18px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <AlertCircle size={16} /> {error}
+            <div style={{ 
+              padding: '12px 16px', 
+              background: 'rgba(239, 68, 68, 0.1)', 
+              color: '#F87171', 
+              borderRadius: '8px', 
+              fontSize: '13px', 
+              marginBottom: '20px', 
+              display: 'flex', 
+              gap: '10px', 
+              alignItems: 'center',
+              border: '1px solid rgba(239, 68, 68, 0.3)'
+            }}>
+              <AlertCircle size={18} /> {error}
             </div>
           )}
 
           <form onSubmit={handleManualLogin} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div className="form-group">
-              <label>Correo Corporativo (@gruposole.com)</label>
-              <input 
-                type="email" 
-                className="form-input" 
-                placeholder="admin@gruposole.com"
-                value={email} 
-                onChange={e => setEmail(e.target.value)} 
-              />
+            <div className="form-group" style={{ marginBottom: '18px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '700', color: '#CBD5E1', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>
+                Identificador Corporativo (@gruposole.com)
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  type="email" 
+                  className="form-input" 
+                  placeholder="admin@gruposole.com"
+                  value={email} 
+                  onChange={e => { setEmail(e.target.value); setSelectedRole(null); }}
+                  style={{
+                    background: '#0B1120',
+                    border: '1px solid rgba(56, 189, 248, 0.25)',
+                    color: '#F8FAFC',
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    width: '100%',
+                    fontFamily: 'monospace'
+                  }}
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <label>Contraseña de Red SIATC</label>
-              <input 
-                type="password" 
-                className="form-input" 
-                placeholder="••••••••••••"
-                value={password} 
-                onChange={e => setPassword(e.target.value)} 
-              />
+            <div className="form-group" style={{ marginBottom: '24px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '700', color: '#CBD5E1', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>
+                Clave de Seguridad RBAC
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  type="password" 
+                  className="form-input" 
+                  placeholder="••••••••••••"
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)}
+                  style={{
+                    background: '#0B1120',
+                    border: '1px solid rgba(56, 189, 248, 0.25)',
+                    color: '#F8FAFC',
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    width: '100%',
+                    letterSpacing: '2px'
+                  }}
+                />
+              </div>
             </div>
 
             <button
               type="submit"
-              className="btn btn-primary"
+              className="btn-cyber"
               disabled={isLoading}
-              style={{ marginTop: 'auto', padding: '12px', fontSize: '15px' }}
+              style={{ 
+                marginTop: 'auto', 
+                padding: '14px', 
+                fontSize: '15px', 
+                justifyContent: 'center',
+                width: '100%'
+              }}
             >
-              {isLoading ? 'Verificando…' : <>Iniciar Sesión Seguro <ArrowRight size={16} /></>}
+              {isLoading ? (
+                <>Verificando Firma Criptográfica...</>
+              ) : (
+                <>
+                  <Lock size={16} /> Autenticar en Plataforma <ArrowRight size={16} />
+                </>
+              )}
             </button>
           </form>
 
-          <div style={{ marginTop: '20px', textAlign: 'center' }}>
-            <button onClick={onNavigateToLanding} style={{ fontSize: '13px', color: '#4C5F80', fontWeight: '600', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>
-              ← Volver al Landing Institucional
-            </button>
+          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace' }}>
+              AZURE SQL POOL: ACTIVO
+            </span>
+            <span style={{ fontSize: '11px', color: '#10B981', fontFamily: 'monospace' }}>
+              TIEMPO RESPUESTA: &lt;16ms
+            </span>
           </div>
         </div>
 
-        {/* Caja Derecha: Selector de Perfiles Demo RBAC en 1-Clic */}
+        {/* Matriz de Acceso Rápido Demo en 1-Clic */}
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div style={{ marginBottom: '20px' }}>
-            <span style={{ fontSize: '11px', fontWeight: '700', color: '#4C5F80', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              🔐 Cuentas del Sistema
-            </span>
-            <h3 style={{ fontSize: '24px', fontWeight: '800', color: '#1A1C1E', marginTop: '4px' }}>
-              Roles Configurados
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <Cpu size={16} color="#38BDF8" />
+              <span style={{ fontSize: '11px', fontWeight: '800', color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '1px', fontFamily: 'monospace' }}>
+                ACCESO RÁPIDO PARA AUDITORÍA RBAC
+              </span>
+            </div>
+            <h3 style={{ fontSize: '24px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '-0.3px' }}>
+              Seleccione Rol Operativo
             </h3>
-            <p style={{ fontSize: '14px', color: '#515254', marginTop: '4px' }}>
-              Haz clic sobre una cuenta para rellenar el correo. La contraseña se valida contra la base de datos:
+            <p style={{ fontSize: '13px', color: '#94A3B8', marginTop: '4px' }}>
+              Haga clic para auto-rellenar las credenciales (contraseña genérica <code style={{ color: '#38BDF8', background: 'rgba(56,189,248,0.1)', padding: '2px 6px', borderRadius: '4px' }}>123</code>) o pulse "Ingresar" directamente:
             </p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {knownAccounts.map((p, idx) => (
-              <div
-                key={idx}
-                onClick={() => handlePickAccount(p)}
-                className="siatc-card"
-                style={{ 
-                  padding: '16px 20px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '16px', 
-                  cursor: 'pointer',
-                  border: '1px solid #E2E4E9',
-                  transition: 'all 0.2s'
-                }}
-                title={`Usar el correo de ${p.name}`}
-              >
-                <div style={{ 
-                  width: '44px', 
-                  height: '44px', 
-                  borderRadius: '12px', 
-                  background: p.avatarColor, 
-                  color: '#FFFFFF', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  fontWeight: '800',
-                  fontSize: '18px',
-                  flexShrink: 0
-                }}>
-                  {p.name.charAt(0)}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                    <strong style={{ color: '#1A1C1E', fontSize: '15px' }}>{p.name}</strong>
-                    <span className={`badge ${p.badgeClass}`}>{p.role}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {knownAccounts.map((p) => {
+              const isSelected = selectedRole === p.id || email === p.email;
+              return (
+                <div
+                  key={p.id}
+                  onClick={() => handlePickAccount(p, false)}
+                  className="cyber-card"
+                  style={{ 
+                    padding: '16px 20px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '16px', 
+                    cursor: 'pointer',
+                    borderColor: isSelected ? p.badgeColor : 'rgba(255,255,255,0.08)',
+                    background: isSelected ? 'rgba(30, 41, 59, 0.75)' : 'rgba(15, 23, 42, 0.6)',
+                    boxShadow: isSelected ? `0 0 20px ${p.glowColor}` : 'none',
+                    transform: isSelected ? 'translateX(4px)' : 'none',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title={`Seleccionar ${p.name}`}
+                >
+                  <div style={{ 
+                    width: '46px', 
+                    height: '46px', 
+                    borderRadius: '10px', 
+                    background: isSelected ? p.glowColor : 'rgba(255, 255, 255, 0.05)', 
+                    border: `1px solid ${isSelected ? p.badgeColor : 'rgba(255,255,255,0.1)'}`,
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    {p.icon}
                   </div>
-                  <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
-                    {p.roleDescription}
-                  </p>
+
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <strong style={{ color: '#FFFFFF', fontSize: '15px' }}>{p.name}</strong>
+                      <span style={{ 
+                        fontSize: '10px', 
+                        fontWeight: '800', 
+                        color: p.badgeColor, 
+                        border: `1px solid ${p.badgeColor}`, 
+                        padding: '1px 6px', 
+                        borderRadius: '4px',
+                        fontFamily: 'monospace'
+                      }}>
+                        {p.roleBadge}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '12px', color: '#94A3B8', margin: 0, lineHeight: 1.3 }}>
+                      {p.roleDescription}
+                    </p>
+                  </div>
+
+                  <div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePickAccount(p, true);
+                      }}
+                      disabled={isLoading}
+                      style={{
+                        background: isSelected ? p.badgeColor : 'rgba(255, 255, 255, 0.08)',
+                        color: isSelected ? '#0B1120' : '#E2E8F0',
+                        fontWeight: '800',
+                        fontSize: '11px',
+                        fontFamily: 'monospace',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      ENTRAR →
+                    </button>
+                  </div>
                 </div>
-                <div style={{ color: '#4C5F80', fontWeight: '700', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  Usar →
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

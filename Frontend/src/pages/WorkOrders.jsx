@@ -186,18 +186,22 @@ export default function WorkOrders({ currentUser }) {
       {/* Cabecera y botón de acción */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
         <div>
-          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#1A1C1E', margin: 0 }}>Gestión de Órdenes de Trabajo (OT)</h3>
-          <p style={{ fontSize: '13px', color: '#515254', margin: '4px 0 0 0' }}>
-            Flujo de mantenimiento en planta: <strong>Solicitud ➔ En Proceso ➔ Finalización ➔ Cierre Contable</strong>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span className="cyber-badge" style={{ fontSize: '10px' }}>CONTROL OPERATIVO</span>
+            <span style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace' }}>// GESTIÓN DE PLANTAS & TALLER</span>
+          </div>
+          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#FFFFFF', margin: 0, letterSpacing: '-0.3px' }}>Órdenes de Trabajo (OT)</h3>
+          <p style={{ fontSize: '13px', color: '#94A3B8', margin: '4px 0 0 0' }}>
+            Pipeline de mantenimiento: <span style={{ color: '#38BDF8', fontFamily: 'monospace' }}>SOLICITUD ➔ EN PLANTA ➔ FINALIZACIÓN ➔ CIERRE CONTABLE</span>
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowCreateModal(true)} style={{ boxShadow: '0 2px 6px rgba(76, 95, 128, 0.2)' }}>
+        <button className="btn-cyber" onClick={() => setShowCreateModal(true)}>
           <Plus size={18} /> Emitir Nueva OT
         </button>
       </div>
 
-      {/* Barra de Pipeline Operativo (Etapas del Proceso) y Buscador */}
-      <div style={{ background: '#FFFFFF', padding: '16px 20px', borderRadius: '12px', border: '1px solid #E2E4E9', marginBottom: '22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+      {/* Barra de Pipeline Operativo y Buscador */}
+      <div className="siatc-card" style={{ padding: '14px 18px', marginBottom: '22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
         {/* Pestañas de Proceso */}
         <div className="pipeline-container">
           <button 
@@ -210,13 +214,13 @@ export default function WorkOrders({ currentUser }) {
             className={`pipeline-tab ${activeStage === 'Pendiente' ? 'active' : ''}`}
             onClick={() => setActiveStage('Pendiente')}
           >
-            🟡 Solicitadas / Pendientes <span className="pipeline-count">{stageCounts.Pendiente}</span>
+            🟡 Solicitadas <span className="pipeline-count">{stageCounts.Pendiente}</span>
           </button>
           <button 
             className={`pipeline-tab ${activeStage === 'En Progreso' ? 'active' : ''}`}
             onClick={() => setActiveStage('En Progreso')}
           >
-            ⚙️ En Planta / En Proceso <span className="pipeline-count">{stageCounts['En Progreso']}</span>
+            ⚙️ En Planta <span className="pipeline-count">{stageCounts['En Progreso']}</span>
           </button>
           <button 
             className={`pipeline-tab ${activeStage === 'Finalizada' ? 'active' : ''}`}
@@ -234,7 +238,7 @@ export default function WorkOrders({ currentUser }) {
 
         {/* Buscador Rápido */}
         <div style={{ position: 'relative', width: '260px' }}>
-          <Search size={16} color="#8A919E" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+          <Search size={15} color="#64748B" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
           <input 
             type="text" 
             placeholder="Buscar por OT, máquina o técnico..." 
@@ -244,9 +248,10 @@ export default function WorkOrders({ currentUser }) {
               width: '100%',
               padding: '8px 12px 8px 36px',
               borderRadius: '8px',
-              border: '1px solid #D8DCE5',
-              fontSize: '13px',
-              background: '#F9FAFB',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              fontSize: '12px',
+              background: '#0B1120',
+              color: '#F8FAFC',
               outline: 'none'
             }}
           />
@@ -257,10 +262,10 @@ export default function WorkOrders({ currentUser }) {
       {loading && !workOrders.length ? (
         <OrderCardSkeleton count={4} />
       ) : filteredOrders.length === 0 ? (
-        <div className="siatc-card" style={{ textAlign: 'center', padding: '48px 24px', color: '#515254' }}>
+        <div className="siatc-card" style={{ textAlign: 'center', padding: '48px 24px', color: '#94A3B8' }}>
           <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔍</div>
-          <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#1A1C1E', marginBottom: '4px' }}>No se encontraron Órdenes de Trabajo</h4>
-          <p style={{ fontSize: '13px', color: '#8A919E', margin: 0 }}>
+          <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#FFFFFF', marginBottom: '4px' }}>No se encontraron Órdenes de Trabajo</h4>
+          <p style={{ fontSize: '13px', color: '#94A3B8', margin: 0 }}>
             {searchQuery ? `No hay resultados para "${searchQuery}" en la etapa "${activeStage}".` : `No hay órdenes en la etapa "${activeStage}".`}
           </p>
         </div>
@@ -274,43 +279,52 @@ export default function WorkOrders({ currentUser }) {
             const isClosed = ot.status === 'Cerrada';
 
             return (
-              <div key={ot.id} className="siatc-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', flexWrap: 'wrap', gap: '18px', borderLeft: isInProgress ? '4px solid #3B72D4' : isFinished ? '4px solid #05B169' : isClosed ? '4px solid #4C5F80' : '4px solid #E58D14' }}>
+              <div key={ot.id} className="siatc-card" style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between', 
+                padding: '20px 24px', 
+                flexWrap: 'wrap', 
+                gap: '18px', 
+                borderLeft: isInProgress ? '4px solid #38BDF8' : isFinished ? '4px solid #10B981' : isClosed ? '4px solid #64748B' : '4px solid #F59E0B',
+                background: 'rgba(15, 23, 42, 0.75)'
+              }}>
                 {/* Datos Principales */}
                 <div style={{ maxWidth: '500px', flex: 1, minWidth: '280px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '16px', fontWeight: '800', color: '#4C5F80' }}>{ot.code}</span>
+                    <span style={{ fontSize: '15px', fontWeight: '800', color: '#38BDF8', fontFamily: 'monospace' }}>{ot.code}</span>
                     <span className={`badge ${ot.type === 'Preventivo' ? 'badge-info' : 'badge-danger'}`}>{ot.type}</span>
-                    <span className={`badge ${isFinished ? 'badge-success' : isInProgress ? 'badge-info' : isClosed ? 'badge-success' : 'badge-warning'}`}>
+                    <span className={`badge ${isFinished ? 'badge-success' : isInProgress ? 'badge-info' : isClosed ? 'badge-mono' : 'badge-warning'}`}>
                       {ot.status}
                     </span>
-                    <span style={{ fontSize: '11px', fontWeight: '700', color: ot.priority === 'Urgente' ? '#DF2935' : ot.priority === 'Alta' ? '#E58D14' : '#05B169' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '800', fontFamily: 'monospace', color: ot.priority === 'Urgente' ? '#EF4444' : ot.priority === 'Alta' ? '#F59E0B' : '#10B981' }}>
                       ● {ot.priority}
                     </span>
                   </div>
-                  <h4 style={{ fontSize: '17px', fontWeight: '800', color: '#1A1C1E', margin: '4px 0' }}>
+                  <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#FFFFFF', margin: '4px 0', letterSpacing: '-0.2px' }}>
                     [{ot.assetCode}] {ot.assetName}
                   </h4>
-                  <p style={{ fontSize: '13px', color: '#515254', margin: '2px 0 6px 0' }}>
-                    <strong>CECO:</strong> {ot.costCenterCode} ({ot.areaName})
+                  <p style={{ fontSize: '13px', color: '#94A3B8', margin: '2px 0 6px 0' }}>
+                    <strong style={{ color: '#CBD5E1' }}>CECO:</strong> {ot.costCenterCode} • <span style={{ color: '#38BDF8' }}>{ot.areaName}</span>
                   </p>
-                  <p style={{ fontSize: '13px', color: '#8A919E', margin: 0, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <p style={{ fontSize: '12px', color: '#64748B', margin: 0, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     "{ot.description}"
                   </p>
                 </div>
 
                 {/* Múltiples técnicos y costos */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '220px', background: '#F8F9FC', padding: '12px 16px', borderRadius: '10px', border: '1px solid #E2E4E9' }}>
-                  <div style={{ fontSize: '12px', color: '#1A1C1E', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700' }}>
-                    <Users size={14} color="#4C5F80" /> 
-                    <span>Técnicos Asignados ({ot.technicians ? ot.technicians.length : 0}):</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '220px', background: 'rgba(11, 17, 32, 0.8)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  <div style={{ fontSize: '11px', color: '#38BDF8', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '800', fontFamily: 'monospace' }}>
+                    <Users size={14} /> 
+                    <span>TÉCNICOS ASIGNADOS ({ot.technicians ? ot.technicians.length : 0}):</span>
                   </div>
                   {ot.technicians && ot.technicians.map((t, idx) => (
-                    <div key={idx} style={{ fontSize: '12px', color: '#515254', paddingLeft: '20px', fontWeight: '500' }}>
-                      • {t.name} (<strong>{t.hours}h</strong>)
+                    <div key={idx} style={{ fontSize: '12px', color: '#CBD5E1', paddingLeft: '20px', fontWeight: '500' }}>
+                      • {t.name} (<strong style={{ color: '#38BDF8' }}>{t.hours}h</strong>)
                     </div>
                   ))}
-                  <div style={{ marginTop: '4px', paddingTop: '4px', borderTop: '1px solid #D8DCE5', fontSize: '12px', fontWeight: '800', color: '#05B169', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Total Costo:</span>
+                  <div style={{ marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', fontSize: '12px', fontWeight: '800', color: '#10B981', display: 'flex', justifyContent: 'space-between', fontFamily: 'monospace' }}>
+                    <span>COSTO TOTAL:</span>
                     <span>${ot.totalCost ? ot.totalCost.toFixed(2) : '0.00'} USD</span>
                   </div>
                 </div>
@@ -321,11 +335,19 @@ export default function WorkOrders({ currentUser }) {
                   {isPending && (
                     <button
                       className="btn"
-                      style={{ background: '#EAF0FB', border: '1px solid #C5D6F5', color: '#3B72D4', fontSize: '12px', padding: '8px 12px' }}
+                      style={{ 
+                        background: 'rgba(56, 189, 248, 0.15)', 
+                        border: '1px solid rgba(56, 189, 248, 0.35)', 
+                        color: '#38BDF8', 
+                        fontSize: '11px', 
+                        padding: '8px 12px',
+                        fontFamily: 'monospace',
+                        fontWeight: '800'
+                      }}
                       onClick={() => handleQuickStatusChange(ot.id, 'En Progreso')}
                       title="Pasar OT a En Proceso"
                     >
-                      <Play size={14} /> Iniciar
+                      <Play size={13} /> INICIAR
                     </button>
                   )}
 
@@ -333,11 +355,19 @@ export default function WorkOrders({ currentUser }) {
                   {isInProgress && (
                     <button
                       className="btn"
-                      style={{ background: '#E7F9F0', border: '1px solid #B8EBD1', color: '#05B169', fontSize: '12px', padding: '8px 12px' }}
+                      style={{ 
+                        background: 'rgba(16, 185, 129, 0.15)', 
+                        border: '1px solid rgba(16, 185, 129, 0.35)', 
+                        color: '#10B981', 
+                        fontSize: '11px', 
+                        padding: '8px 12px',
+                        fontFamily: 'monospace',
+                        fontWeight: '800'
+                      }}
                       onClick={() => handleQuickStatusChange(ot.id, 'Finalizada')}
                       title="Marcar OT como Finalizada"
                     >
-                      <CheckCircle size={14} /> Finalizar
+                      <CheckCircle size={13} /> FINALIZAR
                     </button>
                   )}
 
@@ -353,12 +383,19 @@ export default function WorkOrders({ currentUser }) {
                   </button>
 
                   <button 
-                    className="btn btn-primary" 
-                    style={{ background: '#E8EEF8', border: '1px solid #C4D2E8', color: '#4C5F80', boxShadow: 'none', fontWeight: '700', fontSize: '12px', padding: '8px 12px' }}
+                    className="btn" 
+                    style={{ 
+                      background: 'rgba(255, 255, 255, 0.05)', 
+                      border: '1px solid rgba(255, 255, 255, 0.12)', 
+                      color: '#E2E8F0', 
+                      fontWeight: '700', 
+                      fontSize: '12px', 
+                      padding: '8px 12px' 
+                    }}
                     onClick={() => downloadPDF(ot.id)}
                     title="Descargar Acta Formal con firmas PDF"
                   >
-                    <Download size={15} /> PDF
+                    <Download size={14} /> PDF
                   </button>
                 </div>
               </div>

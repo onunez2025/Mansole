@@ -110,14 +110,18 @@ export default function Assets({ currentUser }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
         <div>
-          <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1A1C1E' }}>Catálogo de Activos Fijos & CECOs</h3>
-          <p style={{ fontSize: '14px', color: '#515254' }}>Organización jerárquica: Empresa {'>'} Área/CECO {'>'} Categorías {'>'} Máquina</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span className="cyber-badge" style={{ fontSize: '10px' }}>INVENTARIO DE PLANTA</span>
+            <span style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace' }}>// JERARQUÍA EMPRESA ➔ CECO ➔ EQUIPO</span>
+          </div>
+          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#FFFFFF', margin: 0, letterSpacing: '-0.3px' }}>Activos Industriales & CECOs</h3>
+          <p style={{ fontSize: '13px', color: '#94A3B8', margin: '4px 0 0 0' }}>Estructura de costos: <span style={{ color: '#38BDF8', fontFamily: 'monospace' }}>Corporación Rinnai ➔ Áreas de Producción ➔ Máquinas Fijas</span></p>
         </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative', width: '260px' }}>
-            <Search size={16} color="#8A919E" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+            <Search size={15} color="#64748B" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
             <input 
               type="text" 
               placeholder="Buscar máquina, código o CECO..." 
@@ -127,15 +131,16 @@ export default function Assets({ currentUser }) {
                 width: '100%',
                 padding: '8px 12px 8px 36px',
                 borderRadius: '8px',
-                border: '1px solid #D8DCE5',
-                fontSize: '13px',
-                background: '#FFFFFF',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                fontSize: '12px',
+                background: '#0B1120',
+                color: '#F8FAFC',
                 outline: 'none'
               }}
             />
           </div>
-          <button className="btn btn-primary" onClick={openCreate}>
-            <Plus size={18} /> Registrar Activo
+          <button className="btn-cyber" onClick={openCreate}>
+            <Plus size={16} /> Registrar Activo
           </button>
         </div>
       </div>
@@ -155,7 +160,7 @@ export default function Assets({ currentUser }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
         {filteredAssets.map((a, idx) => (
           <div key={a.id || idx} className="siatc-card" style={{ display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden' }}>
-            <div style={{ height: '160px', width: '100%', position: 'relative', background: '#F3F5F9', borderBottom: '1px solid #E2E4E9' }}>
+            <div style={{ height: '160px', width: '100%', position: 'relative', background: '#0B1120', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
               <img
                 src={a.imageUrl || '/images/prensa.jpg'}
                 alt={a.name}
@@ -168,20 +173,20 @@ export default function Assets({ currentUser }) {
                   {a.status}
                 </span>
               </div>
-              <div style={{ position: 'absolute', bottom: '10px', left: '10px', background: 'rgba(26,28,30,0.85)', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', color: '#FFF' }}>
+              <div style={{ position: 'absolute', bottom: '10px', left: '10px', background: 'rgba(8, 12, 21, 0.85)', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.3)', fontFamily: 'monospace' }}>
                 {a.costCenterCode}
               </div>
             </div>
 
             <div style={{ padding: '18px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '11px', fontWeight: '700', color: '#4C5F80', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{a.categoryName}</span>
-              <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#1A1C1E', margin: '4px 0 8px', lineHeight: '1.3' }}>
+              <span style={{ fontSize: '10px', fontWeight: '800', color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.8px', fontFamily: 'monospace' }}>{a.categoryName}</span>
+              <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#FFFFFF', margin: '4px 0 8px', lineHeight: '1.3' }}>
                 [{a.code}] {a.name}
               </h4>
-              <p style={{ fontSize: '13px', color: '#515254', marginBottom: '14px', lineHeight: '1.5' }}>
-                <strong>Área:</strong> {a.areaName}<br />
-                <strong>Marca / Modelo:</strong> {a.brand || '—'} {a.model || ''}<br />
-                <strong>Num. Serie:</strong> {a.serialNumber || '—'}
+              <p style={{ fontSize: '12px', color: '#94A3B8', marginBottom: '14px', lineHeight: '1.6' }}>
+                <strong style={{ color: '#CBD5E1' }}>Área:</strong> {a.areaName}<br />
+                <strong style={{ color: '#CBD5E1' }}>Marca / Modelo:</strong> {a.brand || '—'} {a.model || ''}<br />
+                <strong style={{ color: '#CBD5E1' }}>Num. Serie:</strong> <span style={{ fontFamily: 'monospace' }}>{a.serialNumber || '—'}</span>
               </p>
 
               <div style={{ marginTop: 'auto', display: 'flex', gap: '8px' }}>
@@ -191,7 +196,7 @@ export default function Assets({ currentUser }) {
                 <button className="btn btn-secondary" style={{ fontSize: '12px', padding: '8px 10px' }} onClick={() => openEdit(a)} title="Editar activo">
                   <Edit3 size={14} />
                 </button>
-                <button className="btn btn-secondary" style={{ fontSize: '12px', padding: '8px 10px', color: '#DF2935' }} onClick={() => handleDeleteAsset(a)} title="Eliminar activo">
+                <button className="btn btn-secondary" style={{ fontSize: '12px', padding: '8px 10px', color: '#EF4444' }} onClick={() => handleDeleteAsset(a)} title="Eliminar activo">
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -205,19 +210,19 @@ export default function Assets({ currentUser }) {
       {selectedAsset && (
         <div className="modal-overlay" onClick={() => setSelectedAsset(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', borderBottom: '1px solid #E2E4E9', paddingBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '16px' }}>
               <div>
-                <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1A1C1E' }}>Ficha Técnica y Hoja de Vida</h3>
-                <p style={{ fontSize: '13px', color: '#4C5F80', fontWeight: '700' }}>[{selectedAsset.code}] {selectedAsset.name} • {selectedAsset.costCenterCode}</p>
+                <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#FFFFFF', margin: 0 }}>Ficha Técnica y Hoja de Vida</h3>
+                <p style={{ fontSize: '12px', color: '#38BDF8', fontWeight: '700', fontFamily: 'monospace', margin: '4px 0 0 0' }}>[{selectedAsset.code}] {selectedAsset.name} • {selectedAsset.costCenterCode}</p>
               </div>
-              <button onClick={() => setSelectedAsset(null)} style={{ fontSize: '20px', color: '#8A919E', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setSelectedAsset(null)} style={{ fontSize: '20px', color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
             </div>
-            <div style={{ background: '#F9FAFB', padding: '16px', borderRadius: '12px', border: '1px solid #E2E4E9', marginBottom: '20px', fontSize: '14px', lineHeight: '1.6', color: '#1A1C1E' }}>
+            <div style={{ background: 'rgba(11, 17, 32, 0.8)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '20px', fontSize: '13px', lineHeight: '1.6', color: '#F1F5F9' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div><strong>Marca:</strong> {selectedAsset.brand || '—'}</div>
-                <div><strong>Modelo:</strong> {selectedAsset.model || '—'}</div>
-                <div><strong>Num. Serie:</strong> {selectedAsset.serialNumber || '—'}</div>
-                <div><strong>Adquisición:</strong> {selectedAsset.acquisitionDate || 'N/A'}</div>
+                <div><strong style={{ color: '#94A3B8' }}>Marca:</strong> {selectedAsset.brand || '—'}</div>
+                <div><strong style={{ color: '#94A3B8' }}>Modelo:</strong> {selectedAsset.model || '—'}</div>
+                <div><strong style={{ color: '#94A3B8' }}>Num. Serie:</strong> {selectedAsset.serialNumber || '—'}</div>
+                <div><strong style={{ color: '#94A3B8' }}>Adquisición:</strong> {selectedAsset.acquisitionDate || 'N/A'}</div>
                 <div><strong>Área Planta:</strong> {selectedAsset.areaName}</div>
                 <div><strong>Estado Actual:</strong> <span className="badge badge-success">{selectedAsset.status}</span></div>
               </div>

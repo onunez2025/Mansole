@@ -89,18 +89,22 @@ export default function Schedule({ currentUser }) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
         <div>
-          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#1A1C1E', margin: 0 }}>Cronograma de Mantenimientos Preventivos</h3>
-          <p style={{ fontSize: '13px', color: '#515254', margin: '4px 0 0 0' }}>
-            Generación automática por frecuencia con <strong>reprogramación justificada para supervisores</strong>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span className="cyber-badge" style={{ fontSize: '10px' }}>PLANIFICACIÓN PREVENTIVA</span>
+            <span style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace' }}>// ALGORITMO DE FRECUENCIAS AUTOMÁTICAS</span>
+          </div>
+          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#FFFFFF', margin: 0, letterSpacing: '-0.3px' }}>Cronograma de Mantenimientos Preventivos</h3>
+          <p style={{ fontSize: '13px', color: '#94A3B8', margin: '4px 0 0 0' }}>
+            Cálculo por horómetro/frecuencia con <strong style={{ color: '#38BDF8' }}>reprogramación trazable para supervisores</strong>
           </p>
         </div>
-        <button className="btn btn-secondary" onClick={() => loadSchedule(false)}>
-          <RefreshCw size={16} /> Sincronizar
+        <button className="btn-secondary" onClick={() => loadSchedule(false)}>
+          <RefreshCw size={15} /> Sincronizar
         </button>
       </div>
 
       {/* Barra de Filtros y Buscador */}
-      <div style={{ background: '#FFFFFF', padding: '16px 20px', borderRadius: '12px', border: '1px solid #E2E4E9', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+      <div className="siatc-card" style={{ padding: '14px 18px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
         <div className="pipeline-container">
           <button 
             className={`pipeline-tab ${activeFilter === 'Todos' ? 'active' : ''}`}
@@ -129,7 +133,7 @@ export default function Schedule({ currentUser }) {
         </div>
 
         <div style={{ position: 'relative', width: '260px' }}>
-          <Search size={16} color="#8A919E" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+          <Search size={15} color="#64748B" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
           <input 
             type="text" 
             placeholder="Buscar por activo, actividad o CECO..." 
@@ -139,16 +143,17 @@ export default function Schedule({ currentUser }) {
               width: '100%',
               padding: '8px 12px 8px 36px',
               borderRadius: '8px',
-              border: '1px solid #D8DCE5',
-              fontSize: '13px',
-              background: '#F9FAFB',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              fontSize: '12px',
+              background: '#0B1120',
+              color: '#F8FAFC',
               outline: 'none'
             }}
           />
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '18px', flexWrap: 'wrap' }}>
         <span className="badge badge-danger">🔴 Vencido (Urge OT)</span>
         <span className="badge badge-warning">🟡 Próximo a Vencer (3 días)</span>
         <span className="badge badge-success">🟢 Programado OK</span>
@@ -165,15 +170,15 @@ export default function Schedule({ currentUser }) {
                   <th>Activo o Área (CECO)</th>
                   <th>Actividad Mantenimiento</th>
                   <th>Frecuencia</th>
-                  <th>Próxima Fecha Programada</th>
-                  <th>Estado Cronograma</th>
+                  <th>Próxima Fecha</th>
+                  <th>Estado</th>
                   <th>Acción Supervisor</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredSchedule.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: '#8A919E' }}>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: '#64748B' }}>
                       No se encontraron actividades preventivas para el filtro seleccionado.
                     </td>
                   </tr>
@@ -186,12 +191,12 @@ export default function Schedule({ currentUser }) {
                     return (
                       <tr key={s.id || idx}>
                         <td>
-                          <div style={{ fontWeight: '800', color: '#1A1C1E' }}>[{s.assetCode}] {s.assetName}</div>
-                          <div style={{ fontSize: '12px', color: '#4C5F80', fontWeight: '700' }}>{s.areaName} ({s.costCenterCode})</div>
+                          <div style={{ fontWeight: '800', color: '#FFFFFF', fontFamily: 'monospace' }}>[{s.assetCode}] {s.assetName}</div>
+                          <div style={{ fontSize: '11px', color: '#38BDF8', fontWeight: '700', fontFamily: 'monospace' }}>{s.areaName} ({s.costCenterCode})</div>
                         </td>
-                        <td style={{ fontWeight: '600', color: '#1A1C1E' }}>{s.activityName}</td>
+                        <td style={{ fontWeight: '600', color: '#E2E8F0' }}>{s.activityName}</td>
                         <td><span className="badge badge-mono">{s.frequencyType}</span></td>
-                        <td style={{ fontWeight: '800', fontSize: '15px', color: '#1A1C1E' }}>
+                        <td style={{ fontWeight: '800', fontSize: '13px', color: '#FFFFFF', fontFamily: 'monospace' }}>
                           📅 {s.nextDueDate}
                         </td>
                         <td><span className={`badge ${badgeClass}`}>{s.status}</span></td>
@@ -199,17 +204,17 @@ export default function Schedule({ currentUser }) {
                           {canReprogram ? (
                             <button 
                               className="btn btn-secondary" 
-                              style={{ padding: '7px 12px', fontSize: '13px' }}
+                              style={{ padding: '6px 12px', fontSize: '12px' }}
                               onClick={() => {
                                 setSelectedItem(s);
                                 setNewDate(s.nextDueDate);
                               }}
                             >
-                              <Edit3 size={14} /> Reprogramar Fecha
+                              <Edit3 size={13} /> Reprogramar
                             </button>
                           ) : (
-                            <span style={{ fontSize: '12px', color: '#8A919E', fontStyle: 'italic' }}>
-                              🔒 Solo Supervisores (RBAC)
+                            <span style={{ fontSize: '11px', color: '#64748B', fontStyle: 'italic', fontFamily: 'monospace' }}>
+                              🔒 Solo Supervisores
                             </span>
                           )}
                         </td>

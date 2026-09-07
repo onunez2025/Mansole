@@ -55,17 +55,21 @@ export default function Activities({ currentUser }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
         <div>
-          <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1A1C1E' }}>Catálogo Maestro de Actividades de Mantenimiento</h3>
-          <p style={{ fontSize: '14px', color: '#515254' }}>Tareas estándar asociables a Categorías de Máquinas o de forma externa a un Área / CECO</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span className="cyber-badge" style={{ fontSize: '10px' }}>INGENIERÍA DE MANTENIMIENTO</span>
+            <span style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace' }}>// PROCEDIMIENTOS ESTÁNDAR MAESTROS</span>
+          </div>
+          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#FFFFFF', margin: 0, letterSpacing: '-0.3px' }}>Catálogo Maestro de Actividades</h3>
+          <p style={{ fontSize: '13px', color: '#94A3B8', margin: '4px 0 0 0' }}>Tareas normalizadas aplicables a Categorías de Máquinas o imputables a Áreas / CECOs</p>
         </div>
-        <button className="btn btn-primary" onClick={() => {
+        <button className="btn-cyber" onClick={() => {
           setEditingActivity(null);
           setNewActivity({ name: '', type: 'Mecánico', estimatedMinutes: 60, resources: '' });
           setShowModal(true);
         }}>
-          <Plus size={18} /> Nueva Actividad Maestro
+          <Plus size={16} /> Nueva Actividad
         </button>
       </div>
 
@@ -74,19 +78,15 @@ export default function Activities({ currentUser }) {
           <button
             key={type}
             onClick={() => setFilterType(type)}
-            className="btn"
+            className="pipeline-tab"
             style={{
               padding: '8px 16px',
-              fontSize: '13px',
-              background: filterType === type ? '#4C5F80' : '#FFFFFF',
-              borderColor: filterType === type ? '#4C5F80' : '#E2E4E9',
-              color: filterType === type ? '#FFFFFF' : '#515254',
-              fontWeight: filterType === type ? '700' : '600',
-              boxShadow: '0 1px 2px rgba(5,15,26,0.04)'
+              fontSize: '12px',
+              fontWeight: filterType === type ? '800' : '600'
             }}
           >
-            <Filter size={14} />
-            {type === 'ALL' ? 'Todas las Actividades' : `Tipo: ${type.charAt(0) + type.slice(1).toLowerCase()}`}
+            <Filter size={13} />
+            {type === 'ALL' ? 'Todas las Actividades' : `${type.charAt(0) + type.slice(1).toLowerCase()}`}
           </button>
         ))}
       </div>
@@ -98,31 +98,31 @@ export default function Activities({ currentUser }) {
               <span className={`badge ${a.type === 'Mecánico' ? 'badge-info' : a.type === 'Eléctrico' ? 'badge-warning' : 'badge-success'}`}>
                 {a.type || 'General'}
               </span>
-              <span style={{ fontSize: '13px', fontWeight: '700', color: '#4C5F80' }}>
+              <span style={{ fontSize: '12px', fontWeight: '800', color: '#38BDF8', fontFamily: 'monospace' }}>
                 ⏱️ Est: {a.estimatedMinutes || 60} mins
               </span>
             </div>
 
-            <h4 style={{ fontSize: '17px', fontWeight: '800', color: '#1A1C1E', lineHeight: '1.4', margin: '2px 0' }}>
+            <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#FFFFFF', lineHeight: '1.4', margin: '2px 0' }}>
               {a.name}
             </h4>
 
-            <div style={{ fontSize: '13px', color: '#515254', background: '#F9FAFB', padding: '14px', borderRadius: '10px', border: '1px solid #E2E4E9', lineHeight: '1.5' }}>
-              <strong style={{ color: '#1A1C1E', display: 'block', marginBottom: '4px', fontWeight: '700' }}>🛠️ Herramientas y Recursos de Planta:</strong>
+            <div style={{ fontSize: '12px', color: '#CBD5E1', background: 'rgba(11, 17, 32, 0.8)', padding: '14px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.08)', lineHeight: '1.5' }}>
+              <strong style={{ color: '#38BDF8', display: 'block', marginBottom: '4px', fontWeight: '800', fontFamily: 'monospace', fontSize: '11px' }}>🛠️ HERRAMIENTAS & RECURSOS:</strong>
               {a.resources}
             </div>
 
-            <div style={{ marginTop: 'auto', paddingTop: '14px', borderTop: '1px solid #E2E4E9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '12px', color: '#8A919E', fontWeight: '600' }}>Aplicable a: Máquinas y Áreas CECO</span>
+            <div style={{ marginTop: 'auto', paddingTop: '14px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace' }}>CECO & MÁQUINAS</span>
               <div style={{ display: 'flex', gap: '6px' }}>
                 <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => {
                   setEditingActivity(a);
                   setNewActivity({ name: a.name, type: a.type, estimatedMinutes: a.estimatedMinutes, resources: a.resources });
                   setShowModal(true);
                 }}>
-                  Editar Tarea
+                  Editar
                 </button>
-                <button className="btn btn-secondary" style={{ padding: '6px 9px', color: '#DF2935' }} onClick={() => handleDeleteActivity(a)} title="Eliminar">
+                <button className="btn btn-secondary" style={{ padding: '6px 9px', color: '#EF4444' }} onClick={() => handleDeleteActivity(a)} title="Eliminar">
                   <Trash2 size={13} />
                 </button>
               </div>
@@ -134,8 +134,8 @@ export default function Activities({ currentUser }) {
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #E2E4E9', paddingBottom: '14px' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1A1C1E' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '14px' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#FFFFFF', margin: 0 }}>
                 {editingActivity ? 'Editar Actividad Maestra' : 'Crear Actividad Maestra'}
               </h3>
               <button onClick={() => setShowModal(false)} style={{ fontSize: '20px', color: '#8A919E', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>

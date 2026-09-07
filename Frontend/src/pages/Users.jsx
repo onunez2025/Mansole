@@ -333,23 +333,27 @@ export default function Users({ currentUser }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
         <div>
-          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#1A1C1E', letterSpacing: '-0.3px' }}>
-            Gestión Integral de Usuarios, Roles & Seguridad RBAC por Módulo
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span className="cyber-badge" style={{ fontSize: '10px' }}>GOBERNANZA & SEGURIDAD</span>
+            <span style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace' }}>// MATRIZ DINÁMICA RBAC & RLS</span>
+          </div>
+          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '-0.3px', margin: 0 }}>
+            Usuarios, Roles & Matriz RBAC
           </h3>
-          <p style={{ fontSize: '14px', color: '#515254' }}>
-            Configura de manera ultra-explícita qué nivel de acceso y privilegios tiene cada rol sobre los módulos de Grupo SOLE.
+          <p style={{ fontSize: '13px', color: '#94A3B8', margin: '4px 0 0 0' }}>
+            Control granular de privilegios y permisos por rol en Corporación Rinnai
           </p>
         </div>
         {(currentUser?.role || '') === 'Administrador' && (
           <div style={{ display: 'flex', gap: '10px' }}>
             {activeTab === 'users' ? (
-              <button className="btn btn-primary" onClick={handleOpenCreateUser}>
+              <button className="btn-cyber" onClick={handleOpenCreateUser}>
                 <UserPlus size={16} /> + Nuevo Colaborador
               </button>
             ) : (
-              <button className="btn btn-primary" onClick={() => setShowRoleModal(true)}>
+              <button className="btn-cyber" onClick={() => setShowRoleModal(true)}>
                 <PlusCircle size={16} /> + Crear Nuevo Rol
               </button>
             )}
@@ -357,63 +361,65 @@ export default function Users({ currentUser }) {
         )}
       </div>
 
-      <div className="siatc-card" style={{ padding: '14px 20px', marginBottom: '24px', background: '#F4F7FC', borderLeft: '4px solid #3B72D4', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="siatc-card" style={{ padding: '14px 20px', marginBottom: '24px', background: 'rgba(15, 23, 42, 0.75)', borderLeft: '4px solid #38BDF8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <Shield color="#3B72D4" size={26} />
+          <Shield color="#38BDF8" size={24} />
           <div>
-            <strong style={{ color: '#1A1C1E', fontSize: '14px' }}>
-              Sesión Activa: {currentUser?.name || 'Invitado'} ({currentUser?.role || 'Consulta'})
+            <strong style={{ color: '#FFFFFF', fontSize: '14px' }}>
+              Sesión Activa: {currentUser?.name || 'Invitado'} <span style={{ color: '#38BDF8', fontFamily: 'monospace' }}>({currentUser?.role || 'Consulta'})</span>
             </strong>
-            <p style={{ fontSize: '13px', color: '#515254', margin: 0, marginTop: '2px' }}>
+            <p style={{ fontSize: '12px', color: '#94A3B8', margin: 0, marginTop: '2px' }}>
               {(currentUser?.role || '') === 'Administrador' 
-                ? '🟢 Permisos Globales: Haz clic en cualquier recuadro de la matriz para habilitar o restringir una acción a un rol específico en tiempo real.' 
-                : '🟡 Modo Consulta: Si necesitas editar cuentas o modificar los recuadros de la matriz RBAC, ingresa con el perfil Administrador.'}
+                ? '🟢 Privilegios Globales: Haga clic en cualquier casilla para conceder o revocar permisos a un rol en tiempo real.' 
+                : '🟡 Modo Consulta: Si requiere alterar privilegios RBAC o dar de alta colaboradores, ingrese como Administrador.'}
             </p>
           </div>
         </div>
-        <span className="badge badge-info" style={{ fontSize: '12px', padding: '6px 12px' }}>Seguridad EBM Activa</span>
+        <span className="badge badge-info" style={{ fontSize: '11px', padding: '4px 10px' }}>ENCRIPTACIÓN AZURE</span>
       </div>
 
-      <div style={{ display: 'flex', gap: '12px', borderBottom: '2px solid #E4E7ED', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '24px' }}>
         <button 
           onClick={() => setActiveTab('users')}
           style={{
-            padding: '12px 24px',
-            fontSize: '15px',
-            fontWeight: '700',
-            color: activeTab === 'users' ? '#4C5F80' : '#8A919E',
+            padding: '12px 20px',
+            fontSize: '14px',
+            fontWeight: '800',
+            color: activeTab === 'users' ? '#38BDF8' : '#94A3B8',
             background: 'none',
             border: 'none',
-            borderBottom: activeTab === 'users' ? '3px solid #4C5F80' : '3px solid transparent',
-            marginBottom: '-2px',
+            borderBottom: activeTab === 'users' ? '3px solid #38BDF8' : '3px solid transparent',
+            marginBottom: '-1px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '8px',
+            fontFamily: 'monospace'
           }}
         >
-          <UsersIcon size={18} />
-          Colaboradores & Estado ({usersList.length})
+          <UsersIcon size={17} />
+          COLABORADORES ({usersList.length})
         </button>
         <button 
           onClick={() => setActiveTab('roles')}
           style={{
-            padding: '12px 24px',
-            fontSize: '15px',
-            fontWeight: '700',
-            color: activeTab === 'roles' ? '#4C5F80' : '#8A919E',
+            padding: '12px 20px',
+            fontSize: '14px',
+            fontWeight: '800',
+            color: activeTab === 'roles' ? '#38BDF8' : '#94A3B8',
             background: 'none',
             border: 'none',
-            borderBottom: activeTab === 'roles' ? '3px solid #4C5F80' : '3px solid transparent',
-            marginBottom: '-2px',
+            borderBottom: activeTab === 'roles' ? '3px solid #38BDF8' : '3px solid transparent',
+            marginBottom: '-1px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '8px',
+            fontFamily: 'monospace'
           }}
         >
-          <Layers size={18} />
-          Matriz RBAC por Módulo & Acciones ({rolesList.length} Roles)
+          <Layers size={17} />
+          MATRIZ RBAC ({rolesList.length} ROLES)
         </button>
       </div>
 

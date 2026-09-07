@@ -85,11 +85,16 @@ export default function Login({ onNavigateToLanding }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-between p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-between p-4 sm:p-6 lg:p-8 relative overflow-hidden">
+      {/* Ambient background glows */}
+      <div className="absolute top-0 right-1/4 w-[600px] h-[400px] bg-gradient-to-br from-blue-100/50 via-indigo-100/30 to-purple-100/40 blur-[90px] pointer-events-none -z-10 rounded-full" />
+      <div className="absolute bottom-10 left-10 w-[500px] h-[400px] bg-gradient-to-tr from-emerald-100/30 to-teal-100/30 blur-[80px] pointer-events-none -z-10 rounded-full" />
+      <div className="absolute inset-0 bg-dot-grid bg-dot-grid-mask pointer-events-none -z-10" />
+
       {/* Top Header */}
       <header className="max-w-6xl w-full mx-auto flex items-center justify-between py-2 mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-slate-900 flex items-center justify-center text-white font-bold text-base shadow-sm">
+          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white font-black text-base shadow-sm ring-1 ring-slate-950/10">
             S
           </div>
           <div>

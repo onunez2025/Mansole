@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
@@ -76,11 +77,31 @@ export default function App() {
   }
 
   if (!isAuthenticated) {
-    if (publicView === 'landing') {
-      return <Landing onNavigateToLogin={() => setPublicView('login')} />;
-    }
-
-    return <Login onNavigateToLanding={() => setPublicView('landing')} />;
+    return (
+      <AnimatePresence mode="wait">
+        {publicView === 'landing' ? (
+          <motion.div
+            key="landing"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <Landing onNavigateToLogin={() => setPublicView('login')} />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="login"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <Login onNavigateToLanding={() => setPublicView('landing')} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
   }
 
   // Renderiza el módulo activo solo si el rol tiene acceso.
@@ -121,7 +142,17 @@ export default function App() {
         />
 
         <div className="page-container">
-          {renderTab()}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.18 }}
+            >
+              {renderTab()}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
     </div>

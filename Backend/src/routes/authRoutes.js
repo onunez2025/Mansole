@@ -39,6 +39,7 @@ function toPublicUser(row) {
  * Autenticar usuario con email y contraseña
  */
 router.post('/login', rateLimit(5, 15 * 60 * 1000), async (req, res) => {
+  try {
     const input = (req.body.email || req.body.username || '').trim().toLowerCase();
     const { password } = req.body;
 

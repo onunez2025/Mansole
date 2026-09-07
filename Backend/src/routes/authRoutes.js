@@ -39,20 +39,22 @@ function toPublicUser(row) {
  * Autenticar usuario con email y contraseña
  */
 router.post('/login', rateLimit(5, 15 * 60 * 1000), async (req, res) => {
-  // Se acepta `username` como alias histórico, pero el identificador es el email.
-  const email = req.body.email || req.body.username;
-  const { password } = req.body;
+    const input = (req.body.email || req.body.username || '').trim().toLowerCase();
+    const { password } = req.body;
 
-  try {
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email y password requeridos' });
+    if (!input || !password) {
+      return res.status(400).json({ error: 'Usuario / Email y contraseña requeridos' });
     }
 
     const pool = await getDbConnection();
 
+    // Permitir autenticación ingresando "admin" o el correo completo "admin@gruposole.com"
+    const targetEmail = input === 'admin' ? 'admin@gruposole.com' : input;
+
     const userResult = await pool.request()
-      .input('email', sql.NVarChar, email.toLowerCase())
-      .query(`${USER_SELECT} WHERE LOWER(u.Email) = @email`);
+      .input('email', sql.NVarChar, targetEmail)
+      .input('rawInput', sql.NVarChar, input)
+      .query(`${USER_SELECT} WHERE LOWER(u.Email) = @email OR (LOWER(u.Email) LIKE @rawInput + '@%' AND u.RoleId = 1)`);
 
     if (userResult.recordset.length === 0) {
       return res.status(401).json({ error: 'Credenciales inválidas' });

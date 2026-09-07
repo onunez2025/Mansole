@@ -182,54 +182,50 @@ export default function WorkOrders({ currentUser }) {
   }, [workOrders, activeStage, searchQuery]);
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Cabecera y botón de acción */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span className="cyber-badge" style={{ fontSize: '10px' }}>CONTROL OPERATIVO</span>
-            <span style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace' }}>// GESTIÓN DE PLANTAS & TALLER</span>
-          </div>
-          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#FFFFFF', margin: 0, letterSpacing: '-0.3px' }}>Órdenes de Trabajo (OT)</h3>
-          <p style={{ fontSize: '13px', color: '#94A3B8', margin: '4px 0 0 0' }}>
-            Pipeline de mantenimiento: <span style={{ color: '#38BDF8', fontFamily: 'monospace' }}>SOLICITUD ➔ EN PLANTA ➔ FINALIZACIÓN ➔ CIERRE CONTABLE</span>
+          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Órdenes de Trabajo (OT)</h3>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Flujo de mantenimiento: Solicitud → En Planta → Finalizada → Cierre Contable
           </p>
         </div>
-        <button className="btn-cyber" onClick={() => setShowCreateModal(true)}>
-          <Plus size={18} /> Emitir Nueva OT
+        <button className="btn btn-primary text-xs" onClick={() => setShowCreateModal(true)}>
+          <Plus size={15} /> Emitir Nueva OT
         </button>
       </div>
 
       {/* Barra de Pipeline Operativo y Buscador */}
-      <div className="siatc-card" style={{ padding: '14px 18px', marginBottom: '22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+      <div className="bg-white border border-slate-200/90 rounded-xl p-3 sm:p-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 shadow-xs">
         {/* Pestañas de Proceso */}
         <div className="pipeline-container">
           <button 
-            className={`pipeline-tab ${activeStage === 'Todas' ? 'active' : ''}`}
+            className={`pipeline-tab text-xs ${activeStage === 'Todas' ? 'active' : ''}`}
             onClick={() => setActiveStage('Todas')}
           >
             Todas <span className="pipeline-count">{stageCounts.Todas}</span>
           </button>
           <button 
-            className={`pipeline-tab ${activeStage === 'Pendiente' ? 'active' : ''}`}
+            className={`pipeline-tab text-xs ${activeStage === 'Pendiente' ? 'active' : ''}`}
             onClick={() => setActiveStage('Pendiente')}
           >
             🟡 Solicitadas <span className="pipeline-count">{stageCounts.Pendiente}</span>
           </button>
           <button 
-            className={`pipeline-tab ${activeStage === 'En Progreso' ? 'active' : ''}`}
+            className={`pipeline-tab text-xs ${activeStage === 'En Progreso' ? 'active' : ''}`}
             onClick={() => setActiveStage('En Progreso')}
           >
             ⚙️ En Planta <span className="pipeline-count">{stageCounts['En Progreso']}</span>
           </button>
           <button 
-            className={`pipeline-tab ${activeStage === 'Finalizada' ? 'active' : ''}`}
+            className={`pipeline-tab text-xs ${activeStage === 'Finalizada' ? 'active' : ''}`}
             onClick={() => setActiveStage('Finalizada')}
           >
             ✅ Finalizadas <span className="pipeline-count">{stageCounts.Finalizada}</span>
           </button>
           <button 
-            className={`pipeline-tab ${activeStage === 'Cerrada' ? 'active' : ''}`}
+            className={`pipeline-tab text-xs ${activeStage === 'Cerrada' ? 'active' : ''}`}
             onClick={() => setActiveStage('Cerrada')}
           >
             🔒 Cerradas <span className="pipeline-count">{stageCounts.Cerrada}</span>
@@ -237,23 +233,14 @@ export default function WorkOrders({ currentUser }) {
         </div>
 
         {/* Buscador Rápido */}
-        <div style={{ position: 'relative', width: '260px' }}>
-          <Search size={15} color="#64748B" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+        <div className="relative w-full md:w-64">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input 
             type="text" 
             placeholder="Buscar por OT, máquina o técnico..." 
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px 8px 36px',
-              borderRadius: '8px',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              fontSize: '12px',
-              background: '#0B1120',
-              color: '#F8FAFC',
-              outline: 'none'
-            }}
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all"
           />
         </div>
       </div>
@@ -262,16 +249,16 @@ export default function WorkOrders({ currentUser }) {
       {loading && !workOrders.length ? (
         <OrderCardSkeleton count={4} />
       ) : filteredOrders.length === 0 ? (
-        <div className="siatc-card" style={{ textAlign: 'center', padding: '48px 24px', color: '#94A3B8' }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔍</div>
-          <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#FFFFFF', marginBottom: '4px' }}>No se encontraron Órdenes de Trabajo</h4>
-          <p style={{ fontSize: '13px', color: '#94A3B8', margin: 0 }}>
+        <div className="bg-white border border-slate-200/90 rounded-xl text-center py-12 px-6 shadow-xs">
+          <div className="text-3xl mb-2">🔍</div>
+          <h4 className="text-base font-bold text-slate-900 mb-1">No se encontraron Órdenes de Trabajo</h4>
+          <p className="text-xs text-slate-500">
             {searchQuery ? `No hay resultados para "${searchQuery}" en la etapa "${activeStage}".` : `No hay órdenes en la etapa "${activeStage}".`}
           </p>
         </div>
       ) : (
         /* Listado de OTs */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="space-y-3">
           {filteredOrders.map((ot) => {
             const isPending = ot.status === 'Iniciada' || ot.status === 'Pendiente';
             const isInProgress = ot.status === 'En Progreso' || ot.status === 'En Proceso' || ot.status === 'Iniciado en Planta';
@@ -279,123 +266,89 @@ export default function WorkOrders({ currentUser }) {
             const isClosed = ot.status === 'Cerrada';
 
             return (
-              <div key={ot.id} className="siatc-card" style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'space-between', 
-                padding: '20px 24px', 
-                flexWrap: 'wrap', 
-                gap: '18px', 
-                borderLeft: isInProgress ? '4px solid #38BDF8' : isFinished ? '4px solid #10B981' : isClosed ? '4px solid #64748B' : '4px solid #F59E0B',
-                background: 'rgba(15, 23, 42, 0.75)'
-              }}>
+              <div key={ot.id} className={`bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs flex items-center justify-between flex-wrap gap-4 transition-all hover:border-slate-300 ${
+                isInProgress ? 'border-l-4 border-l-blue-500' : isFinished ? 'border-l-4 border-l-emerald-500' : isClosed ? 'border-l-4 border-l-slate-400' : 'border-l-4 border-l-amber-500'
+              }`}>
                 {/* Datos Principales */}
-                <div style={{ maxWidth: '500px', flex: 1, minWidth: '280px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '15px', fontWeight: '800', color: '#38BDF8', fontFamily: 'monospace' }}>{ot.code}</span>
-                    <span className={`badge ${ot.type === 'Preventivo' ? 'badge-info' : 'badge-danger'}`}>{ot.type}</span>
-                    <span className={`badge ${isFinished ? 'badge-success' : isInProgress ? 'badge-info' : isClosed ? 'badge-mono' : 'badge-warning'}`}>
+                <div className="max-w-xl flex-1 min-w-[280px]">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <span className="text-sm font-bold text-slate-900 font-mono">{ot.code}</span>
+                    <span className={`badge ${ot.type === 'Preventivo' ? 'badge-info' : 'badge-danger'} text-[11px]`}>{ot.type}</span>
+                    <span className={`badge ${isFinished ? 'badge-success' : isInProgress ? 'badge-info' : isClosed ? 'badge-mono' : 'badge-warning'} text-[11px]`}>
                       {ot.status}
                     </span>
-                    <span style={{ fontSize: '11px', fontWeight: '800', fontFamily: 'monospace', color: ot.priority === 'Urgente' ? '#EF4444' : ot.priority === 'Alta' ? '#F59E0B' : '#10B981' }}>
+                    <span className={`text-[11px] font-bold font-mono ${ot.priority === 'Urgente' ? 'text-red-600' : ot.priority === 'Alta' ? 'text-amber-600' : 'text-emerald-600'}`}>
                       ● {ot.priority}
                     </span>
                   </div>
-                  <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#FFFFFF', margin: '4px 0', letterSpacing: '-0.2px' }}>
+                  <h4 className="text-base font-bold text-slate-900 mb-1 leading-tight">
                     [{ot.assetCode}] {ot.assetName}
                   </h4>
-                  <p style={{ fontSize: '13px', color: '#94A3B8', margin: '2px 0 6px 0' }}>
-                    <strong style={{ color: '#CBD5E1' }}>CECO:</strong> {ot.costCenterCode} • <span style={{ color: '#38BDF8' }}>{ot.areaName}</span>
+                  <p className="text-xs text-slate-500 mb-1.5">
+                    <strong className="text-slate-700">CECO:</strong> {ot.costCenterCode} • <span className="text-slate-700">{ot.areaName}</span>
                   </p>
-                  <p style={{ fontSize: '12px', color: '#64748B', margin: 0, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <p className="text-xs text-slate-600 italic line-clamp-1">
                     "{ot.description}"
                   </p>
                 </div>
 
                 {/* Múltiples técnicos y costos */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '220px', background: 'rgba(11, 17, 32, 0.8)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <div style={{ fontSize: '11px', color: '#38BDF8', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '800', fontFamily: 'monospace' }}>
-                    <Users size={14} /> 
-                    <span>TÉCNICOS ASIGNADOS ({ot.technicians ? ot.technicians.length : 0}):</span>
+                <div className="flex flex-col gap-1.5 min-w-[220px] bg-slate-50 p-3.5 rounded-lg border border-slate-200/80 text-xs">
+                  <div className="text-[11px] text-slate-600 flex items-center gap-1.5 font-bold uppercase tracking-wider">
+                    <Users size={13} className="text-slate-500" /> 
+                    <span>Técnicos ({ot.technicians ? ot.technicians.length : 0}):</span>
                   </div>
                   {ot.technicians && ot.technicians.map((t, idx) => (
-                    <div key={idx} style={{ fontSize: '12px', color: '#CBD5E1', paddingLeft: '20px', fontWeight: '500' }}>
-                      • {t.name} (<strong style={{ color: '#38BDF8' }}>{t.hours}h</strong>)
+                    <div key={idx} className="text-slate-700 pl-4 font-medium">
+                      • {t.name} (<strong className="text-slate-900">{t.hours}h</strong>)
                     </div>
                   ))}
-                  <div style={{ marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', fontSize: '12px', fontWeight: '800', color: '#10B981', display: 'flex', justifyContent: 'space-between', fontFamily: 'monospace' }}>
-                    <span>COSTO TOTAL:</span>
-                    <span>${ot.totalCost ? ot.totalCost.toFixed(2) : '0.00'} USD</span>
+                  <div className="mt-1 pt-1.5 border-t border-slate-200 text-xs font-bold flex justify-between font-mono">
+                    <span className="text-slate-500">COSTO TOTAL:</span>
+                    <span className="text-emerald-700">${ot.totalCost ? ot.totalCost.toFixed(2) : '0.00'} USD</span>
                   </div>
                 </div>
 
                 {/* Acciones Rápidas del Proceso */}
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div className="flex gap-2 items-center flex-wrap">
                   {/* Botón rápido para Iniciar OT si está pendiente */}
                   {isPending && (
                     <button
-                      className="btn"
-                      style={{ 
-                        background: 'rgba(56, 189, 248, 0.15)', 
-                        border: '1px solid rgba(56, 189, 248, 0.35)', 
-                        color: '#38BDF8', 
-                        fontSize: '11px', 
-                        padding: '8px 12px',
-                        fontFamily: 'monospace',
-                        fontWeight: '800'
-                      }}
+                      className="btn text-xs bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 font-semibold py-1.5 px-3"
                       onClick={() => handleQuickStatusChange(ot.id, 'En Progreso')}
                       title="Pasar OT a En Proceso"
                     >
-                      <Play size={13} /> INICIAR
+                      <Play size={12} /> INICIAR
                     </button>
                   )}
 
                   {/* Botón rápido para Finalizar OT si está en proceso */}
                   {isInProgress && (
                     <button
-                      className="btn"
-                      style={{ 
-                        background: 'rgba(16, 185, 129, 0.15)', 
-                        border: '1px solid rgba(16, 185, 129, 0.35)', 
-                        color: '#10B981', 
-                        fontSize: '11px', 
-                        padding: '8px 12px',
-                        fontFamily: 'monospace',
-                        fontWeight: '800'
-                      }}
+                      className="btn text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 font-semibold py-1.5 px-3"
                       onClick={() => handleQuickStatusChange(ot.id, 'Finalizada')}
                       title="Marcar OT como Finalizada"
                     >
-                      <CheckCircle size={13} /> FINALIZAR
+                      <CheckCircle size={12} /> FINALIZAR
                     </button>
                   )}
 
                   <button 
-                    className="btn btn-secondary" 
-                    style={{ fontSize: '12px', padding: '8px 14px' }}
+                    className="btn btn-secondary text-xs py-1.5 px-3"
                     onClick={() => {
                       setSelectedOT(ot);
                       setAiDiagnosis(ot.aiDiagnosis || null);
                     }}
                   >
-                    <FileText size={15} /> Detalle & Checklist
+                    <FileText size={14} /> Detalle & Checklist
                   </button>
 
                   <button 
-                    className="btn" 
-                    style={{ 
-                      background: 'rgba(255, 255, 255, 0.05)', 
-                      border: '1px solid rgba(255, 255, 255, 0.12)', 
-                      color: '#E2E8F0', 
-                      fontWeight: '700', 
-                      fontSize: '12px', 
-                      padding: '8px 12px' 
-                    }}
+                    className="btn btn-secondary text-xs py-1.5 px-2.5 text-slate-700"
                     onClick={() => downloadPDF(ot.id)}
-                    title="Descargar Acta Formal con firmas PDF"
+                    title="Descargar Acta Formal en PDF"
                   >
-                    <Download size={14} /> PDF
+                    <Download size={13} /> PDF
                   </button>
                 </div>
               </div>
@@ -451,102 +404,109 @@ export default function WorkOrders({ currentUser }) {
             </div>
 
             {/* ASISTENTE DE INTELIGENCIA ARTIFICIAL (Módulo 8) */}
-            <div style={{ background: '#F2EEFE', border: '1px solid #D5C3FD', borderRadius: '16px', padding: '20px', marginBottom: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#6A35E0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF' }}>
-                    <Bot size={22} />
+            <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-5 mb-5 shadow-xs">
+              <div className="flex items-center justify-between gap-4 mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center flex-shrink-0">
+                    <Bot size={18} />
                   </div>
                   <div>
-                    <h4 style={{ fontSize: '17px', fontWeight: '800', color: '#1A1C1E', margin: 0 }}>Asistente Inteligencia Artificial (IA) en Planta</h4>
-                    <span style={{ fontSize: '12px', color: '#6A35E0', fontWeight: '700' }}>Diagnóstico Asistido & Guía de Soluciones para Técnicos</span>
+                    <h4 className="text-sm font-bold text-slate-900 leading-tight">Asistente IA para Diagnóstico en Planta</h4>
+                    <span className="text-xs text-slate-500 font-medium">Recomendaciones predictivas y heurística de averías</span>
                   </div>
                 </div>
                 {!aiDiagnosis && (
                   <button 
-                    className="btn btn-ai" 
+                    className="btn btn-primary text-xs py-1.5 px-3" 
                     disabled={aiLoading}
                     onClick={() => triggerAiHelp(selectedOT.assetName, selectedOT.description, selectedOT.assetCode)}
                   >
-                    {aiLoading ? '⏳ Consultando Motor IA...' : '✨ Consultar Soluciones IA'}
+                    {aiLoading ? 'Consultando IA...' : '✨ Diagnóstico IA'}
                   </button>
                 )}
               </div>
 
               {aiDiagnosis ? (
-                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #D5C3FD', fontSize: '13px', color: '#1A1C1E', lineHeight: '1.6' }}>
-                  <div style={{ marginBottom: '14px' }}>
-                    <strong style={{ color: '#DF2935', display: 'block', marginBottom: '4px', fontSize: '14px' }}>⚠️ Posibles Causas Raíz Detectadas por IA:</strong>
-                    <ul style={{ paddingLeft: '20px', color: '#515254', margin: 0 }}>
+                <div className="mt-4 pt-4 border-t border-slate-200 text-xs space-y-3 leading-relaxed">
+                  <div>
+                    <strong className="text-red-700 block mb-1 font-semibold">⚠️ Posibles Causas Raíz:</strong>
+                    <ul className="list-disc pl-5 text-slate-600 space-y-1">
                       {aiDiagnosis.possibleCauses && aiDiagnosis.possibleCauses.map((c, i) => (
-                        <li key={i} style={{ marginBottom: '4px', fontWeight: '600' }}>{c}</li>
+                        <li key={i}>{c}</li>
                       ))}
                     </ul>
                   </div>
-                  <div style={{ marginBottom: '14px' }}>
-                    <strong style={{ color: '#05B169', display: 'block', marginBottom: '4px', fontSize: '14px' }}>🔧 Pasos Recomendados para Reparación / Diagnóstico:</strong>
-                    <ol style={{ paddingLeft: '20px', color: '#1A1C1E', margin: 0 }}>
+                  <div>
+                    <strong className="text-emerald-700 block mb-1 font-semibold">🔧 Pasos Recomendados:</strong>
+                    <ol className="list-decimal pl-5 text-slate-700 space-y-1 font-medium">
                       {aiDiagnosis.recommendedSteps && aiDiagnosis.recommendedSteps.map((r, i) => (
-                        <li key={i} style={{ marginBottom: '6px', fontWeight: '700' }}>{r}</li>
+                        <li key={i}>{r}</li>
                       ))}
                     </ol>
                   </div>
-                  <div style={{ background: '#FEF7EC', padding: '10px 14px', borderRadius: '8px', border: '1px solid #FDE3BA', fontSize: '13px', color: '#E58D14', fontWeight: '700' }}>
-                    {aiDiagnosis.safetyWarning || "🚨 Aplicar bloqueo LOTO antes de manipular circuitos en el CECO."}
+                  <div className="bg-amber-50 border border-amber-200 p-2.5 rounded-lg text-amber-800 font-medium">
+                    {aiDiagnosis.safetyWarning || "🚨 Aplicar protocolo de bloqueo y etiquetado LOTO antes de intervenir."}
                   </div>
                 </div>
               ) : (
-                <p style={{ fontSize: '13px', color: '#515254', margin: 0 }}>
-                  Pulsa el botón para que el modelo IA analice el síntoma (<em>"{selectedOT.description.slice(0, 45)}..."</em>) y devuelva las causas probables y guía de solución in-situ.
+                <p className="text-xs text-slate-500 m-0">
+                  Presiona el botón para que el asistente analice la avería y proponga causas probables y solución paso a paso.
                 </p>
               )}
             </div>
 
             {/* Checklist en Planta y Repuestos Consumidos */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-              <div style={{ background: '#FFFFFF', padding: '16px', borderRadius: '12px', border: '1px solid #E2E4E9' }}>
-                <strong style={{ fontSize: '14px', color: '#1A1C1E', display: 'block', marginBottom: '10px' }}>✅ Checklist de Tareas en Planta:</strong>
-                {(selectedOT.tasks && selectedOT.tasks.length > 0 ? selectedOT.tasks : [
-                  { name: '1. Inspeccionar conexiones y cableado eléctrico', completed: true },
-                  { name: '2. Verificar lubricación y niveles de fluido', completed: false },
-                  { name: '3. Realizar prueba de funcionamiento en vacío', completed: false }
-                ]).map((t, idx) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', fontSize: '13px', fontWeight: '600' }}>
-                    <input type="checkbox" defaultChecked={t.completed} style={{ width: '16px', height: '16px', accentColor: '#05B169' }} />
-                    <span style={{ color: t.completed ? '#05B169' : '#1A1C1E', textDecoration: t.completed ? 'line-through' : 'none' }}>
-                      {t.name}
-                    </span>
-                  </div>
-                ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+              <div className="bg-white p-4 rounded-xl border border-slate-200 text-xs">
+                <strong className="text-slate-900 block mb-2.5 font-bold uppercase tracking-wider text-[11px]">Checklist de Tareas en Planta</strong>
+                <div className="space-y-2">
+                  {(selectedOT.tasks && selectedOT.tasks.length > 0 ? selectedOT.tasks : [
+                    { name: '1. Inspeccionar conexiones y cableado eléctrico', completed: true },
+                    { name: '2. Verificar lubricación y niveles de fluido', completed: false },
+                    { name: '3. Realizar prueba de funcionamiento en vacío', completed: false }
+                  ]).map((t, idx) => (
+                    <label key={idx} className="flex items-center gap-2 text-slate-700 cursor-pointer">
+                      <input type="checkbox" defaultChecked={t.completed} className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4" />
+                      <span className={t.completed ? 'text-slate-400 line-through' : 'text-slate-800 font-medium'}>
+                        {t.name}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
-              <div style={{ background: '#FFFFFF', padding: '16px', borderRadius: '12px', border: '1px solid #E2E4E9' }}>
-                <strong style={{ fontSize: '14px', color: '#1A1C1E', display: 'block', marginBottom: '10px' }}>📦 Repuestos Consumidos del Almacén:</strong>
-                {(selectedOT.spareParts && selectedOT.spareParts.length > 0 ? selectedOT.spareParts : [
-                  { name: 'REP-VLM-001 Válvula Proporcional Hidráulica', quantity: 1, cost: 350.00 }
-                ]).map((p, idx) => (
-                  <div key={idx} style={{ fontSize: '13px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #F3F5F9' }}>
-                    <div style={{ fontWeight: '700', color: '#1A1C1E' }}>{p.name} (Cant: {p.quantity})</div>
-                    <div style={{ color: p.cost === 0 ? '#05B169' : '#515254', fontWeight: '600' }}>
-                      Costo Imputado: ${p.cost ? p.cost.toFixed(2) : '0.00'} USD {p.cost === 0 ? '(Canibalizado)' : ''}
+              <div className="bg-white p-4 rounded-xl border border-slate-200 text-xs">
+                <strong className="text-slate-900 block mb-2.5 font-bold uppercase tracking-wider text-[11px]">Repuestos Consumidos del Almacén</strong>
+                <div className="space-y-2">
+                  {(selectedOT.spareParts && selectedOT.spareParts.length > 0 ? selectedOT.spareParts : [
+                    { name: 'REP-VLM-001 Válvula Proporcional Hidráulica', quantity: 1, cost: 350.00 }
+                  ]).map((p, idx) => (
+                    <div key={idx} className="pb-2 border-b border-slate-100 last:border-0 flex justify-between items-center">
+                      <div>
+                        <div className="font-semibold text-slate-900">{p.name}</div>
+                        <div className="text-[11px] text-slate-500">Cantidad: {p.quantity}</div>
+                      </div>
+                      <div className={`font-mono font-bold text-xs ${p.cost === 0 ? 'text-emerald-600' : 'text-slate-800'}`}>
+                        ${p.cost ? p.cost.toFixed(2) : '0.00'} USD
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '16px', borderTop: '1px solid #E2E4E9' }}>
-              <button className="btn btn-secondary" onClick={() => downloadPDF(selectedOT.id)}>
-                <Download size={16} /> Descargar Acta PDF
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+              <button className="btn btn-secondary text-xs" onClick={() => downloadPDF(selectedOT.id)}>
+                <Download size={14} /> Acta PDF
               </button>
-              <button className="btn btn-primary" onClick={async () => {
+              <button className="btn btn-primary text-xs" onClick={async () => {
                 try {
                   await api.updateWorkOrderStatus(selectedOT.id || selectedOT.Id, { 
                     status: selectedOT.status || 'En Progreso', 
                     downtimeMinutes: selectedOT.downtimeMinutes 
                   });
                   setSelectedOT(null);
-                  toast.success("OT actualizada exitosamente en Azure SQL Server");
+                  toast.success("OT actualizada exitosamente");
                   loadOrders();
                 } catch(e) {
                   toast.error("Error al actualizar OT: " + (e.response?.data?.error || e.message));
@@ -562,10 +522,10 @@ export default function WorkOrders({ currentUser }) {
       {/* Modal Crear OT con Múltiples Técnicos */}
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #E2E4E9', paddingBottom: '14px' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1A1C1E' }}>Emisión Rápida de OT con Múltiples Técnicos</h3>
-              <button onClick={() => setShowCreateModal(false)} style={{ fontSize: '20px', color: '#8A919E', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+          <div className="modal-content max-w-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900">Emisión de Orden de Trabajo</h3>
+              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-700 text-lg leading-none">✕</button>
             </div>
 
             <form onSubmit={handleCreateOT}>

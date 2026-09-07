@@ -332,94 +332,67 @@ export default function Users({ currentUser }) {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span className="cyber-badge" style={{ fontSize: '10px' }}>GOBERNANZA & SEGURIDAD</span>
-            <span style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace' }}>// MATRIZ DINÁMICA RBAC & RLS</span>
-          </div>
-          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '-0.3px', margin: 0 }}>
+          <h3 className="text-xl font-bold text-slate-900 tracking-tight">
             Usuarios, Roles & Matriz RBAC
           </h3>
-          <p style={{ fontSize: '13px', color: '#94A3B8', margin: '4px 0 0 0' }}>
-            Control granular de privilegios y permisos por rol en Corporación Rinnai
+          <p className="text-sm text-slate-500 mt-0.5">
+            Gobernanza y control granular de accesos por rol en la organización
           </p>
         </div>
         {(currentUser?.role || '') === 'Administrador' && (
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div className="flex items-center gap-3">
             {activeTab === 'users' ? (
-              <button className="btn-cyber" onClick={handleOpenCreateUser}>
-                <UserPlus size={16} /> + Nuevo Colaborador
+              <button className="btn btn-primary text-xs" onClick={handleOpenCreateUser}>
+                <UserPlus size={15} /> Nuevo Colaborador
               </button>
             ) : (
-              <button className="btn-cyber" onClick={() => setShowRoleModal(true)}>
-                <PlusCircle size={16} /> + Crear Nuevo Rol
+              <button className="btn btn-primary text-xs" onClick={() => setShowRoleModal(true)}>
+                <PlusCircle size={15} /> Crear Rol
               </button>
             )}
           </div>
         )}
       </div>
 
-      <div className="siatc-card" style={{ padding: '14px 20px', marginBottom: '24px', background: 'rgba(15, 23, 42, 0.75)', borderLeft: '4px solid #38BDF8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <Shield color="#38BDF8" size={24} />
+      <div className="stat-card border-l-4 border-l-blue-600 flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200 flex-shrink-0">
+            <Shield size={20} />
+          </div>
           <div>
-            <strong style={{ color: '#FFFFFF', fontSize: '14px' }}>
-              Sesión Activa: {currentUser?.name || 'Invitado'} <span style={{ color: '#38BDF8', fontFamily: 'monospace' }}>({currentUser?.role || 'Consulta'})</span>
-            </strong>
-            <p style={{ fontSize: '12px', color: '#94A3B8', margin: 0, marginTop: '2px' }}>
+            <div className="text-sm font-bold text-slate-900">
+              Sesión Activa: {currentUser?.name || 'Invitado'}{' '}
+              <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 ml-1">
+                {currentUser?.role || 'Consulta'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
               {(currentUser?.role || '') === 'Administrador' 
-                ? '🟢 Privilegios Globales: Haga clic en cualquier casilla para conceder o revocar permisos a un rol en tiempo real.' 
-                : '🟡 Modo Consulta: Si requiere alterar privilegios RBAC o dar de alta colaboradores, ingrese como Administrador.'}
+                ? 'Privilegios de Administrador: Haz clic en cualquier celda para conceder o revocar permisos en tiempo real.' 
+                : 'Modo Consulta: Para modificar privilegios RBAC o dar de alta colaboradores, inicia sesión como Administrador.'}
             </p>
           </div>
         </div>
-        <span className="badge badge-info" style={{ fontSize: '11px', padding: '4px 10px' }}>ENCRIPTACIÓN AZURE</span>
+        <span className="badge badge-info text-[11px] flex-shrink-0">Encriptación Azure</span>
       </div>
 
-      <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '24px' }}>
+      <div className="pipeline-container border-b border-slate-200 pb-2">
         <button 
           onClick={() => setActiveTab('users')}
-          style={{
-            padding: '12px 20px',
-            fontSize: '14px',
-            fontWeight: '800',
-            color: activeTab === 'users' ? '#38BDF8' : '#94A3B8',
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'users' ? '3px solid #38BDF8' : '3px solid transparent',
-            marginBottom: '-1px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontFamily: 'monospace'
-          }}
+          className={`pipeline-tab text-xs ${activeTab === 'users' ? 'active' : ''}`}
         >
-          <UsersIcon size={17} />
-          COLABORADORES ({usersList.length})
+          <UsersIcon size={14} />
+          Colaboradores ({usersList.length})
         </button>
         <button 
           onClick={() => setActiveTab('roles')}
-          style={{
-            padding: '12px 20px',
-            fontSize: '14px',
-            fontWeight: '800',
-            color: activeTab === 'roles' ? '#38BDF8' : '#94A3B8',
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'roles' ? '3px solid #38BDF8' : '3px solid transparent',
-            marginBottom: '-1px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontFamily: 'monospace'
-          }}
+          className={`pipeline-tab text-xs ${activeTab === 'roles' ? 'active' : ''}`}
         >
-          <Layers size={17} />
-          MATRIZ RBAC ({rolesList.length} ROLES)
+          <Layers size={14} />
+          Matriz RBAC ({rolesList.length} Roles)
         </button>
       </div>
 

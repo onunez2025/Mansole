@@ -22,13 +22,13 @@ export default function Dashboard({ currentUser }) {
 
   if (loading && !kpi) {
     return (
-      <div>
-        <div style={{ marginBottom: '28px' }}>
-          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#1A1C1E' }}>Resumen Ejecutivo Operativo</h3>
-          <p style={{ fontSize: '14px', color: '#8A919E' }}>Sincronizando telemetría en tiempo real desde Azure SQL...</p>
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-xl font-bold text-slate-900">Resumen Operativo de Planta</h3>
+          <p className="text-sm text-slate-500">Sincronizando telemetría desde Azure SQL...</p>
         </div>
         <CardSkeleton count={4} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <TableSkeleton rows={3} cols={3} />
           <TableSkeleton rows={3} cols={3} />
         </div>
@@ -37,83 +37,85 @@ export default function Dashboard({ currentUser }) {
   }
 
   const cards = [
-    { title: 'Disponibilidad de Planta', value: `${kpi.overallAvailability}%`, desc: 'Meta mensual > 95%', icon: <TrendingUp size={24} color="#10B981" />, bg: 'rgba(16, 185, 129, 0.1)', border: 'rgba(16, 185, 129, 0.3)', textColor: '#10B981' },
-    { title: 'MTTR (T. Med. Reparación)', value: `${kpi.mttrHours} hrs`, desc: 'Promedio resolución correctivos', icon: <Clock size={24} color="#38BDF8" />, bg: 'rgba(56, 189, 248, 0.1)', border: 'rgba(56, 189, 248, 0.3)', textColor: '#38BDF8' },
-    { title: 'MTBF (T. Entre Fallas)', value: `${kpi.mtbfHours} hrs`, desc: 'Confiabilidad operativa en planta', icon: <Cpu size={24} color="#818CF8" />, bg: 'rgba(99, 102, 241, 0.1)', border: 'rgba(99, 102, 241, 0.3)', textColor: '#818CF8' },
-    { title: 'Cumplimiento Preventivo', value: `${kpi.preventiveCompliance}%`, desc: `${kpi.closedOrdersCount} OTs finalizadas`, icon: <CheckCircle2 size={24} color="#C084FC" />, bg: 'rgba(168, 85, 247, 0.1)', border: 'rgba(168, 85, 247, 0.3)', textColor: '#C084FC' },
+    { 
+      title: 'Disponibilidad de Planta', 
+      value: `${kpi.overallAvailability}%`, 
+      desc: 'Meta mensual > 95%', 
+      icon: <TrendingUp size={20} />, 
+      color: 'text-emerald-600 bg-emerald-50 border-emerald-200' 
+    },
+    { 
+      title: 'MTTR (T. Med. Reparación)', 
+      value: `${kpi.mttrHours} hrs`, 
+      desc: 'Promedio resolución correctivos', 
+      icon: <Clock size={20} />, 
+      color: 'text-blue-600 bg-blue-50 border-blue-200' 
+    },
+    { 
+      title: 'MTBF (T. Entre Fallas)', 
+      value: `${kpi.mtbfHours} hrs`, 
+      desc: 'Confiabilidad operativa en planta', 
+      icon: <Cpu size={20} />, 
+      color: 'text-indigo-600 bg-indigo-50 border-indigo-200' 
+    },
+    { 
+      title: 'Cumplimiento Preventivo', 
+      value: `${kpi.preventiveCompliance}%`, 
+      desc: `${kpi.closedOrdersCount} OTs finalizadas`, 
+      icon: <CheckCircle2 size={20} />, 
+      color: 'text-purple-600 bg-purple-50 border-purple-200' 
+    },
   ];
 
   return (
-    <div>
-      {/* Saludo institucional y rol */}
-      <div style={{ marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+    <div className="space-y-6">
+      {/* Encabezado */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span className="cyber-badge" style={{ fontSize: '10px' }}>PANEL EJECUTIVO</span>
-            <span style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace' }}>// TELEMETRÍA EN VIVO AZURE SQL</span>
-          </div>
-          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '-0.3px', margin: 0 }}>Indicadores Clave de Desempeño (KPIs)</h3>
-          <p style={{ fontSize: '13px', color: '#94A3B8', margin: '4px 0 0 0' }}>Monitoreo en tiempo real de disponibilidad, confiabilidad y costos en Corporación Rinnai</p>
+          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Indicadores Clave de Desempeño (KPIs)</h3>
+          <p className="text-sm text-slate-500 mt-0.5">Monitoreo en tiempo real de disponibilidad, confiabilidad y costos en planta</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <div style={{ 
-            background: 'rgba(15, 23, 42, 0.8)', 
-            padding: '6px 14px', 
-            borderRadius: '8px', 
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            fontSize: '12px', 
-            fontFamily: 'monospace',
-            color: '#94A3B8'
-          }}>
-            PERÍODO: <strong style={{ color: '#38BDF8' }}>JUL - AGO 2026</strong>
-          </div>
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-600 shadow-xs">
+          <span>Período:</span>
+          <strong className="text-slate-900 font-semibold">Julio - Agosto 2026</strong>
         </div>
       </div>
 
-      {/* Grid de Tarjetas de Indicadores Cyber */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+      {/* Grid de Métricas Principales */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((c, i) => (
-          <div key={i} className="siatc-card" style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '18px', 
-            padding: '22px 24px', 
-            border: `1px solid ${c.border}`,
-            background: 'rgba(15, 23, 42, 0.75)',
-            boxShadow: `0 4px 20px rgba(0,0,0,0.3)`
-          }}>
-            <div style={{ 
-              width: '54px', 
-              height: '54px', 
-              borderRadius: '12px', 
-              background: c.bg, 
-              border: `1px solid ${c.border}`,
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              flexShrink: 0 
-            }}>
-              {c.icon}
+          <div key={i} className="stat-card">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{c.title}</span>
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center border ${c.color}`}>
+                {c.icon}
+              </div>
             </div>
-            <div>
-              <div style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.6px', fontFamily: 'monospace' }}>{c.title}</div>
-              <div style={{ fontSize: '26px', fontWeight: '900', color: '#FFFFFF', margin: '4px 0', letterSpacing: '-0.5px' }}>{c.value}</div>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: c.textColor }}>● {c.desc}</div>
+            <div className="text-3xl font-bold text-slate-900 tracking-tight mb-2">{c.value}</div>
+            <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-auto">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+              <span>{c.desc}</span>
             </div>
           </div>
         ))}
       </div>
 
       {/* Grid de Tablas: Top Fallas y Gastos por CECO */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Ranking Máquinas con más fallas */}
-        <div className="siatc-card" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-            <AlertTriangle color="#EF4444" size={20} />
-            <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#FFFFFF', margin: 0, letterSpacing: '-0.2px' }}>Ranking Activos con Más Incidencias</h4>
+        <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs">
+          <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-slate-100">
+            <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center border border-red-200">
+              <AlertTriangle size={17} />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900 tracking-tight">Activos con Mayor Incidencia</h4>
+              <p className="text-xs text-slate-500">Equipos prioritarios para mantenimiento preventivo</p>
+            </div>
           </div>
-          <div className="table-container" style={{ marginTop: 0 }}>
+
+          <div className="table-container">
             <table className="custom-table">
               <thead>
                 <tr>
@@ -127,12 +129,18 @@ export default function Dashboard({ currentUser }) {
                 {kpi.topFailingAssets.map((a, idx) => (
                   <tr key={idx}>
                     <td>
-                      <div style={{ fontWeight: '800', color: '#FFFFFF', fontFamily: 'monospace' }}>[{a.code}]</div>
-                      <div style={{ fontSize: '12px', color: '#94A3B8' }}>{a.name}</div>
+                      <div className="font-semibold text-slate-900 text-xs font-mono">[{a.code}]</div>
+                      <div className="text-xs text-slate-600">{a.name}</div>
                     </td>
-                    <td><span className="badge badge-warning">{a.ceco}</span></td>
-                    <td style={{ fontWeight: '800', color: '#EF4444', fontFamily: 'monospace' }}>{a.failuresCount} fallas</td>
-                    <td style={{ fontWeight: '700', color: '#CBD5E1', fontFamily: 'monospace' }}>{a.downtimeMinutes} min</td>
+                    <td>
+                      <span className="badge badge-warning text-[11px]">{a.ceco}</span>
+                    </td>
+                    <td>
+                      <span className="font-semibold text-red-600 text-xs">{a.failuresCount} fallas</span>
+                    </td>
+                    <td>
+                      <span className="font-medium text-slate-700 text-xs font-mono">{a.downtimeMinutes} min</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -141,26 +149,23 @@ export default function Dashboard({ currentUser }) {
         </div>
 
         {/* Gasto por Centro de Costo (CECO) */}
-        <div className="siatc-card" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', flexWrap: 'wrap', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <DollarSign color="#10B981" size={20} />
-              <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#FFFFFF', margin: 0, letterSpacing: '-0.2px' }}>Imputación de Gastos por CECO</h4>
+        <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs">
+          <div className="flex items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200">
+                <DollarSign size={17} />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 tracking-tight">Imputación de Gastos por CECO</h4>
+                <p className="text-xs text-slate-500">Distribución de costos de mantenimiento</p>
+              </div>
             </div>
-            <span style={{ 
-              fontSize: '13px', 
-              fontWeight: '800', 
-              color: '#10B981', 
-              background: 'rgba(16, 185, 129, 0.1)', 
-              padding: '4px 10px', 
-              borderRadius: '8px', 
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              fontFamily: 'monospace'
-            }}>
-              TOTAL: ${kpi.totalMaintenanceCost.toLocaleString()} USD
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md font-mono">
+              Total: ${kpi.totalMaintenanceCost.toLocaleString()} USD
             </span>
           </div>
-          <div className="table-container" style={{ marginTop: 0 }}>
+
+          <div className="table-container">
             <table className="custom-table">
               <thead>
                 <tr>
@@ -173,15 +178,20 @@ export default function Dashboard({ currentUser }) {
               <tbody>
                 {kpi.expensesByCostCenter.map((exp, idx) => (
                   <tr key={idx}>
-                    <td><span className="badge badge-info">{exp.ceco}</span></td>
-                    <td style={{ fontWeight: '600', color: '#F8FAFC' }}>{exp.areaName}</td>
-                    <td style={{ fontWeight: '800', color: '#10B981', fontFamily: 'monospace' }}>${exp.amount.toFixed(2)}</td>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '56px', height: '6px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '999px', overflow: 'hidden' }}>
-                          <div style={{ width: `${exp.percentage}%`, height: '100%', background: 'linear-gradient(90deg, #0284C7, #38BDF8)' }} />
+                      <span className="badge badge-info text-[11px]">{exp.ceco}</span>
+                    </td>
+                    <td className="font-medium text-slate-800 text-xs">{exp.areaName}</td>
+                    <td className="font-semibold text-slate-900 text-xs font-mono">${exp.amount.toFixed(2)}</td>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-slate-900 rounded-full" 
+                            style={{ width: `${exp.percentage}%` }}
+                          />
                         </div>
-                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#94A3B8', fontFamily: 'monospace' }}>{exp.percentage}%</span>
+                        <span className="text-[11px] font-medium text-slate-500 font-mono">{exp.percentage}%</span>
                       </div>
                     </td>
                   </tr>
@@ -193,21 +203,27 @@ export default function Dashboard({ currentUser }) {
       </div>
 
       {/* Trazabilidad Almacén y Canibalización */}
-      <div className="siatc-card" style={{ padding: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-          <Boxes color="#38BDF8" size={20} />
-          <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#FFFFFF', margin: 0, letterSpacing: '-0.2px' }}>
-            Consumo en Almacén & Repuestos Canibalizados (Costo $0 USD)
-          </h4>
+      <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs">
+        <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-slate-100">
+          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200">
+            <Boxes size={17} />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-900 tracking-tight">
+              Consumo de Repuestos en Almacén & Canibalización
+            </h4>
+            <p className="text-xs text-slate-500">Trazabilidad de piezas estándar vs componentes reutilizados con valorización $0 USD</p>
+          </div>
         </div>
-        <div className="table-container" style={{ marginTop: 0 }}>
+
+        <div className="table-container">
           <table className="custom-table">
             <thead>
               <tr>
                 <th>Repuesto / Código</th>
                 <th>Consumo OTs</th>
                 <th>Costo Acumulado</th>
-                <th>Trazabilidad SAP / Reutilización</th>
+                <th>Trazabilidad / Origen</th>
               </tr>
             </thead>
             <tbody>
@@ -215,16 +231,23 @@ export default function Dashboard({ currentUser }) {
                 const isZero = p.totalCost === 0;
                 return (
                   <tr key={idx}>
-                    <td style={{ fontWeight: '700', color: '#FFFFFF' }}>{p.name} <span style={{ color: '#64748B', fontFamily: 'monospace', fontSize: '12px' }}>({p.code})</span></td>
-                    <td style={{ fontWeight: '600', color: '#94A3B8' }}>{p.usedQuantity} unidades</td>
-                    <td style={{ fontWeight: '800', fontSize: '14px', color: isZero ? '#10B981' : '#FFFFFF', fontFamily: 'monospace' }}>
+                    <td>
+                      <span className="font-semibold text-slate-900 text-xs">{p.name}</span>{' '}
+                      <span className="text-slate-400 font-mono text-[11px]">({p.code})</span>
+                    </td>
+                    <td className="text-slate-600 text-xs">{p.usedQuantity} unidades</td>
+                    <td className={`font-semibold text-xs font-mono ${isZero ? 'text-emerald-600' : 'text-slate-900'}`}>
                       ${p.totalCost.toFixed(2)} USD
                     </td>
                     <td>
                       {isZero ? (
-                        <span className="badge badge-success">♻️ Canibalizado / Reutilizado ($0 USD)</span>
+                        <span className="badge badge-success text-[11px]">
+                          Reutilizado / Canibalizado ($0)
+                        </span>
                       ) : (
-                        <span className="badge badge-info">📦 Compra Estándar SAP</span>
+                        <span className="badge badge-mono text-[11px]">
+                          Compra SAP
+                        </span>
                       )}
                     </td>
                   </tr>

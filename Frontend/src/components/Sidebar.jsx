@@ -9,22 +9,22 @@ import {
   Bot,
   Users,
   LogOut,
-  X
+  X,
+  Sparkles
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout, hasModule, isMobileOpen, onCloseMobile }) {
   const allMenuItems = [
-    { id: 'dashboard', label: 'Dashboard & KPIs', icon: <LayoutDashboard size={19} /> },
-    { id: 'workOrders', label: 'Órdenes de Trabajo (OT)', icon: <Hammer size={19} />, highlight: 'PRO', module: 'workorders' },
-    { id: 'schedule', label: 'Cronograma Preventivo', icon: <CalendarClock size={19} />, module: 'schedule' },
-    { id: 'assets', label: 'Activos y CECOs', icon: <Wrench size={19} />, module: 'assets' },
-    { id: 'inventory', label: 'Repuestos / Almacén', icon: <Boxes size={19} />, module: 'inventory' },
-    { id: 'activities', label: 'Catálogo Actividades', icon: <ClipboardList size={19} />, module: 'activities' },
-    { id: 'users', label: 'Usuarios & RBAC', icon: <Users size={19} />, module: 'users' }
+    { id: 'dashboard', label: 'Dashboard & KPIs', icon: <LayoutDashboard size={18} /> },
+    { id: 'workOrders', label: 'Órdenes de Trabajo (OT)', icon: <Hammer size={18} />, badge: 'Principal', module: 'workorders' },
+    { id: 'schedule', label: 'Cronograma Preventivo', icon: <CalendarClock size={18} />, module: 'schedule' },
+    { id: 'assets', label: 'Activos y CECOs', icon: <Wrench size={18} />, module: 'assets' },
+    { id: 'inventory', label: 'Repuestos / Almacén', icon: <Boxes size={18} />, module: 'inventory' },
+    { id: 'activities', label: 'Catálogo Actividades', icon: <ClipboardList size={18} />, module: 'activities' },
+    { id: 'users', label: 'Usuarios & RBAC', icon: <Users size={18} />, module: 'users' }
   ];
 
-  // Ocultar los módulos que el rol no puede abrir. Sin hasModule (uso fuera de
-  // AuthProvider) se muestran todos, y el backend sigue siendo quien decide.
+  // Ocultar los módulos que el rol no puede abrir
   const menuItems = hasModule
     ? allMenuItems.filter(item => !item.module || hasModule(item.module))
     : allMenuItems;
@@ -42,35 +42,19 @@ export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout
         onClick={onCloseMobile} 
       />
 
-      <aside className={`sidebar-container ${isMobileOpen ? 'open' : ''}`} style={{
-        background: '#070B14',
-        borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-        boxShadow: '4px 0 24px rgba(0, 0, 0, 0.4)'
-      }}>
-        {/* Branding Grupo SOLE - Cyber Industrial */}
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              background: 'linear-gradient(135deg, #0284C7 0%, #4F46E5 100%)',
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#FFFFFF',
-              fontWeight: '900',
-              fontSize: '20px',
-              boxShadow: '0 0 15px rgba(14, 165, 233, 0.4)'
-            }}>
+      <aside className={`sidebar-container ${isMobileOpen ? 'open' : ''}`}>
+        {/* Branding Grupo SOLE */}
+        <div className="h-16 px-5 border-b border-slate-200/80 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white font-bold text-sm shadow-xs">
               S
             </div>
             <div>
-              <h1 style={{ fontSize: '16px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '0.4px', margin: 0 }}>
+              <h1 className="text-sm font-bold text-slate-900 tracking-tight leading-tight">
                 GRUPO SOLE
               </h1>
-              <p style={{ fontSize: '10px', color: '#38BDF8', fontWeight: '700', letterSpacing: '0.8px', fontFamily: 'monospace', margin: 0 }}>
-                CMMS RINNAI // v4.2
+              <p className="text-[11px] text-slate-500 font-medium leading-none">
+                CMMS Industrial
               </p>
             </div>
           </div>
@@ -79,18 +63,7 @@ export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout
           {onCloseMobile && (
             <button 
               onClick={onCloseMobile}
-              style={{
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                color: '#94A3B8',
-                cursor: 'pointer',
-                padding: '6px',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-              className="lg:hidden"
+              className="lg:hidden p-1.5 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-100 transition-colors"
               title="Cerrar menú"
             >
               <X size={18} />
@@ -98,151 +71,86 @@ export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout
           )}
         </div>
 
-        {/* Subheader Status Telemetría */}
-        <div style={{ padding: '12px 24px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
-          <div style={{ 
-            padding: '6px 10px', 
-            background: 'rgba(15, 23, 42, 0.8)', 
-            borderRadius: '6px',
-            border: '1px solid rgba(56, 189, 248, 0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            fontSize: '10px',
-            fontWeight: '700',
-            fontFamily: 'monospace',
-            color: '#94A3B8'
-          }}>
-            <span>NODO LIMA-NORTE</span>
-            <span style={{ color: '#10B981', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981', display: 'inline-block' }} />
-              ONLINE
-            </span>
-          </div>
+        {/* Status de Conexión */}
+        <div className="px-5 py-2.5 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between text-[11px]">
+          <span className="text-slate-500 font-medium">Planta Lima-Norte</span>
+          <span className="inline-flex items-center gap-1.5 text-emerald-700 font-semibold">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            Online
+          </span>
         </div>
 
-      {/* Navegación por Módulos */}
-      <nav style={{ flex: 1, padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '4px', overflowY: 'auto' }}>
-        <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748B', textTransform: 'uppercase', padding: '0 12px', marginBottom: '8px', letterSpacing: '1px', fontFamily: 'monospace' }}>
-          // CONTROL MAESTRO
-        </div>
-        {menuItems.map(item => {
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleSelectTab(item.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '11px 14px',
-                borderRadius: '8px',
-                width: '100%',
-                textAlign: 'left',
-                background: isActive 
-                  ? 'linear-gradient(90deg, rgba(14, 165, 233, 0.2) 0%, rgba(14, 165, 233, 0.03) 100%)' 
-                  : 'transparent',
-                color: isActive ? '#FFFFFF' : '#94A3B8',
-                fontWeight: isActive ? '700' : '500',
-                fontSize: '13px',
-                transition: 'all 0.15s ease',
-                cursor: 'pointer',
-                borderLeft: isActive ? '3px solid #38BDF8' : '3px solid transparent',
-                borderTop: 'none',
-                borderRight: 'none',
-                borderBottom: 'none',
-                boxShadow: isActive ? 'inset 0 0 12px rgba(56, 189, 248, 0.1)' : 'none'
-              }}
-              onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)'; e.currentTarget.style.color = '#38BDF8'; } }}
-              onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#94A3B8'; } }}
-            >
-              <div style={{ color: isActive ? '#38BDF8' : 'inherit' }}>
-                {item.icon}
+        {/* Navegación por Módulos */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Navegación
+          </div>
+          {menuItems.map(item => {
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleSelectTab(item.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all text-left ${
+                  isActive
+                    ? 'bg-slate-100 text-slate-900 font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                }`}
+              >
+                <div className={isActive ? 'text-slate-900' : 'text-slate-400'}>
+                  {item.icon}
+                </div>
+                <span className="flex-1 truncate">{item.label}</span>
+                {item.badge && (
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+
+          {/* Tarjeta de Asistente IA */}
+          <div className="pt-4 mt-2">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+              <div className="flex items-center gap-1.5 font-semibold text-slate-900 mb-1">
+                <Sparkles size={14} className="text-indigo-600" />
+                <span>Asistente IA</span>
               </div>
-              <span style={{ flex: 1 }}>{item.label}</span>
-              {item.highlight && (
-                <span style={{ 
-                  background: 'linear-gradient(135deg, #EF4444, #DC2626)', 
-                  color: '#FFFFFF', 
-                  fontSize: '9px', 
-                  fontWeight: '800', 
-                  padding: '2px 6px', 
-                  borderRadius: '999px',
-                  boxShadow: '0 0 8px rgba(239, 68, 68, 0.5)',
-                  fontFamily: 'monospace'
-                }}>
-                  {item.highlight}
-                </span>
-              )}
+              <p className="text-slate-500 text-[11px] leading-relaxed">
+                Diagnóstico de fallas y recomendaciones de mantenimiento integradas en OTs.
+              </p>
+            </div>
+          </div>
+        </nav>
+
+        {/* Pie de Sidebar: Perfil y Logout */}
+        <div className="p-3 border-t border-slate-200/80 bg-white">
+          <div className="flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-slate-50 transition-colors">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center flex-shrink-0">
+                {currentUser?.name ? currentUser.name.charAt(0) : 'U'}
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-semibold text-slate-900 truncate">
+                  {currentUser?.name || 'Usuario'}
+                </div>
+                <div className="text-[11px] text-slate-500 truncate">
+                  {currentUser?.role || 'Operador'}
+                </div>
+              </div>
+            </div>
+
+            <button 
+              onClick={onLogout} 
+              title="Cerrar sesión" 
+              className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors flex-shrink-0"
+            >
+              <LogOut size={16} />
             </button>
-          );
-        })}
-
-        {/* Separador e IA Asistente */}
-        <div style={{ height: '1px', background: 'rgba(255, 255, 255, 0.06)', margin: '14px 6px' }} />
-        <div style={{ 
-          padding: '14px', 
-          background: 'rgba(124, 58, 237, 0.1)', 
-          borderRadius: '10px', 
-          border: '1px solid rgba(168, 85, 247, 0.25)',
-          boxShadow: '0 0 15px rgba(124, 58, 237, 0.1)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#C084FC', fontWeight: '800', fontSize: '12px', marginBottom: '6px', fontFamily: 'monospace' }}>
-            <Bot size={16} /> MOTOR IA ACTIVO
           </div>
-          <p style={{ fontSize: '11px', color: '#94A3B8', lineHeight: 1.4, margin: 0 }}>
-            Diagnóstico predictivo de fallas con heurística industrial habilitado en OTs.
-          </p>
         </div>
-      </nav>
-
-      {/* Pie de Sidebar: Perfil y Logout */}
-      <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', background: '#050810' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ 
-              width: '36px', 
-              height: '36px', 
-              borderRadius: '8px', 
-              background: 'linear-gradient(135deg, #0284C7 0%, #4F46E5 100%)', 
-              color: '#FFFFFF', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              fontWeight: '800', 
-              fontSize: '14px',
-              boxShadow: '0 0 10px rgba(14, 165, 233, 0.3)'
-            }}>
-              {currentUser?.name ? currentUser.name.charAt(0) : 'U'}
-            </div>
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: '700', color: '#FFFFFF' }}>{currentUser?.name || 'Carlos Admin'}</div>
-              <span style={{ fontSize: '11px', color: '#38BDF8', fontWeight: '600', display: 'block', fontFamily: 'monospace' }}>
-                {currentUser?.role || 'Administrador'}
-              </span>
-            </div>
-          </div>
-          <button 
-            onClick={onLogout} 
-            title="Desconectar sesión y volver al login" 
-            style={{ 
-              padding: '8px', 
-              color: '#64748B', 
-              background: 'rgba(255, 255, 255, 0.04)', 
-              borderRadius: '6px',
-              border: '1px solid rgba(255, 255, 255, 0.06)', 
-              cursor: 'pointer', 
-              transition: 'all 0.2s' 
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#EF4444'; e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.4)'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)'; }}
-          >
-            <LogOut size={16} />
-          </button>
-        </div>
-      </div>
-    </aside>
-  </>
-);
+      </aside>
+    </>
+  );
 }

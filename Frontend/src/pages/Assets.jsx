@@ -109,94 +109,81 @@ export default function Assets({ currentUser }) {
   }, [assets, searchQuery]);
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span className="cyber-badge" style={{ fontSize: '10px' }}>INVENTARIO DE PLANTA</span>
-            <span style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace' }}>// JERARQUÍA EMPRESA ➔ CECO ➔ EQUIPO</span>
-          </div>
-          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#FFFFFF', margin: 0, letterSpacing: '-0.3px' }}>Activos Industriales & CECOs</h3>
-          <p style={{ fontSize: '13px', color: '#94A3B8', margin: '4px 0 0 0' }}>Estructura de costos: <span style={{ color: '#38BDF8', fontFamily: 'monospace' }}>Corporación Rinnai ➔ Áreas de Producción ➔ Máquinas Fijas</span></p>
+          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Activos Industriales & CECOs</h3>
+          <p className="text-sm text-slate-500 mt-0.5">Jerarquía de costos: Planta Industrial → Áreas de Producción → Equipos</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', width: '260px' }}>
-            <Search size={15} color="#64748B" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative w-64">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input 
               type="text" 
               placeholder="Buscar máquina, código o CECO..." 
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 12px 8px 36px',
-                borderRadius: '8px',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                fontSize: '12px',
-                background: '#0B1120',
-                color: '#F8FAFC',
-                outline: 'none'
-              }}
+              className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all"
             />
           </div>
-          <button className="btn-cyber" onClick={openCreate}>
-            <Plus size={16} /> Registrar Activo
+          <button className="btn btn-primary text-xs" onClick={openCreate}>
+            <Plus size={15} /> Registrar Activo
           </button>
         </div>
       </div>
 
       {loading && !assets.length ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="siatc-card" style={{ height: '300px', display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
-              <div className="skeleton" style={{ height: '140px', width: '100%' }} />
-              <div className="skeleton" style={{ height: '20px', width: '70%' }} />
-              <div className="skeleton" style={{ height: '14px', width: '40%' }} />
-              <div className="skeleton" style={{ height: '36px', width: '100%', marginTop: 'auto' }} />
+            <div key={i} className="siatc-card h-72 flex flex-col gap-3 p-4">
+              <div className="skeleton h-36 w-full rounded-lg" />
+              <div className="skeleton h-5 w-3/4" />
+              <div className="skeleton h-4 w-1/2" />
+              <div className="skeleton h-9 w-full mt-auto" />
             </div>
           ))}
         </div>
       ) : (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredAssets.map((a, idx) => (
-          <div key={a.id || idx} className="siatc-card" style={{ display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden' }}>
-            <div style={{ height: '160px', width: '100%', position: 'relative', background: '#0B1120', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+          <div key={a.id || idx} className="siatc-card flex flex-col p-0 overflow-hidden hover:border-slate-300 transition-all">
+            <div className="h-44 w-full relative bg-slate-100 border-b border-slate-200">
               <img
                 src={a.imageUrl || '/images/prensa.jpg'}
                 alt={a.name}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                className="w-full h-full object-cover"
                 onError={(e) => { e.target.style.display='none'; }}
               />
-              <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '6px' }}>
-                <span className={`badge ${a.status === 'Operativo' ? 'badge-success' : 'badge-danger'}`}>
-                  {a.status === 'Operativo' ? <CheckCircle2 size={13} /> : <AlertOctagon size={13} />}
+              <div className="absolute top-3 right-3 flex gap-2">
+                <span className={`badge ${a.status === 'Operativo' ? 'badge-success' : 'badge-danger'} shadow-xs`}>
+                  {a.status === 'Operativo' ? <CheckCircle2 size={12} /> : <AlertOctagon size={12} />}
                   {a.status}
                 </span>
               </div>
-              <div style={{ position: 'absolute', bottom: '10px', left: '10px', background: 'rgba(8, 12, 21, 0.85)', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', color: '#38BDF8', border: '1px solid rgba(56, 189, 248, 0.3)', fontFamily: 'monospace' }}>
+              <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-md text-[11px] font-bold text-slate-800 border border-slate-200 font-mono shadow-xs">
                 {a.costCenterCode}
               </div>
             </div>
 
-            <div style={{ padding: '18px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '10px', fontWeight: '800', color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.8px', fontFamily: 'monospace' }}>{a.categoryName}</span>
-              <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#FFFFFF', margin: '4px 0 8px', lineHeight: '1.3' }}>
+            <div className="p-5 flex-1 flex flex-col">
+              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider font-mono">{a.categoryName}</span>
+              <h4 className="text-base font-bold text-slate-900 mt-1 mb-2 leading-tight">
                 [{a.code}] {a.name}
               </h4>
-              <p style={{ fontSize: '12px', color: '#94A3B8', marginBottom: '14px', lineHeight: '1.6' }}>
-                <strong style={{ color: '#CBD5E1' }}>Área:</strong> {a.areaName}<br />
-                <strong style={{ color: '#CBD5E1' }}>Marca / Modelo:</strong> {a.brand || '—'} {a.model || ''}<br />
-                <strong style={{ color: '#CBD5E1' }}>Num. Serie:</strong> <span style={{ fontFamily: 'monospace' }}>{a.serialNumber || '—'}</span>
-              </p>
+              <div className="text-xs text-slate-500 space-y-1 mb-4 leading-relaxed">
+                <div><strong className="text-slate-700">Área:</strong> {a.areaName}</div>
+                <div><strong className="text-slate-700">Marca / Modelo:</strong> {a.brand || '—'} {a.model || ''}</div>
+                <div><strong className="text-slate-700">Num. Serie:</strong> <span className="font-mono">{a.serialNumber || '—'}</span></div>
+              </div>
 
-              <div style={{ marginTop: 'auto', display: 'flex', gap: '8px' }}>
-                <button className="btn btn-secondary" style={{ flex: 1, fontSize: '12px', padding: '8px' }} onClick={() => setSelectedAsset(a)}>
+              <div className="mt-auto pt-3 border-t border-slate-100 flex items-center gap-2">
+                <button className="btn btn-secondary flex-1 text-xs py-1.5" onClick={() => setSelectedAsset(a)}>
                   <FileText size={14} /> Ficha Técnica
                 </button>
-                <button className="btn btn-secondary" style={{ fontSize: '12px', padding: '8px 10px' }} onClick={() => openEdit(a)} title="Editar activo">
+                <button className="btn btn-secondary text-xs p-1.5" onClick={() => openEdit(a)} title="Editar activo">
                   <Edit3 size={14} />
                 </button>
-                <button className="btn btn-secondary" style={{ fontSize: '12px', padding: '8px 10px', color: '#EF4444' }} onClick={() => handleDeleteAsset(a)} title="Eliminar activo">
+                <button className="btn btn-secondary text-xs p-1.5 text-red-600 hover:bg-red-50 hover:border-red-200" onClick={() => handleDeleteAsset(a)} title="Eliminar activo">
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -210,38 +197,38 @@ export default function Assets({ currentUser }) {
       {selectedAsset && (
         <div className="modal-overlay" onClick={() => setSelectedAsset(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '16px' }}>
+            <div className="flex justify-between items-start mb-5 pb-4 border-b border-slate-200">
               <div>
-                <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#FFFFFF', margin: 0 }}>Ficha Técnica y Hoja de Vida</h3>
-                <p style={{ fontSize: '12px', color: '#38BDF8', fontWeight: '700', fontFamily: 'monospace', margin: '4px 0 0 0' }}>[{selectedAsset.code}] {selectedAsset.name} • {selectedAsset.costCenterCode}</p>
+                <h3 className="text-lg font-bold text-slate-900">Ficha Técnica y Hoja de Vida</h3>
+                <p className="text-xs text-slate-500 font-mono mt-0.5">[{selectedAsset.code}] {selectedAsset.name} • {selectedAsset.costCenterCode}</p>
               </div>
-              <button onClick={() => setSelectedAsset(null)} style={{ fontSize: '20px', color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setSelectedAsset(null)} className="text-slate-400 hover:text-slate-700 text-lg leading-none">✕</button>
             </div>
-            <div style={{ background: 'rgba(11, 17, 32, 0.8)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '20px', fontSize: '13px', lineHeight: '1.6', color: '#F1F5F9' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div><strong style={{ color: '#94A3B8' }}>Marca:</strong> {selectedAsset.brand || '—'}</div>
-                <div><strong style={{ color: '#94A3B8' }}>Modelo:</strong> {selectedAsset.model || '—'}</div>
-                <div><strong style={{ color: '#94A3B8' }}>Num. Serie:</strong> {selectedAsset.serialNumber || '—'}</div>
-                <div><strong style={{ color: '#94A3B8' }}>Adquisición:</strong> {selectedAsset.acquisitionDate || 'N/A'}</div>
-                <div><strong>Área Planta:</strong> {selectedAsset.areaName}</div>
-                <div><strong>Estado Actual:</strong> <span className="badge badge-success">{selectedAsset.status}</span></div>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-5 text-xs leading-relaxed text-slate-700">
+              <div className="grid grid-cols-2 gap-3">
+                <div><span className="text-slate-500">Marca:</span> <strong className="text-slate-900">{selectedAsset.brand || '—'}</strong></div>
+                <div><span className="text-slate-500">Modelo:</span> <strong className="text-slate-900">{selectedAsset.model || '—'}</strong></div>
+                <div><span className="text-slate-500">Num. Serie:</span> <strong className="text-slate-900 font-mono">{selectedAsset.serialNumber || '—'}</strong></div>
+                <div><span className="text-slate-500">Adquisición:</span> <strong className="text-slate-900">{selectedAsset.acquisitionDate || 'N/A'}</strong></div>
+                <div><span className="text-slate-500">Área Planta:</span> <strong className="text-slate-900">{selectedAsset.areaName}</strong></div>
+                <div><span className="text-slate-500">Estado Actual:</span> <span className="badge badge-success ml-1">{selectedAsset.status}</span></div>
               </div>
             </div>
-            <h4 style={{ fontSize: '15px', fontWeight: '800', color: '#1A1C1E', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Layers size={18} color="#4C5F80" /> Archivos y Planos Adjuntos (Azure Blob Storage)
+            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Layers size={15} className="text-slate-500" /> Archivos y Planos Adjuntos (Azure Blob Storage)
             </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+            <div className="space-y-2 mb-6">
               {[`Manual_Operacion_${selectedAsset.brand || 'Equipo'}.pdf`, `Plano_LOTO_${selectedAsset.code}.dwg`].map(f => (
-                <div key={f} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#FFFFFF', borderRadius: '10px', border: '1px solid #E2E4E9' }}>
-                  <span style={{ fontSize: '13px', fontWeight: '600', color: '#1A1C1E' }}>📄 {f}</span>
-                  <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }}>Descargar Azure Blob</button>
+                <div key={f} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 text-xs">
+                  <span className="font-medium text-slate-800">📄 {f}</span>
+                  <button className="btn btn-secondary text-xs py-1 px-2.5">Descargar Blob</button>
                 </div>
               ))}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '16px', borderTop: '1px solid #E2E4E9' }}>
-              <button className="btn btn-secondary" onClick={() => setSelectedAsset(null)}>Cerrar Ficha</button>
-              <button className="btn btn-primary" onClick={() => { setSelectedAsset(null); openEdit(selectedAsset); }}>
-                <Wrench size={16} /> Editar Activo
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+              <button className="btn btn-secondary text-xs" onClick={() => setSelectedAsset(null)}>Cerrar</button>
+              <button className="btn btn-primary text-xs" onClick={() => { setSelectedAsset(null); openEdit(selectedAsset); }}>
+                <Wrench size={14} /> Editar Activo
               </button>
             </div>
           </div>
@@ -252,11 +239,11 @@ export default function Assets({ currentUser }) {
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #E2E4E9', paddingBottom: '14px' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1A1C1E' }}>
+            <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900">
                 {editingAsset ? `Editar Activo: ${editingAsset.code}` : 'Registrar Nuevo Activo'}
               </h3>
-              <button onClick={() => setShowCreateModal(false)} style={{ fontSize: '20px', color: '#8A919E', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-700 text-lg leading-none">✕</button>
             </div>
 
             <form onSubmit={handleSaveAsset}>

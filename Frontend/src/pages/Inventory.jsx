@@ -133,97 +133,86 @@ export default function Inventory({ currentUser }) {
   }, [inventory, activeConditionFilter, searchQuery]);
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span className="cyber-badge" style={{ fontSize: '10px' }}>KARDEX & ALMACÉN</span>
-            <span style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace' }}>// GESTIÓN DE REPUESTOS & CANIBALIZACIÓN $0</span>
-          </div>
-          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#FFFFFF', margin: 0, letterSpacing: '-0.3px' }}>Almacén y Trazabilidad de Repuestos</h3>
-          <p style={{ fontSize: '13px', color: '#94A3B8', margin: '4px 0 0 0' }}>Soporte nativo para componentes de <strong style={{ color: '#10B981' }}>Canibalización</strong> y hallazgos en planta (Fuera de SAP con costo $0 USD)</p>
+          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Almacén y Trazabilidad de Repuestos</h3>
+          <p className="text-sm text-slate-500 mt-0.5">Control de inventario estándar y componentes de <strong className="text-emerald-600 font-semibold">Canibalización</strong> ($0 USD contable)</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <button className="btn-secondary" onClick={loadInventory}>
-            <RefreshCw size={15} /> Sincronizar
+        <div className="flex items-center gap-3 flex-wrap">
+          <button className="btn btn-secondary text-xs" onClick={loadInventory}>
+            <RefreshCw size={14} /> Sincronizar
           </button>
           {canRegister ? (
-            <button className="btn-cyber" onClick={openCreate}>
-              <Plus size={16} /> Ingresar Repuesto / Canibaliza
+            <button className="btn btn-primary text-xs" onClick={openCreate}>
+              <Plus size={15} /> Ingresar Repuesto
             </button>
           ) : (
-            <button className="btn-secondary" disabled title="Bloqueado por RBAC para Operarios">
-              🚫 Ingreso Bloqueado
+            <button className="btn btn-secondary text-xs opacity-50 cursor-not-allowed" disabled title="Bloqueado por RBAC para Operarios">
+              Ingreso Restringido
             </button>
           )}
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        <div className="siatc-card" style={{ padding: '18px 22px', borderLeft: '4px solid #10B981', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <Boxes color="#10B981" size={26} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="stat-card border-l-4 border-l-emerald-500 flex-row items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200 flex-shrink-0">
+            <Boxes size={20} />
+          </div>
           <div>
-            <div style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '800', fontFamily: 'monospace' }}>TOTAL CATÁLOGO ALMACÉN</div>
-            <div style={{ fontSize: '22px', fontWeight: '900', color: '#FFFFFF', fontFamily: 'monospace' }}>{totalItems} referencias</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Catálogo Almacén</div>
+            <div className="text-2xl font-bold text-slate-900 mt-0.5 font-mono">{totalItems} referencias</div>
           </div>
         </div>
-        <div className="siatc-card" style={{ padding: '18px 22px', borderLeft: '4px solid #F59E0B', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <AlertCircle color="#F59E0B" size={26} />
+        <div className="stat-card border-l-4 border-l-amber-500 flex-row items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200 flex-shrink-0">
+            <AlertCircle size={20} />
+          </div>
           <div>
-            <div style={{ fontSize: '11px', color: '#F59E0B', fontWeight: '800', fontFamily: 'monospace' }}>ALERTA STOCK MÍNIMO</div>
-            <div style={{ fontSize: '22px', fontWeight: '900', color: '#FFFFFF', fontFamily: 'monospace' }}>
-              {lowStockCount} bajo mínimo
-            </div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-amber-600">Alerta Stock Mínimo</div>
+            <div className="text-2xl font-bold text-slate-900 mt-0.5 font-mono">{lowStockCount} bajo mínimo</div>
           </div>
         </div>
       </div>
 
       {/* Filtros de Tipo y Búsqueda */}
-      <div className="siatc-card" style={{ padding: '14px 18px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+      <div className="bg-white border border-slate-200/90 rounded-xl p-3 sm:p-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 shadow-xs">
         <div className="pipeline-container">
           <button 
-            className={`pipeline-tab ${activeConditionFilter === 'Todos' ? 'active' : ''}`}
+            className={`pipeline-tab text-xs ${activeConditionFilter === 'Todos' ? 'active' : ''}`}
             onClick={() => setActiveConditionFilter('Todos')}
           >
             Todos ({inventory.length})
           </button>
           <button 
-            className={`pipeline-tab ${activeConditionFilter === 'Nuevo' ? 'active' : ''}`}
+            className={`pipeline-tab text-xs ${activeConditionFilter === 'Nuevo' ? 'active' : ''}`}
             onClick={() => setActiveConditionFilter('Nuevo')}
           >
             📦 Nuevos ({inventory.filter(i => i.condition === 'Nuevo').length})
           </button>
           <button 
-            className={`pipeline-tab ${activeConditionFilter === 'Reusado' ? 'active' : ''}`}
+            className={`pipeline-tab text-xs ${activeConditionFilter === 'Reusado' ? 'active' : ''}`}
             onClick={() => setActiveConditionFilter('Reusado')}
           >
             ♻️ Canibalizados $0 ({inventory.filter(i => i.condition === 'Reusado').length})
           </button>
           <button 
-            className={`pipeline-tab ${activeConditionFilter === 'BajoStock' ? 'active' : ''}`}
+            className={`pipeline-tab text-xs ${activeConditionFilter === 'BajoStock' ? 'active' : ''}`}
             onClick={() => setActiveConditionFilter('BajoStock')}
           >
             ⚠️ Bajo Mínimo ({lowStockCount})
           </button>
         </div>
 
-        <div style={{ position: 'relative', width: '260px' }}>
-          <Search size={15} color="#64748B" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+        <div className="relative w-full md:w-64">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input 
             type="text" 
-            placeholder="Buscar repuesto, código o estante..." 
+            placeholder="Buscar repuesto, código..." 
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px 8px 36px',
-              borderRadius: '8px',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              fontSize: '12px',
-              background: '#0B1120',
-              color: '#F8FAFC',
-              outline: 'none'
-            }}
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all"
           />
         </div>
       </div>
@@ -231,8 +220,8 @@ export default function Inventory({ currentUser }) {
       {loading && !inventory.length ? (
         <TableSkeleton rows={5} cols={8} />
       ) : (
-      <div className="siatc-card" style={{ padding: '24px' }}>
-        <div className="table-container" style={{ marginTop: 0 }}>
+      <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs">
+        <div className="table-container">
           <table className="custom-table">
             <thead>
               <tr>
@@ -240,16 +229,16 @@ export default function Inventory({ currentUser }) {
                 <th>Condición & Origen</th>
                 <th>Stock Actual</th>
                 <th>Mínimo</th>
-                <th>Ubicación en Planta</th>
+                <th>Ubicación</th>
                 <th>Costo Unit. USD</th>
                 <th>Estado Stock</th>
-                <th style={{ textAlign: 'center' }}>Acciones</th>
+                <th className="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {filteredInventory.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: '#64748B' }}>
+                  <td colSpan={8} className="text-center py-8 text-slate-400 text-xs">
                     No se encontraron repuestos para el criterio seleccionado.
                   </td>
                 </tr>
@@ -264,36 +253,36 @@ export default function Inventory({ currentUser }) {
                 return (
                   <tr key={item.id || idx}>
                     <td>
-                      <div style={{ fontWeight: '800', color: '#FFFFFF', fontFamily: 'monospace' }}>[{item.code}] {item.name}</div>
-                      <div style={{ fontSize: '12px', color: '#94A3B8' }}>{item.description || 'Sin descripción'}</div>
+                      <div className="font-bold text-slate-900 text-xs font-mono">[{item.code}] {item.name}</div>
+                      <div className="text-xs text-slate-500">{item.description || 'Sin descripción'}</div>
                     </td>
                     <td>
                       {isReused ? (
-                        <span className="badge badge-success" title="No altera costos contables">♻️ Canibalizado $0</span>
+                        <span className="badge badge-success text-[11px]" title="No altera costos contables">♻️ Canibalizado $0</span>
                       ) : (
-                        <span className="badge badge-info">📦 Compra SAP</span>
+                        <span className="badge badge-info text-[11px]">📦 Compra SAP</span>
                       )}
                     </td>
-                    <td style={{ fontWeight: '800', fontSize: '14px', color: '#FFFFFF', fontFamily: 'monospace' }}>{stock} {item.unitOfMeasure || 'Pieza'}s</td>
-                    <td style={{ color: '#94A3B8', fontWeight: '600', fontFamily: 'monospace' }}>{min}</td>
-                    <td><span className="badge badge-mono">{item.location}</span></td>
-                    <td style={{ fontWeight: '800', color: isReused ? '#10B981' : '#FFFFFF', fontFamily: 'monospace' }}>
+                    <td className="font-bold text-xs text-slate-900 font-mono">{stock} {item.unitOfMeasure || 'Pieza'}s</td>
+                    <td className="text-xs text-slate-500 font-mono">{min}</td>
+                    <td><span className="badge badge-mono text-[11px]">{item.location}</span></td>
+                    <td className={`font-semibold text-xs font-mono ${isReused ? 'text-emerald-600' : 'text-slate-900'}`}>
                       ${Number(cost).toFixed(2)}
-                      {isReused && <span style={{ display: 'block', fontSize: '10px', color: '#10B981', fontWeight: '800' }}>CECO: $0 USD</span>}
+                      {isReused && <span className="block text-[10px] text-emerald-600 font-bold">CECO: $0</span>}
                     </td>
                     <td>
                       {isAlert ? (
-                        <span className="badge badge-warning">⚠️ Recomendar Compra</span>
+                        <span className="badge badge-warning text-[11px]">⚠️ Comprar</span>
                       ) : (
-                        <span className="badge badge-success"><CheckCircle2 size={12} /> Stock OK</span>
+                        <span className="badge badge-success text-[11px]"><CheckCircle2 size={11} /> Normal</span>
                       )}
                     </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
-                        <button className="btn btn-secondary" style={{ padding: '5px 9px' }} onClick={() => openEdit(item)} title="Editar">
+                    <td className="text-center">
+                      <div className="flex justify-center gap-1.5">
+                        <button className="btn btn-secondary text-xs p-1" onClick={() => openEdit(item)} title="Editar">
                           <Edit3 size={13} />
                         </button>
-                        <button className="btn btn-secondary" style={{ padding: '5px 9px', color: '#EF4444' }} onClick={() => handleDeleteItem(item)} title="Eliminar">
+                        <button className="btn btn-secondary text-xs p-1 text-red-600 hover:bg-red-50 hover:border-red-200" onClick={() => handleDeleteItem(item)} title="Eliminar">
                           <Trash2 size={13} />
                         </button>
                       </div>
@@ -310,15 +299,15 @@ export default function Inventory({ currentUser }) {
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '14px' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#FFFFFF', margin: 0 }}>
+            <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900">
                 {editingItem ? `Editar Repuesto: ${editingItem.code}` : 'Ingreso de Repuesto / Canibalización'}
               </h3>
-              <button onClick={() => setShowModal(false)} style={{ fontSize: '20px', color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-700 text-lg leading-none">✕</button>
             </div>
 
-            <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '14px', borderRadius: '10px', marginBottom: '20px', fontSize: '12px', color: '#10B981', fontWeight: '600', lineHeight: '1.4' }}>
-              ℹ️ Al seleccionar el motivo <strong>Canibalización</strong> o <strong>Hallazgo</strong>, el costo del repuesto se fijará automáticamente en <strong>$0.00 USD</strong> para preservar los balances contables en SAP.
+            <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl mb-5 text-xs text-emerald-800 leading-relaxed">
+              ℹ️ Al seleccionar <strong>Canibalización</strong> o <strong>Hallazgo</strong>, el costo del repuesto se fijará automáticamente en <strong>$0.00 USD</strong> para preservar los balances contables en SAP.
             </div>
 
             <form onSubmit={handleRegister}>

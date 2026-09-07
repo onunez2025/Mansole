@@ -1,151 +1,58 @@
 import React from 'react';
-import { Bell, Search, Database, Menu, X, Activity, Cpu } from 'lucide-react';
+import { Bell, Search, Menu, X, Database } from 'lucide-react';
 
 export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu, isMobileOpen }) {
   return (
-    <header className="px-4 md:px-8" style={{
-      minHeight: '70px',
-      background: 'rgba(7, 11, 20, 0.85)',
-      backdropFilter: 'blur(16px)',
-      borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      position: 'sticky',
-      top: 0,
-      zIndex: 90,
-      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-      flexWrap: 'wrap',
-      gap: '12px',
-      paddingTop: '8px',
-      paddingBottom: '8px'
-    }}>
+    <header className="h-16 px-4 md:px-8 bg-white border-b border-slate-200/80 sticky top-0 z-40 flex items-center justify-between gap-4">
       {/* Botón Hamburguesa Móvil + Título de la vista activa */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '240px' }}>
+      <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={onToggleMobileMenu}
-          className="lg:hidden"
-          style={{
-            padding: '8px',
-            borderRadius: '8px',
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            color: '#38BDF8',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minWidth: '40px',
-            minHeight: '40px'
-          }}
+          className="lg:hidden p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
           title="Menú de Navegación"
           aria-label="Abrir menú de navegación"
         >
-          {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
+          {isMobileOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
 
         <div>
-          <h2 style={{ fontSize: '17px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '-0.2px', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>{activeTabTitle}</span>
+          <h2 className="text-base font-bold text-slate-900 tracking-tight leading-tight truncate">
+            {activeTabTitle}
           </h2>
-          <p style={{ fontSize: '11px', color: '#38BDF8', fontWeight: '700', fontFamily: 'monospace', letterSpacing: '0.8px', margin: 0 }}>
-            // RINNAI PERÚ • PLANTA INDUSTRIAL INDUSTRIAL-01
+          <p className="text-[11px] text-slate-500 font-medium hidden sm:block leading-none">
+            Rinnai Perú • Planta Industrial
           </p>
         </div>
       </div>
 
       {/* Acciones del Navbar y Telemetría */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+      <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
         {/* Indicador SQL Server / Azure Telemetry */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '8px', 
-          background: 'rgba(16, 185, 129, 0.1)', 
-          padding: '6px 14px', 
-          borderRadius: '999px',
-          border: '1px solid rgba(16, 185, 129, 0.25)',
-          boxShadow: '0 0 10px rgba(16, 185, 129, 0.15)'
-        }}>
-          <span style={{
-            width: '7px',
-            height: '7px',
-            borderRadius: '50%',
-            background: '#10B981',
-            boxShadow: '0 0 8px #10B981',
-            display: 'inline-block'
-          }} />
-          <span style={{ fontSize: '11px', fontWeight: '700', color: '#10B981', fontFamily: 'monospace' }}>
-            AZURE SQL // 16ms
-          </span>
+        <div className="hidden sm:inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+          <span>Azure SQL Online</span>
         </div>
 
-        {/* Buscador Rápido de Activo / OT - Cyber Style */}
-        <div style={{ position: 'relative', width: '240px' }}>
-          <Search size={15} color="#64748B" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+        {/* Buscador Rápido */}
+        <div className="relative hidden md:block w-56 lg:w-64">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input 
             type="text" 
-            placeholder="Buscar OT, activo, CECO..." 
-            style={{
-              width: '100%',
-              padding: '7px 12px 7px 34px',
-              borderRadius: '8px',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              background: 'rgba(15, 23, 42, 0.6)',
-              color: '#F8FAFC',
-              fontSize: '12px',
-              fontWeight: '500',
-              fontFamily: 'inherit',
-              transition: 'all 0.2s ease',
-              outline: 'none'
-            }}
-            onFocus={e => {
-              e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.5)';
-              e.currentTarget.style.boxShadow = '0 0 10px rgba(56, 189, 248, 0.2)';
-            }}
-            onBlur={e => {
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
+            placeholder="Buscar en el sistema..." 
+            className="w-full pl-9 pr-8 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all"
           />
+          <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">
+            ⌘K
+          </kbd>
         </div>
 
-        {/* Alertas de Planta con Badge Holográfico */}
-        <button style={{ 
-          position: 'relative', 
-          padding: '8px 10px', 
-          borderRadius: '8px', 
-          background: 'rgba(255, 255, 255, 0.05)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          color: '#94A3B8',
-          transition: 'all 0.2s ease'
-        }} 
-        onMouseEnter={e => { e.currentTarget.style.color = '#38BDF8'; e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.3)'; }}
-        onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; }}
-        title="Notificaciones de OTs y Alertas Críticas"
+        {/* Alertas y Notificaciones */}
+        <button 
+          className="relative p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+          title="Notificaciones"
         >
-          <Bell size={17} />
-          <span style={{
-            position: 'absolute',
-            top: '-4px',
-            right: '-4px',
-            background: 'linear-gradient(135deg, #EF4444, #B91C1C)',
-            color: 'white',
-            fontSize: '9px',
-            fontWeight: '900',
-            width: '16px',
-            height: '16px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)',
-            fontFamily: 'monospace'
-          }}>
+          <Bell size={16} />
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
             3
           </span>
         </button>

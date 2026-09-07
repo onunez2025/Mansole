@@ -54,75 +54,66 @@ export default function Activities({ currentUser }) {
   const filtered = filterType === 'ALL' ? activities : activities.filter(a => (a.type || '').toUpperCase() === filterType);
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span className="cyber-badge" style={{ fontSize: '10px' }}>INGENIERÍA DE MANTENIMIENTO</span>
-            <span style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace' }}>// PROCEDIMIENTOS ESTÁNDAR MAESTROS</span>
-          </div>
-          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#FFFFFF', margin: 0, letterSpacing: '-0.3px' }}>Catálogo Maestro de Actividades</h3>
-          <p style={{ fontSize: '13px', color: '#94A3B8', margin: '4px 0 0 0' }}>Tareas normalizadas aplicables a Categorías de Máquinas o imputables a Áreas / CECOs</p>
+          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Catálogo Maestro de Actividades</h3>
+          <p className="text-sm text-slate-500 mt-0.5">Procedimientos estandarizados y tareas rutinarias para órdenes de trabajo preventivas</p>
         </div>
-        <button className="btn-cyber" onClick={() => {
+        <button className="btn btn-primary text-xs" onClick={() => {
           setEditingActivity(null);
           setNewActivity({ name: '', type: 'Mecánico', estimatedMinutes: 60, resources: '' });
           setShowModal(true);
         }}>
-          <Plus size={16} /> Nueva Actividad
+          <Plus size={15} /> Nueva Actividad
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', overflowX: 'auto' }}>
+      <div className="pipeline-container">
         {['ALL', 'MECÁNICO', 'ELÉCTRICO', 'INSTRUMENTACIÓN', 'INFRAESTRUCTURA'].map(type => (
           <button
             key={type}
             onClick={() => setFilterType(type)}
-            className="pipeline-tab"
-            style={{
-              padding: '8px 16px',
-              fontSize: '12px',
-              fontWeight: filterType === type ? '800' : '600'
-            }}
+            className={`pipeline-tab text-xs ${filterType === type ? 'active' : ''}`}
           >
-            <Filter size={13} />
+            <Filter size={12} />
             {type === 'ALL' ? 'Todas las Actividades' : `${type.charAt(0) + type.slice(1).toLowerCase()}`}
           </button>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.map((a, idx) => (
-          <div key={a.id || idx} className="siatc-card" style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '22px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span className={`badge ${a.type === 'Mecánico' ? 'badge-info' : a.type === 'Eléctrico' ? 'badge-warning' : 'badge-success'}`}>
+          <div key={a.id || idx} className="siatc-card flex flex-col p-5 hover:border-slate-300 transition-all">
+            <div className="flex items-center justify-between mb-2">
+              <span className={`badge ${a.type === 'Mecánico' ? 'badge-info' : a.type === 'Eléctrico' ? 'badge-warning' : 'badge-success'} text-[11px]`}>
                 {a.type || 'General'}
               </span>
-              <span style={{ fontSize: '12px', fontWeight: '800', color: '#38BDF8', fontFamily: 'monospace' }}>
-                ⏱️ Est: {a.estimatedMinutes || 60} mins
+              <span className="text-xs font-semibold text-slate-500 font-mono">
+                ⏱️ {a.estimatedMinutes || 60} min
               </span>
             </div>
 
-            <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#FFFFFF', lineHeight: '1.4', margin: '2px 0' }}>
+            <h4 className="text-base font-bold text-slate-900 mb-2 leading-tight">
               {a.name}
             </h4>
 
-            <div style={{ fontSize: '12px', color: '#CBD5E1', background: 'rgba(11, 17, 32, 0.8)', padding: '14px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.08)', lineHeight: '1.5' }}>
-              <strong style={{ color: '#38BDF8', display: 'block', marginBottom: '4px', fontWeight: '800', fontFamily: 'monospace', fontSize: '11px' }}>🛠️ HERRAMIENTAS & RECURSOS:</strong>
+            <div className="text-xs bg-slate-50 p-3 rounded-lg border border-slate-200 text-slate-600 mb-4 leading-relaxed">
+              <strong className="text-slate-800 block mb-1 text-[11px] uppercase tracking-wider font-semibold">Herramientas & Recursos:</strong>
               {a.resources}
             </div>
 
-            <div style={{ marginTop: 'auto', paddingTop: '14px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace' }}>CECO & MÁQUINAS</span>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => {
+            <div className="mt-auto pt-3 border-t border-slate-100 flex justify-between items-center gap-2">
+              <span className="text-[11px] text-slate-400 font-mono">CECO & MÁQUINAS</span>
+              <div className="flex gap-1.5">
+                <button className="btn btn-secondary text-xs py-1 px-2.5" onClick={() => {
                   setEditingActivity(a);
                   setNewActivity({ name: a.name, type: a.type, estimatedMinutes: a.estimatedMinutes, resources: a.resources });
                   setShowModal(true);
                 }}>
                   Editar
                 </button>
-                <button className="btn btn-secondary" style={{ padding: '6px 9px', color: '#EF4444' }} onClick={() => handleDeleteActivity(a)} title="Eliminar">
+                <button className="btn btn-secondary text-xs p-1 text-red-600 hover:bg-red-50 hover:border-red-200" onClick={() => handleDeleteActivity(a)} title="Eliminar">
                   <Trash2 size={13} />
                 </button>
               </div>
@@ -133,12 +124,12 @@ export default function Activities({ currentUser }) {
 
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '14px' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#FFFFFF', margin: 0 }}>
+          <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900">
                 {editingActivity ? 'Editar Actividad Maestra' : 'Crear Actividad Maestra'}
               </h3>
-              <button onClick={() => setShowModal(false)} style={{ fontSize: '20px', color: '#8A919E', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-700 text-lg leading-none">✕</button>
             </div>
             
             <form onSubmit={async (e) => {
@@ -146,25 +137,25 @@ export default function Activities({ currentUser }) {
               try {
                 if (editingActivity) {
                   await api.updateActivity(editingActivity.id, newActivity);
-                  alert("✅ Actividad actualizada exitosamente en Azure SQL");
+                  toast.success("Actividad actualizada exitosamente");
                 } else {
                   await api.createActivity(newActivity);
-                  alert("✅ Actividad creada exitosamente en Azure SQL");
+                  toast.success("Actividad creada exitosamente");
                 }
                 setShowModal(false);
                 loadActivities();
               } catch (err) {
-                alert("❌ Error al procesar actividad: " + err.message);
+                toast.error("Error al procesar actividad: " + err.message);
               }
             }}>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label>Nombre de la Actividad *</label>
-                <input className="form-input" required value={newActivity.name} onChange={e => setNewActivity({...newActivity, name: e.target.value})} placeholder="Ej. Cambio de Aceite" />
+              <div className="form-group mb-4">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Nombre de la Actividad *</label>
+                <input className="form-input" required value={newActivity.name} onChange={e => setNewActivity({...newActivity, name: e.target.value})} placeholder="Ej. Inspección de Válvulas y Líneas" />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="form-group">
-                  <label>Tipo *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Tipo *</label>
                   <select className="form-select" value={newActivity.type} onChange={e => setNewActivity({...newActivity, type: e.target.value})}>
                     <option value="Mecánico">Mecánico</option>
                     <option value="Eléctrico">Eléctrico</option>
@@ -173,19 +164,25 @@ export default function Activities({ currentUser }) {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Tiempo Estimado (Minutos) *</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Tiempo Estimado (Minutos) *</label>
                   <input type="number" required className="form-input" value={newActivity.estimatedMinutes} onChange={e => setNewActivity({...newActivity, estimatedMinutes: e.target.value})} />
                 </div>
               </div>
 
-              <div className="form-group" style={{ marginBottom: '24px' }}>
-                <label>Recursos y Herramientas Requeridos</label>
-                <textarea className="form-textarea" rows="2" value={newActivity.resources} onChange={e => setNewActivity({...newActivity, resources: e.target.value})} placeholder="Ej. EPP, Llave inglesa 10mm" />
+              <div className="form-group mb-5">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Herramientas y Recursos Necesarios</label>
+                <textarea 
+                  className="form-textarea text-xs" 
+                  rows="3" 
+                  value={newActivity.resources} 
+                  onChange={e => setNewActivity({...newActivity, resources: e.target.value})} 
+                  placeholder="Ej. Llave dinamométrica, multímetro, grasa dieléctrica..."
+                />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '16px', borderTop: '1px solid #E2E4E9' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary">Guardar en Base de Datos</button>
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                <button type="button" className="btn btn-secondary text-xs" onClick={() => setShowModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary text-xs">Guardar Actividad</button>
               </div>
             </form>
           </div>

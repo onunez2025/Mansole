@@ -86,99 +86,80 @@ export default function Schedule({ currentUser }) {
   }, [schedule, activeFilter, searchQuery]);
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span className="cyber-badge" style={{ fontSize: '10px' }}>PLANIFICACIÓN PREVENTIVA</span>
-            <span style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace' }}>// ALGORITMO DE FRECUENCIAS AUTOMÁTICAS</span>
-          </div>
-          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#FFFFFF', margin: 0, letterSpacing: '-0.3px' }}>Cronograma de Mantenimientos Preventivos</h3>
-          <p style={{ fontSize: '13px', color: '#94A3B8', margin: '4px 0 0 0' }}>
-            Cálculo por horómetro/frecuencia con <strong style={{ color: '#38BDF8' }}>reprogramación trazable para supervisores</strong>
+          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Cronograma de Mantenimientos Preventivos</h3>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Cálculo por horómetro/frecuencia con reprogramación trazable para supervisores
           </p>
         </div>
-        <button className="btn-secondary" onClick={() => loadSchedule(false)}>
-          <RefreshCw size={15} /> Sincronizar
+        <button className="btn btn-secondary text-xs" onClick={() => loadSchedule(false)}>
+          <RefreshCw size={14} /> Sincronizar
         </button>
       </div>
 
       {/* Barra de Filtros y Buscador */}
-      <div className="siatc-card" style={{ padding: '14px 18px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+      <div className="bg-white border border-slate-200/90 rounded-xl p-3 sm:p-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 shadow-xs">
         <div className="pipeline-container">
           <button 
-            className={`pipeline-tab ${activeFilter === 'Todos' ? 'active' : ''}`}
+            className={`pipeline-tab text-xs ${activeFilter === 'Todos' ? 'active' : ''}`}
             onClick={() => setActiveFilter('Todos')}
           >
             Todos ({schedule.length})
           </button>
           <button 
-            className={`pipeline-tab ${activeFilter === 'Vencido' ? 'active' : ''}`}
+            className={`pipeline-tab text-xs ${activeFilter === 'Vencido' ? 'active' : ''}`}
             onClick={() => setActiveFilter('Vencido')}
           >
             🔴 Vencidos ({schedule.filter(s => s.status === 'Vencido').length})
           </button>
           <button 
-            className={`pipeline-tab ${activeFilter === 'Próximo' ? 'active' : ''}`}
+            className={`pipeline-tab text-xs ${activeFilter === 'Próximo' ? 'active' : ''}`}
             onClick={() => setActiveFilter('Próximo')}
           >
             🟡 Próximos ({schedule.filter(s => s.status === 'Próximo a Vencer').length})
           </button>
           <button 
-            className={`pipeline-tab ${activeFilter === 'Programado' ? 'active' : ''}`}
+            className={`pipeline-tab text-xs ${activeFilter === 'Programado' ? 'active' : ''}`}
             onClick={() => setActiveFilter('Programado')}
           >
             🟢 Programados ({schedule.filter(s => s.status === 'Programado').length})
           </button>
         </div>
 
-        <div style={{ position: 'relative', width: '260px' }}>
-          <Search size={15} color="#64748B" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+        <div className="relative w-full md:w-64">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input 
             type="text" 
             placeholder="Buscar por activo, actividad o CECO..." 
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px 8px 36px',
-              borderRadius: '8px',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              fontSize: '12px',
-              background: '#0B1120',
-              color: '#F8FAFC',
-              outline: 'none'
-            }}
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all"
           />
         </div>
-      </div>
-
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '18px', flexWrap: 'wrap' }}>
-        <span className="badge badge-danger">🔴 Vencido (Urge OT)</span>
-        <span className="badge badge-warning">🟡 Próximo a Vencer (3 días)</span>
-        <span className="badge badge-success">🟢 Programado OK</span>
       </div>
 
       {loading && !schedule.length ? (
         <TableSkeleton rows={5} cols={6} />
       ) : (
-        <div className="siatc-card" style={{ padding: '24px' }}>
-          <div className="table-container" style={{ marginTop: 0 }}>
+        <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-xs">
+          <div className="table-container">
             <table className="custom-table">
               <thead>
                 <tr>
-                  <th>Activo o Área (CECO)</th>
+                  <th>Activo / CECO</th>
                   <th>Actividad Mantenimiento</th>
                   <th>Frecuencia</th>
                   <th>Próxima Fecha</th>
                   <th>Estado</th>
-                  <th>Acción Supervisor</th>
+                  <th>Acción</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredSchedule.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: '#64748B' }}>
+                    <td colSpan={6} className="text-center py-8 text-slate-400 text-xs">
                       No se encontraron actividades preventivas para el filtro seleccionado.
                     </td>
                   </tr>
@@ -191,30 +172,29 @@ export default function Schedule({ currentUser }) {
                     return (
                       <tr key={s.id || idx}>
                         <td>
-                          <div style={{ fontWeight: '800', color: '#FFFFFF', fontFamily: 'monospace' }}>[{s.assetCode}] {s.assetName}</div>
-                          <div style={{ fontSize: '11px', color: '#38BDF8', fontWeight: '700', fontFamily: 'monospace' }}>{s.areaName} ({s.costCenterCode})</div>
+                          <div className="font-bold text-slate-900 text-xs font-mono">[{s.assetCode}] {s.assetName}</div>
+                          <div className="text-xs text-slate-500 font-mono">{s.areaName} ({s.costCenterCode})</div>
                         </td>
-                        <td style={{ fontWeight: '600', color: '#E2E8F0' }}>{s.activityName}</td>
-                        <td><span className="badge badge-mono">{s.frequencyType}</span></td>
-                        <td style={{ fontWeight: '800', fontSize: '13px', color: '#FFFFFF', fontFamily: 'monospace' }}>
+                        <td className="font-medium text-slate-800 text-xs">{s.activityName}</td>
+                        <td><span className="badge badge-mono text-[11px]">{s.frequencyType}</span></td>
+                        <td className="font-bold text-xs text-slate-900 font-mono">
                           📅 {s.nextDueDate}
                         </td>
-                        <td><span className={`badge ${badgeClass}`}>{s.status}</span></td>
+                        <td><span className={`badge ${badgeClass} text-[11px]`}>{s.status}</span></td>
                         <td>
                           {canReprogram ? (
                             <button 
-                              className="btn btn-secondary" 
-                              style={{ padding: '6px 12px', fontSize: '12px' }}
+                              className="btn btn-secondary text-xs py-1 px-2.5"
                               onClick={() => {
                                 setSelectedItem(s);
                                 setNewDate(s.nextDueDate);
                               }}
                             >
-                              <Edit3 size={13} /> Reprogramar
+                              <Edit3 size={12} /> Reprogramar
                             </button>
                           ) : (
-                            <span style={{ fontSize: '11px', color: '#64748B', fontStyle: 'italic', fontFamily: 'monospace' }}>
-                              🔒 Solo Supervisores
+                            <span className="text-[11px] text-slate-400 font-medium">
+                              Solo Supervisores
                             </span>
                           )}
                         </td>
@@ -230,48 +210,48 @@ export default function Schedule({ currentUser }) {
 
       {selectedItem && (
         <div className="modal-overlay" onClick={() => setSelectedItem(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #E2E4E9', paddingBottom: '14px' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1A1C1E' }}>Reprogramación de Fecha Preventivo</h3>
-              <button onClick={() => setSelectedItem(null)} style={{ fontSize: '20px', color: '#8A919E', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+          <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900">Reprogramación de Preventivo</h3>
+              <button onClick={() => setSelectedItem(null)} className="text-slate-400 hover:text-slate-700 text-lg leading-none">✕</button>
             </div>
 
-            <div style={{ background: '#EAF0FB', border: '1px solid #C5D6F5', padding: '14px', borderRadius: '10px', marginBottom: '20px', fontSize: '13px', color: '#3B72D4', fontWeight: '600', lineHeight: '1.5' }}>
-              ⚡ Estás editando la fecha programada de <strong>"{selectedItem.activityName}"</strong> en el activo <strong>[{selectedItem.assetCode}] {selectedItem.assetName}</strong>. La reprogramación requiere declarar una justificación para la auditoría contable del CECO.
+            <div className="bg-blue-50 border border-blue-200 p-3.5 rounded-xl mb-5 text-xs text-blue-800 leading-relaxed">
+              Estás modificando la fecha programada de <strong>"{selectedItem.activityName}"</strong> en el activo <strong>[{selectedItem.assetCode}] {selectedItem.assetName}</strong>. La reprogramación quedará registrada con justificación para la auditoría de CECO.
             </div>
 
             <form onSubmit={handleReprogram}>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', marginBottom: '6px' }}>Fecha Actualmente Programada</label>
-                <input className="form-input" disabled value={selectedItem.nextDueDate} style={{ background: '#F3F5F9' }} />
+              <div className="form-group mb-4">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Fecha Actualmente Programada</label>
+                <input className="form-input bg-slate-50 text-slate-500 font-mono" disabled value={selectedItem.nextDueDate} />
               </div>
 
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', marginBottom: '6px' }}>Nueva Fecha Propuesta *</label>
+              <div className="form-group mb-4">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Nueva Fecha Propuesta *</label>
                 <input 
                   type="date" 
-                  className="form-input" 
+                  className="form-input font-mono" 
                   required 
                   value={newDate} 
                   onChange={e => setNewDate(e.target.value)} 
                 />
               </div>
 
-              <div className="form-group" style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', fontWeight: '700', fontSize: '13px', marginBottom: '6px' }}>Motivo de Reprogramación (Auditoría CECO) *</label>
+              <div className="form-group mb-5">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Motivo de Reprogramación *</label>
                 <textarea 
-                  className="form-textarea" 
+                  className="form-textarea text-xs" 
                   rows="3" 
                   required
                   value={reprogramReason} 
                   onChange={e => setReprogramReason(e.target.value)} 
-                  placeholder="Explique el motivo: espera de repuestos, producción continua no permite parada, etc."
+                  placeholder="Explique el motivo: espera de repuestos, ventana operativa de planta, etc."
                 />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '16px', borderTop: '1px solid #E2E4E9' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setSelectedItem(null)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary">Guardar Nueva Fecha</button>
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                <button type="button" className="btn btn-secondary text-xs" onClick={() => setSelectedItem(null)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary text-xs">Guardar Nueva Fecha</button>
               </div>
             </form>
           </div>

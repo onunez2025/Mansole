@@ -1,26 +1,32 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../services/api';
-import { Wrench, FileText, Plus, CheckCircle2, AlertOctagon, Layers, Edit3, Trash2 } from 'lucide-react';
+import { Wrench, FileText, Plus, CheckCircle2, AlertOctagon, Layers, Edit3, Trash2, Search } from 'lucide-react';
+import { toast } from 'sonner';
+import { TableSkeleton } from '../components/UI';
+
+// Caché en cliente para carga instantánea
+let cachedAssetsList = null;
 
 export default function Assets({ currentUser }) {
-  const [assets, setAssets] = useState([]);
+  const [assets, setAssets] = useState(cachedAssetsList || []);
   const [areas, setAreas] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cachedAssetsList);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [newAsset, setNewAsset] = useState({ code: '', name: '', brand: '', model: '', serialNumber: '', status: 'Operativo', areaId: '', categoryId: '' });
 
-  const loadAssets = () => {
-    setLoading(true);
+  const loadAssets = (silent = false) => {
+    if (!silent && !cachedAssetsList) setLoading(true);
     Promise.all([
       api.getAssets(),
       api.getAreas(),
       api.getCategories()
     ]).then(([data, areasData, catsData]) => {
       if (Array.isArray(data)) {
-        setAssets(data.map((a, i) => ({
+        const clean = data.map((a, i) => ({
           id: a.id || a.Id || i + 1,
           code: a.code || a.Code || `EQ-${i + 10}`,
           name: a.name || a.Name || 'Maquinaria Industrial',
@@ -35,13 +41,15 @@ export default function Assets({ currentUser }) {
           acquisitionDate: a.acquisitionDate || a.AcquisitionDate || '',
           status: a.status || a.Status || 'Operativo',
           imageUrl: a.imageUrl || a.ImageUrl || ''
-        })));
+        }));
+        cachedAssetsList = clean;
+        setAssets(clean);
       }
       if (Array.isArray(areasData)) setAreas(areasData);
       if (Array.isArray(catsData)) setCategories(catsData);
       setLoading(false);
     }).catch(() => {
-      setAssets([]);
+      if (!cachedAssetsList) setAssets([]);
       setLoading(false);
     });
   };
@@ -65,15 +73,15 @@ export default function Assets({ currentUser }) {
     try {
       if (editingAsset) {
         await api.updateAsset(editingAsset.id, newAsset);
-        alert(`✅ Activo "${newAsset.name}" actualizado en Azure SQL.`);
+        toast.success(`Activo "${newAsset.name}" actualizado exitosamente`);
       } else {
         await api.createAsset(newAsset);
-        alert(`✅ Activo "${newAsset.name}" registrado en Azure SQL.`);
+        toast.success(`Activo "${newAsset.name}" registrado exitosamente`);
       }
       setShowCreateModal(false);
       loadAssets();
     } catch (err) {
-      alert(`❌ Error: ${err.message}`);
+      toast.error(`Error al guardar activo: ${err.message}`);
     }
   };
 
@@ -81,16 +89,24 @@ export default function Assets({ currentUser }) {
     if (!window.confirm(`¿Eliminar definitivamente el activo [${a.code}] ${a.name}? Esta acción no se puede deshacer.`)) return;
     try {
       await api.deleteAsset(a.id);
-      alert(`✅ Activo "${a.name}" eliminado de Azure SQL.`);
+      toast.success(`Activo "${a.name}" eliminado exitosamente`);
       loadAssets();
     } catch (err) {
-      alert(`❌ Error al eliminar: ${err.message}`);
+      toast.error(`Error al eliminar: ${err.message}`);
     }
   };
 
-  if (loading) {
-    return <div style={{ padding: '40px', color: '#8A919E', fontWeight: '600' }}>⏳ Cargando inventario de maquinaria e infraestructura desde Azure SQL...</div>;
-  }
+  const filteredAssets = useMemo(() => {
+    if (!searchQuery.trim()) return assets;
+    const q = searchQuery.toLowerCase();
+    return assets.filter(a => 
+      (a.name || '').toLowerCase().includes(q) ||
+      (a.code || '').toLowerCase().includes(q) ||
+      (a.areaName || '').toLowerCase().includes(q) ||
+      (a.costCenterCode || '').toLowerCase().includes(q) ||
+      (a.brand || '').toLowerCase().includes(q)
+    );
+  }, [assets, searchQuery]);
 
   return (
     <div>
@@ -99,13 +115,45 @@ export default function Assets({ currentUser }) {
           <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1A1C1E' }}>Catálogo de Activos Fijos & CECOs</h3>
           <p style={{ fontSize: '14px', color: '#515254' }}>Organización jerárquica: Empresa {'>'} Área/CECO {'>'} Categorías {'>'} Máquina</p>
         </div>
-        <button className="btn btn-primary" onClick={openCreate}>
-          <Plus size={18} /> Registrar Nuevo Activo
-        </button>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ position: 'relative', width: '260px' }}>
+            <Search size={16} color="#8A919E" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+            <input 
+              type="text" 
+              placeholder="Buscar máquina, código o CECO..." 
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px 8px 36px',
+                borderRadius: '8px',
+                border: '1px solid #D8DCE5',
+                fontSize: '13px',
+                background: '#FFFFFF',
+                outline: 'none'
+              }}
+            />
+          </div>
+          <button className="btn btn-primary" onClick={openCreate}>
+            <Plus size={18} /> Registrar Activo
+          </button>
+        </div>
       </div>
 
+      {loading && !assets.length ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="siatc-card" style={{ height: '300px', display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
+              <div className="skeleton" style={{ height: '140px', width: '100%' }} />
+              <div className="skeleton" style={{ height: '20px', width: '70%' }} />
+              <div className="skeleton" style={{ height: '14px', width: '40%' }} />
+              <div className="skeleton" style={{ height: '36px', width: '100%', marginTop: 'auto' }} />
+            </div>
+          ))}
+        </div>
+      ) : (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
-        {assets.map((a, idx) => (
+        {filteredAssets.map((a, idx) => (
           <div key={a.id || idx} className="siatc-card" style={{ display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden' }}>
             <div style={{ height: '160px', width: '100%', position: 'relative', background: '#F3F5F9', borderBottom: '1px solid #E2E4E9' }}>
               <img
@@ -151,6 +199,7 @@ export default function Assets({ currentUser }) {
           </div>
         ))}
       </div>
+      )}
 
       {/* Modal Ficha Técnica */}
       {selectedAsset && (

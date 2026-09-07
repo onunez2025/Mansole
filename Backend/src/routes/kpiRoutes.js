@@ -2,8 +2,16 @@ const express = require('express');
 const router = express.Router();
 const { getDbConnection } = require('../config/db');
 
+// Micro-caché en memoria de 15 segundos para acelerar la carga del Dashboard
+let kpiCache = { data: null, timestamp: 0 };
+
 // GET /api/kpi y /api/kpi/dashboard — KPIs calculados 100% desde MANSOLE en Azure SQL
 const getKpis = async (req, res) => {
+  const now = Date.now();
+  if (kpiCache.data && (now - kpiCache.timestamp < 15000)) {
+    return res.json(kpiCache.data);
+  }
+
   try {
     const pool = await getDbConnection();
 
@@ -82,7 +90,7 @@ const getKpis = async (req, res) => {
       percentage: Number(((Number(r.amount) / cecoTotal) * 100).toFixed(1))
     }));
 
-    res.json({
+    const resultPayload = {
       preventiveCompliance: isNaN(preventiveCompliance) ? 0 : preventiveCompliance,
       openOrdersCount: openOrders,
       closedOrdersCount: closedOrders,
@@ -102,7 +110,10 @@ const getKpis = async (req, res) => {
       })),
       expensesByCostCenter,
       sparePartsConsumption: []
-    });
+    };
+
+    kpiCache = { data: resultPayload, timestamp: Date.now() };
+    res.json(resultPayload);
   } catch (e) {
     console.error('KPI Error:', e.message);
     // Fallback con zeros si falla la BD

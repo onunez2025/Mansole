@@ -26,10 +26,10 @@ const dbConfig = {
   },
   pool: {
     max: 10,
-    min: 0,
-    idleTimeoutMillis: 30000
+    min: 2, // Mantiene 2 conexiones calientes autenticadas con Azure SQL para eliminar latencia de TLS handshake
+    idleTimeoutMillis: 300000 // 5 minutos de inactividad antes de reciclar
   },
-  connectionTimeout: 10000
+  connectionTimeout: 15000
 };
 
 let poolPromise = null;

@@ -1,18 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../services/api';
-import { Boxes, AlertCircle, Plus, RefreshCw, CheckCircle2, Edit3, Trash2 } from 'lucide-react';
+import { Boxes, AlertCircle, Plus, RefreshCw, CheckCircle2, Edit3, Trash2, Search } from 'lucide-react';
+import { toast } from 'sonner';
+import { TableSkeleton } from '../components/UI';
+
+// Caché en cliente para transiciones instantáneas (0ms)
+let cachedInventoryList = null;
 
 export default function Inventory({ currentUser }) {
-  const [inventory, setInventory] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [inventory, setInventory] = useState(cachedInventoryList || []);
+  const [loading, setLoading] = useState(!cachedInventoryList);
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeConditionFilter, setActiveConditionFilter] = useState('Todos');
   const [formData, setFormData] = useState({
     code: '', name: '', description: '', currentStock: 1, minStock: 1, location: 'Almacén Central', unitCost: 0, reason: 'Canibalización'
   });
 
-  const loadInventory = () => {
-    setLoading(true);
+  const loadInventory = (silent = false) => {
+    if (!silent && !cachedInventoryList) setLoading(true);
     api.getInventory().then(data => {
       if (Array.isArray(data)) {
         const cleanData = data.map((item, i) => {
@@ -30,13 +37,14 @@ export default function Inventory({ currentUser }) {
             condition: item.condition || item.Condition || (cost === 0 ? 'Reusado' : 'Nuevo')
           };
         });
+        cachedInventoryList = cleanData;
         setInventory(cleanData);
       } else {
         setInventory([]);
       }
       setLoading(false);
     }).catch(() => {
-      setInventory([]);
+      if (!cachedInventoryList) setInventory([]);
       setLoading(false);
     });
   };
@@ -66,10 +74,10 @@ export default function Inventory({ currentUser }) {
     if (!window.confirm(`¿Eliminar el repuesto [${item.code}] ${item.name}?`)) return;
     try {
       await api.deleteInventoryItem(item.id);
-      alert(`✅ Repuesto eliminado de Azure SQL.`);
+      toast.success(`Repuesto [${item.code}] eliminado exitosamente`);
       loadInventory();
     } catch (err) {
-      alert(`❌ Error: ${err.message}`);
+      toast.error(`Error al eliminar: ${err.message}`);
     }
   };
 
@@ -91,25 +99,38 @@ export default function Inventory({ currentUser }) {
     try {
       if (editingItem) {
         await api.updateInventoryItem(editingItem.id, payload);
-        alert(`✅ Repuesto actualizado en Azure SQL.`);
+        toast.success(`Repuesto actualizado exitosamente`);
       } else {
         await api.createInventoryItem(payload);
-        alert(`✅ Repuesto registrado en Azure SQL (Costo: $${Number(cost).toFixed(2)} USD)`);
+        toast.success(`Repuesto registrado en inventario (Costo: $${Number(cost).toFixed(2)} USD)`);
       }
       setShowModal(false);
       loadInventory();
     } catch (err) {
-      alert(`❌ Error: ${err.message}`);
+      toast.error(`Error: ${err.message}`);
     }
   };
-
-  if (loading) {
-    return <div style={{ padding: '40px', color: '#8A919E', fontWeight: '600' }}>⏳ Cargando almacén de repuestos desde Azure SQL...</div>;
-  }
 
   const canRegister = currentUser?.role !== 'Operario de Máquina';
   const totalItems = Array.isArray(inventory) ? inventory.length : 0;
   const lowStockCount = Array.isArray(inventory) ? inventory.filter(i => (i.currentStock || 0) <= (i.minStock || 0)).length : 0;
+
+  const filteredInventory = useMemo(() => {
+    return inventory.filter(i => {
+      if (activeConditionFilter === 'Nuevo' && i.condition !== 'Nuevo') return false;
+      if (activeConditionFilter === 'Reusado' && i.condition !== 'Reusado') return false;
+      if (activeConditionFilter === 'BajoStock' && (i.currentStock || 0) > (i.minStock || 0)) return false;
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesName = (i.name || '').toLowerCase().includes(q);
+        const matchesCode = (i.code || '').toLowerCase().includes(q);
+        const matchesLoc = (i.location || '').toLowerCase().includes(q);
+        return matchesName || matchesCode || matchesLoc;
+      }
+      return true;
+    });
+  }, [inventory, activeConditionFilter, searchQuery]);
 
   return (
     <div>
@@ -153,6 +174,58 @@ export default function Inventory({ currentUser }) {
         </div>
       </div>
 
+      {/* Filtros de Tipo y Búsqueda */}
+      <div style={{ background: '#FFFFFF', padding: '16px 20px', borderRadius: '12px', border: '1px solid #E2E4E9', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+        <div className="pipeline-container">
+          <button 
+            className={`pipeline-tab ${activeConditionFilter === 'Todos' ? 'active' : ''}`}
+            onClick={() => setActiveConditionFilter('Todos')}
+          >
+            Todos ({inventory.length})
+          </button>
+          <button 
+            className={`pipeline-tab ${activeConditionFilter === 'Nuevo' ? 'active' : ''}`}
+            onClick={() => setActiveConditionFilter('Nuevo')}
+          >
+            📦 Nuevos ({inventory.filter(i => i.condition === 'Nuevo').length})
+          </button>
+          <button 
+            className={`pipeline-tab ${activeConditionFilter === 'Reusado' ? 'active' : ''}`}
+            onClick={() => setActiveConditionFilter('Reusado')}
+          >
+            ♻️ Canibalizados / Reusados $0 ({inventory.filter(i => i.condition === 'Reusado').length})
+          </button>
+          <button 
+            className={`pipeline-tab ${activeConditionFilter === 'BajoStock' ? 'active' : ''}`}
+            onClick={() => setActiveConditionFilter('BajoStock')}
+          >
+            ⚠️ Bajo Stock Mínimo ({lowStockCount})
+          </button>
+        </div>
+
+        <div style={{ position: 'relative', width: '260px' }}>
+          <Search size={16} color="#8A919E" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+          <input 
+            type="text" 
+            placeholder="Buscar repuesto, código o estante..." 
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '8px 12px 8px 36px',
+              borderRadius: '8px',
+              border: '1px solid #D8DCE5',
+              fontSize: '13px',
+              background: '#F9FAFB',
+              outline: 'none'
+            }}
+          />
+        </div>
+      </div>
+
+      {loading && !inventory.length ? (
+        <TableSkeleton rows={5} cols={8} />
+      ) : (
       <div className="siatc-card" style={{ padding: '24px' }}>
         <div className="table-container" style={{ marginTop: 0 }}>
           <table className="custom-table">
@@ -169,7 +242,14 @@ export default function Inventory({ currentUser }) {
               </tr>
             </thead>
             <tbody>
-              {inventory.map((item, idx) => {
+              {filteredInventory.length === 0 ? (
+                <tr>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: '#8A919E' }}>
+                    No se encontraron repuestos para el criterio seleccionado.
+                  </td>
+                </tr>
+              ) : (
+                filteredInventory.map((item, idx) => {
                 const stock = Number(item.currentStock || 0);
                 const min = Number(item.minStock || 0);
                 const cost = Number(item.unitCost || 0);
@@ -215,11 +295,12 @@ export default function Inventory({ currentUser }) {
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>
       </div>
+      )}
 
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>

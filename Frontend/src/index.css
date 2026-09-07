@@ -330,3 +330,65 @@
 .custom-table tbody tr:hover {
   background: #FDFDFE;
 }
+
+/* Skeleton Loading Animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #EDF1F7 25%, #F7F9FC 50%, #EDF1F7 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* Workflow Pipeline Filters */
+.pipeline-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.pipeline-tab {
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid #D8DCE5;
+  background: #FFFFFF;
+  color: #515254;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pipeline-tab:hover {
+  background: #F1F4F9;
+  border-color: #C0C9D9;
+}
+
+.pipeline-tab.active {
+  background: #4C5F80;
+  color: #FFFFFF;
+  border-color: #4C5F80;
+  box-shadow: 0 2px 6px rgba(76, 95, 128, 0.25);
+}
+
+.pipeline-count {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+}
+.pipeline-tab.active .pipeline-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+}
+

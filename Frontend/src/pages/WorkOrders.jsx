@@ -1,15 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { api, API_BASE } from '../services/api';
-import { Hammer, Plus, Download, Bot, Users, FileText } from 'lucide-react';
+import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle2, AlertTriangle, Filter, CheckCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { OrderCardSkeleton } from '../components/UI';
+
+// Caché en cliente para que al volver a OTs cargue de inmediato (0ms)
+let cachedWorkOrdersList = null;
 
 export default function WorkOrders({ currentUser }) {
-  const [workOrders, setWorkOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [workOrders, setWorkOrders] = useState(cachedWorkOrdersList || []);
+  const [loading, setLoading] = useState(!cachedWorkOrdersList);
   const [selectedOT, setSelectedOT] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiDiagnosis, setAiDiagnosis] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [availableAssets, setAvailableAssets] = useState([]);
+
+  // Filtros de Proceso y Búsqueda
+  const [activeStage, setActiveStage] = useState('Todas');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [newOT, setNewOT] = useState({
     type: 'Correctivo',
@@ -28,8 +37,8 @@ export default function WorkOrders({ currentUser }) {
     sparePartCost: 350.00
   });
 
-  const loadOrders = () => {
-    setLoading(true);
+  const loadOrders = (silent = false) => {
+    if (!silent && !cachedWorkOrdersList) setLoading(true);
     api.getWorkOrders().then(data => {
       if (Array.isArray(data)) {
         const clean = data.map((o, idx) => {
@@ -46,23 +55,29 @@ export default function WorkOrders({ currentUser }) {
             costCenterCode: o.costCenterCode || o.CostCenterCode || 'CECO-SOL-101',
             description: o.description || o.Description || 'Labor programada de mantenimiento',
             totalCost: isNaN(cost) ? 0 : cost,
+            downtimeMinutes: o.downtimeMinutes || o.DowntimeMinutes || 0,
             technicians: o.technicians || o.Technicians || [{ name: 'Juan Pérez (Técnico 1)', hours: 2 }],
             aiDiagnosis: o.aiDiagnosis || null
           };
         });
+        cachedWorkOrdersList = clean;
         setWorkOrders(clean);
       } else {
         setWorkOrders([]);
       }
       setLoading(false);
     }).catch(() => {
-      setWorkOrders([]);
+      if (!cachedWorkOrdersList) setWorkOrders([]);
       setLoading(false);
     });
   };
 
   useEffect(() => {
     loadOrders();
+    // Cargar activos disponibles para el formulario de nueva OT
+    api.getAssets().then(data => {
+      if (Array.isArray(data)) setAvailableAssets(data);
+    }).catch(() => {});
   }, []);
 
   const triggerAiHelp = async (assetName, description, code) => {
@@ -70,6 +85,21 @@ export default function WorkOrders({ currentUser }) {
     const result = await api.diagnoseWithAI(assetName, description, code);
     setAiDiagnosis(result);
     setAiLoading(false);
+  };
+
+  // Cambio rápido de estado con 1 clic desde la tarjeta
+  const handleQuickStatusChange = async (otId, newStatus) => {
+    try {
+      await api.updateWorkOrderStatus(otId, { status: newStatus });
+      toast.success(`OT actualizada a estado: ${newStatus}`);
+      // Actualizar localmente de inmediato para feedback instantáneo
+      const updated = workOrders.map(o => o.id === otId ? { ...o, status: newStatus } : o);
+      cachedWorkOrdersList = updated;
+      setWorkOrders(updated);
+      loadOrders(true); // Sincronización silenciosa en segundo plano
+    } catch (err) {
+      toast.error(`Error actualizando estado: ${err.message}`);
+    }
   };
 
   const handleCreateOT = async (e) => {
@@ -98,7 +128,7 @@ export default function WorkOrders({ currentUser }) {
       
       const response = await api.createWorkOrder(payload);
       setShowCreateModal(false);
-      toast.success(`${response.message || 'OT creada con éxito'} (Código: ${response.code})`);
+      toast.success(`${response.message || 'OT emitida exitosamente'} (Código: ${response.code})`);
       loadOrders(); // Recargar de BD real
     } catch (error) {
       toast.error(`Error al crear OT: ${error.response?.data?.error || error.message}`);
@@ -109,83 +139,233 @@ export default function WorkOrders({ currentUser }) {
     window.open(`${API_BASE}/workorders/${id}/pdf`, '_blank');
   };
 
-  if (loading) {
-    return <div style={{ padding: '40px', color: '#8A919E', fontWeight: '600' }}>⏳ Cargando Órdenes de Trabajo e Inteligencia Artificial...</div>;
-  }
+  // Conteos por etapa de proceso para la barra de Pipeline
+  const stageCounts = useMemo(() => {
+    const counts = { Todas: workOrders.length, Pendiente: 0, 'En Progreso': 0, Finalizada: 0, Cerrada: 0 };
+    workOrders.forEach(o => {
+      const st = o.status;
+      if (st === 'Iniciada' || st === 'Pendiente') counts.Pendiente++;
+      else if (st === 'En Progreso' || st === 'En Proceso' || st === 'Iniciado en Planta') counts['En Progreso']++;
+      else if (st === 'Finalizada') counts.Finalizada++;
+      else if (st === 'Cerrada') counts.Cerrada++;
+    });
+    return counts;
+  }, [workOrders]);
+
+  // Filtrar OTs por Pipeline y Búsqueda
+  const filteredOrders = useMemo(() => {
+    return workOrders.filter(ot => {
+      // Filtro por etapa
+      if (activeStage === 'Pendiente') {
+        if (ot.status !== 'Iniciada' && ot.status !== 'Pendiente') return false;
+      } else if (activeStage === 'En Progreso') {
+        if (ot.status !== 'En Progreso' && ot.status !== 'En Proceso' && ot.status !== 'Iniciado en Planta') return false;
+      } else if (activeStage === 'Finalizada') {
+        if (ot.status !== 'Finalizada') return false;
+      } else if (activeStage === 'Cerrada') {
+        if (ot.status !== 'Cerrada') return false;
+      }
+
+      // Filtro por búsqueda de texto
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesCode = (ot.code || '').toLowerCase().includes(q);
+        const matchesAsset = (ot.assetName || '').toLowerCase().includes(q) || (ot.assetCode || '').toLowerCase().includes(q);
+        const matchesCeco = (ot.costCenterCode || '').toLowerCase().includes(q) || (ot.areaName || '').toLowerCase().includes(q);
+        const matchesDesc = (ot.description || '').toLowerCase().includes(q);
+        const matchesTech = (ot.technicians || []).some(t => (t.name || '').toLowerCase().includes(q));
+        return matchesCode || matchesAsset || matchesCeco || matchesDesc || matchesTech;
+      }
+
+      return true;
+    });
+  }, [workOrders, activeStage, searchQuery]);
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      {/* Cabecera y botón de acción */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
         <div>
-          <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1A1C1E' }}>Gestión de Órdenes de Trabajo (OT)</h3>
-          <p style={{ fontSize: '14px', color: '#515254' }}>
-            Soporte nativo para OTs por Activo o Área, <strong>asignación de múltiples técnicos</strong> y exportación de Actas en PDF
+          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#1A1C1E', margin: 0 }}>Gestión de Órdenes de Trabajo (OT)</h3>
+          <p style={{ fontSize: '13px', color: '#515254', margin: '4px 0 0 0' }}>
+            Flujo de mantenimiento en planta: <strong>Solicitud ➔ En Proceso ➔ Finalización ➔ Cierre Contable</strong>
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
-          <Plus size={18} /> Emitir OT Rápida
+        <button className="btn btn-primary" onClick={() => setShowCreateModal(true)} style={{ boxShadow: '0 2px 6px rgba(76, 95, 128, 0.2)' }}>
+          <Plus size={18} /> Emitir Nueva OT
         </button>
       </div>
 
-      {/* Listado de OTs */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {workOrders.map((ot) => (
-          <div key={ot.id} className="siatc-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 24px', flexWrap: 'wrap', gap: '18px' }}>
-            {/* Datos Principales */}
-            <div style={{ maxWidth: '520px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                <span style={{ fontSize: '16px', fontWeight: '800', color: '#4C5F80' }}>{ot.code}</span>
-                <span className={`badge ${ot.type === 'Preventivo' ? 'badge-info' : 'badge-danger'}`}>{ot.type}</span>
-                <span className={`badge ${ot.status === 'Finalizada' ? 'badge-success' : 'badge-warning'}`}>{ot.status}</span>
-              </div>
-              <h4 style={{ fontSize: '18px', fontWeight: '800', color: '#1A1C1E', margin: '4px 0' }}>
-                [{ot.assetCode}] {ot.assetName}
-              </h4>
-              <p style={{ fontSize: '13px', color: '#515254' }}>
-                <strong>CECO:</strong> {ot.costCenterCode} ({ot.areaName}) • <strong>Prioridad:</strong> {ot.priority}
-              </p>
-            </div>
+      {/* Barra de Pipeline Operativo (Etapas del Proceso) y Buscador */}
+      <div style={{ background: '#FFFFFF', padding: '16px 20px', borderRadius: '12px', border: '1px solid #E2E4E9', marginBottom: '22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+        {/* Pestañas de Proceso */}
+        <div className="pipeline-container">
+          <button 
+            className={`pipeline-tab ${activeStage === 'Todas' ? 'active' : ''}`}
+            onClick={() => setActiveStage('Todas')}
+          >
+            Todas <span className="pipeline-count">{stageCounts.Todas}</span>
+          </button>
+          <button 
+            className={`pipeline-tab ${activeStage === 'Pendiente' ? 'active' : ''}`}
+            onClick={() => setActiveStage('Pendiente')}
+          >
+            🟡 Solicitadas / Pendientes <span className="pipeline-count">{stageCounts.Pendiente}</span>
+          </button>
+          <button 
+            className={`pipeline-tab ${activeStage === 'En Progreso' ? 'active' : ''}`}
+            onClick={() => setActiveStage('En Progreso')}
+          >
+            ⚙️ En Planta / En Proceso <span className="pipeline-count">{stageCounts['En Progreso']}</span>
+          </button>
+          <button 
+            className={`pipeline-tab ${activeStage === 'Finalizada' ? 'active' : ''}`}
+            onClick={() => setActiveStage('Finalizada')}
+          >
+            ✅ Finalizadas <span className="pipeline-count">{stageCounts.Finalizada}</span>
+          </button>
+          <button 
+            className={`pipeline-tab ${activeStage === 'Cerrada' ? 'active' : ''}`}
+            onClick={() => setActiveStage('Cerrada')}
+          >
+            🔒 Cerradas <span className="pipeline-count">{stageCounts.Cerrada}</span>
+          </button>
+        </div>
 
-            {/* Múltiples técnicos y costos */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '240px', background: '#F8F9FC', padding: '14px 18px', borderRadius: '10px', border: '1px solid #E2E4E9' }}>
-              <div style={{ fontSize: '12px', color: '#1A1C1E', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700' }}>
-                <Users size={15} color="#4C5F80" /> 
-                <span>Técnicos Asignados ({ot.technicians ? ot.technicians.length : 0}):</span>
-              </div>
-              {ot.technicians && ot.technicians.map((t, idx) => (
-                <div key={idx} style={{ fontSize: '13px', color: '#515254', paddingLeft: '22px', fontWeight: '500' }}>
-                  • {t.name} (<strong>{t.hours} hrs</strong>)
-                </div>
-              ))}
-              <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid #D8DCE5', fontSize: '13px', fontWeight: '800', color: '#05B169', display: 'flex', justifyContent: 'space-between' }}>
-                <span>Total Imputable:</span>
-                <span>${ot.totalCost ? ot.totalCost.toFixed(2) : '0.00'} USD</span>
-              </div>
-            </div>
-
-            {/* Acciones */}
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button 
-                className="btn btn-secondary" 
-                onClick={() => {
-                  setSelectedOT(ot);
-                  setAiDiagnosis(ot.aiDiagnosis || null);
-                }}
-              >
-                <FileText size={16} /> Detalle & Checklist
-              </button>
-              <button 
-                className="btn btn-primary" 
-                style={{ background: '#E8EEF8', border: '1px solid #C4D2E8', color: '#4C5F80', boxShadow: 'none', fontWeight: '700' }}
-                onClick={() => downloadPDF(ot.id)}
-                title="Descargar Acta Formal con firmas PDF"
-              >
-                <Download size={16} /> Acta PDF
-              </button>
-            </div>
-          </div>
-        ))}
+        {/* Buscador Rápido */}
+        <div style={{ position: 'relative', width: '260px' }}>
+          <Search size={16} color="#8A919E" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+          <input 
+            type="text" 
+            placeholder="Buscar por OT, máquina o técnico..." 
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '8px 12px 8px 36px',
+              borderRadius: '8px',
+              border: '1px solid #D8DCE5',
+              fontSize: '13px',
+              background: '#F9FAFB',
+              outline: 'none'
+            }}
+          />
+        </div>
       </div>
+
+      {/* Skeletons durante carga inicial */}
+      {loading && !workOrders.length ? (
+        <OrderCardSkeleton count={4} />
+      ) : filteredOrders.length === 0 ? (
+        <div className="siatc-card" style={{ textAlign: 'center', padding: '48px 24px', color: '#515254' }}>
+          <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔍</div>
+          <h4 style={{ fontSize: '16px', fontWeight: '800', color: '#1A1C1E', marginBottom: '4px' }}>No se encontraron Órdenes de Trabajo</h4>
+          <p style={{ fontSize: '13px', color: '#8A919E', margin: 0 }}>
+            {searchQuery ? `No hay resultados para "${searchQuery}" en la etapa "${activeStage}".` : `No hay órdenes en la etapa "${activeStage}".`}
+          </p>
+        </div>
+      ) : (
+        /* Listado de OTs */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {filteredOrders.map((ot) => {
+            const isPending = ot.status === 'Iniciada' || ot.status === 'Pendiente';
+            const isInProgress = ot.status === 'En Progreso' || ot.status === 'En Proceso' || ot.status === 'Iniciado en Planta';
+            const isFinished = ot.status === 'Finalizada';
+            const isClosed = ot.status === 'Cerrada';
+
+            return (
+              <div key={ot.id} className="siatc-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', flexWrap: 'wrap', gap: '18px', borderLeft: isInProgress ? '4px solid #3B72D4' : isFinished ? '4px solid #05B169' : isClosed ? '4px solid #4C5F80' : '4px solid #E58D14' }}>
+                {/* Datos Principales */}
+                <div style={{ maxWidth: '500px', flex: 1, minWidth: '280px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '16px', fontWeight: '800', color: '#4C5F80' }}>{ot.code}</span>
+                    <span className={`badge ${ot.type === 'Preventivo' ? 'badge-info' : 'badge-danger'}`}>{ot.type}</span>
+                    <span className={`badge ${isFinished ? 'badge-success' : isInProgress ? 'badge-info' : isClosed ? 'badge-success' : 'badge-warning'}`}>
+                      {ot.status}
+                    </span>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: ot.priority === 'Urgente' ? '#DF2935' : ot.priority === 'Alta' ? '#E58D14' : '#05B169' }}>
+                      ● {ot.priority}
+                    </span>
+                  </div>
+                  <h4 style={{ fontSize: '17px', fontWeight: '800', color: '#1A1C1E', margin: '4px 0' }}>
+                    [{ot.assetCode}] {ot.assetName}
+                  </h4>
+                  <p style={{ fontSize: '13px', color: '#515254', margin: '2px 0 6px 0' }}>
+                    <strong>CECO:</strong> {ot.costCenterCode} ({ot.areaName})
+                  </p>
+                  <p style={{ fontSize: '13px', color: '#8A919E', margin: 0, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    "{ot.description}"
+                  </p>
+                </div>
+
+                {/* Múltiples técnicos y costos */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '220px', background: '#F8F9FC', padding: '12px 16px', borderRadius: '10px', border: '1px solid #E2E4E9' }}>
+                  <div style={{ fontSize: '12px', color: '#1A1C1E', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700' }}>
+                    <Users size={14} color="#4C5F80" /> 
+                    <span>Técnicos Asignados ({ot.technicians ? ot.technicians.length : 0}):</span>
+                  </div>
+                  {ot.technicians && ot.technicians.map((t, idx) => (
+                    <div key={idx} style={{ fontSize: '12px', color: '#515254', paddingLeft: '20px', fontWeight: '500' }}>
+                      • {t.name} (<strong>{t.hours}h</strong>)
+                    </div>
+                  ))}
+                  <div style={{ marginTop: '4px', paddingTop: '4px', borderTop: '1px solid #D8DCE5', fontSize: '12px', fontWeight: '800', color: '#05B169', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Total Costo:</span>
+                    <span>${ot.totalCost ? ot.totalCost.toFixed(2) : '0.00'} USD</span>
+                  </div>
+                </div>
+
+                {/* Acciones Rápidas del Proceso */}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  {/* Botón rápido para Iniciar OT si está pendiente */}
+                  {isPending && (
+                    <button
+                      className="btn"
+                      style={{ background: '#EAF0FB', border: '1px solid #C5D6F5', color: '#3B72D4', fontSize: '12px', padding: '8px 12px' }}
+                      onClick={() => handleQuickStatusChange(ot.id, 'En Progreso')}
+                      title="Pasar OT a En Proceso"
+                    >
+                      <Play size={14} /> Iniciar
+                    </button>
+                  )}
+
+                  {/* Botón rápido para Finalizar OT si está en proceso */}
+                  {isInProgress && (
+                    <button
+                      className="btn"
+                      style={{ background: '#E7F9F0', border: '1px solid #B8EBD1', color: '#05B169', fontSize: '12px', padding: '8px 12px' }}
+                      onClick={() => handleQuickStatusChange(ot.id, 'Finalizada')}
+                      title="Marcar OT como Finalizada"
+                    >
+                      <CheckCircle size={14} /> Finalizar
+                    </button>
+                  )}
+
+                  <button 
+                    className="btn btn-secondary" 
+                    style={{ fontSize: '12px', padding: '8px 14px' }}
+                    onClick={() => {
+                      setSelectedOT(ot);
+                      setAiDiagnosis(ot.aiDiagnosis || null);
+                    }}
+                  >
+                    <FileText size={15} /> Detalle & Checklist
+                  </button>
+
+                  <button 
+                    className="btn btn-primary" 
+                    style={{ background: '#E8EEF8', border: '1px solid #C4D2E8', color: '#4C5F80', boxShadow: 'none', fontWeight: '700', fontSize: '12px', padding: '8px 12px' }}
+                    onClick={() => downloadPDF(ot.id)}
+                    title="Descargar Acta Formal con firmas PDF"
+                  >
+                    <Download size={15} /> PDF
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Modal Detalle OT & Asistente IA */}
       {selectedOT && (
@@ -372,12 +552,37 @@ export default function WorkOrders({ currentUser }) {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="form-group">
-                  <label>Activo / Máquina o Área</label>
-                  <input className="form-input" value={newOT.assetName} onChange={e => setNewOT({...newOT, assetName: e.target.value})} />
+                  <label>Seleccionar Activo / Máquina *</label>
+                  {availableAssets.length > 0 ? (
+                    <select 
+                      className="form-select"
+                      value={newOT.assetCode}
+                      onChange={e => {
+                        const selected = availableAssets.find(a => (a.code || a.Code) === e.target.value);
+                        if (selected) {
+                          setNewOT({
+                            ...newOT,
+                            assetCode: selected.code || selected.Code,
+                            assetName: selected.name || selected.Name,
+                            areaName: selected.areaName || selected.AreaName || 'Área General',
+                            costCenterCode: selected.costCenterCode || selected.CostCenterCode || 'CECO-SOL-101'
+                          });
+                        }
+                      }}
+                    >
+                      {availableAssets.map(a => (
+                        <option key={a.id || a.Id} value={a.code || a.Code}>
+                          [{a.code || a.Code}] {a.name || a.Name} ({a.areaName || a.AreaName || 'Planta'})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input className="form-input" value={newOT.assetName} onChange={e => setNewOT({...newOT, assetName: e.target.value})} />
+                  )}
                 </div>
                 <div className="form-group">
-                  <label>CECO Imputable</label>
-                  <input className="form-input" value={newOT.costCenterCode} onChange={e => setNewOT({...newOT, costCenterCode: e.target.value})} />
+                  <label>CECO Imputable (Autocompletado)</label>
+                  <input className="form-input" value={newOT.costCenterCode} readOnly style={{ background: '#F4F6F9', color: '#4C5F80', fontWeight: '700' }} />
                 </div>
               </div>
 

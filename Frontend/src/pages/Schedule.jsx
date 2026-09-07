@@ -1,16 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../services/api';
-import { CalendarClock, Edit3, RefreshCw } from 'lucide-react';
+import { CalendarClock, Edit3, RefreshCw, Search } from 'lucide-react';
+import { toast } from 'sonner';
+import { TableSkeleton } from '../components/UI';
+
+// Caché en cliente para transiciones instantáneas (0ms)
+let cachedScheduleList = null;
 
 export default function Schedule({ currentUser }) {
-  const [schedule, setSchedule] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [schedule, setSchedule] = useState(cachedScheduleList || []);
+  const [loading, setLoading] = useState(!cachedScheduleList);
   const [selectedItem, setSelectedItem] = useState(null);
   const [newDate, setNewDate] = useState('');
   const [reprogramReason, setReprogramReason] = useState('Parada de producción aplazada o espera de ventana operativa en línea');
+  const [activeFilter, setActiveFilter] = useState('Todos');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const loadSchedule = () => {
-    setLoading(true);
+  const loadSchedule = (silent = false) => {
+    if (!silent && !cachedScheduleList) setLoading(true);
     api.getSchedule().then(data => {
       if (Array.isArray(data)) {
         const clean = data.map((s, idx) => ({
@@ -24,13 +31,14 @@ export default function Schedule({ currentUser }) {
           nextDueDate: s.nextDueDate || s.NextDueDate || '2026-08-15',
           status: s.status || s.Status || 'Programado'
         }));
+        cachedScheduleList = clean;
         setSchedule(clean);
       } else {
         setSchedule([]);
       }
       setLoading(false);
     }).catch(() => {
-      setSchedule([]);
+      if (!cachedScheduleList) setSchedule([]);
       setLoading(false);
     });
   };
@@ -46,31 +54,98 @@ export default function Schedule({ currentUser }) {
     try {
       await api.reprogramSchedule(selectedItem.id, newDate, reprogramReason);
       setSelectedItem(null);
-      alert(`✅ Fecha reprogramada exitosamente al ${newDate}. Justificación registrada en Azure SQL.`);
-      loadSchedule();
+      toast.success(`Fecha reprogramada exitosamente al ${newDate}`);
+      // Actualizar localmente de inmediato
+      const updated = schedule.map(s => s.id === selectedItem.id ? { ...s, nextDueDate: newDate } : s);
+      cachedScheduleList = updated;
+      setSchedule(updated);
+      loadSchedule(true);
     } catch (err) {
-      alert(`❌ Error al reprogramar actividad: ${err.message}`);
+      toast.error(`Error al reprogramar actividad: ${err.message}`);
     }
   };
 
-  if (loading) {
-    return <div style={{ padding: '40px', color: '#8A919E', fontWeight: '600' }}>⏳ Cargando cronograma preventivo desde Azure SQL...</div>;
-  }
+  const canReprogram = currentUser?.role === 'Administrador' || currentUser?.role === 'Supervisor' || currentUser?.role === 'Supervisor de Planta';
 
-  const canReprogram = currentUser?.role === 'Administrador' || currentUser?.role === 'Supervisor de Planta';
+  // Filtrado por estado y texto
+  const filteredSchedule = useMemo(() => {
+    return schedule.filter(s => {
+      if (activeFilter === 'Vencido' && s.status !== 'Vencido') return false;
+      if (activeFilter === 'Próximo' && s.status !== 'Próximo a Vencer') return false;
+      if (activeFilter === 'Programado' && s.status !== 'Programado') return false;
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesAsset = (s.assetName || '').toLowerCase().includes(q) || (s.assetCode || '').toLowerCase().includes(q);
+        const matchesActivity = (s.activityName || '').toLowerCase().includes(q);
+        const matchesArea = (s.areaName || '').toLowerCase().includes(q) || (s.costCenterCode || '').toLowerCase().includes(q);
+        return matchesAsset || matchesActivity || matchesArea;
+      }
+      return true;
+    });
+  }, [schedule, activeFilter, searchQuery]);
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
         <div>
-          <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1A1C1E' }}>Cronograma de Mantenimientos Preventivos</h3>
-          <p style={{ fontSize: '14px', color: '#515254' }}>
-            Generación automática por frecuencia con <strong>permiso RBAC de reprogramación manual para supervisores</strong>
+          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#1A1C1E', margin: 0 }}>Cronograma de Mantenimientos Preventivos</h3>
+          <p style={{ fontSize: '13px', color: '#515254', margin: '4px 0 0 0' }}>
+            Generación automática por frecuencia con <strong>reprogramación justificada para supervisores</strong>
           </p>
         </div>
-        <button className="btn btn-secondary" onClick={loadSchedule}>
-          <RefreshCw size={16} /> Sincronizar Calendario
+        <button className="btn btn-secondary" onClick={() => loadSchedule(false)}>
+          <RefreshCw size={16} /> Sincronizar
         </button>
+      </div>
+
+      {/* Barra de Filtros y Buscador */}
+      <div style={{ background: '#FFFFFF', padding: '16px 20px', borderRadius: '12px', border: '1px solid #E2E4E9', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+        <div className="pipeline-container">
+          <button 
+            className={`pipeline-tab ${activeFilter === 'Todos' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('Todos')}
+          >
+            Todos ({schedule.length})
+          </button>
+          <button 
+            className={`pipeline-tab ${activeFilter === 'Vencido' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('Vencido')}
+          >
+            🔴 Vencidos ({schedule.filter(s => s.status === 'Vencido').length})
+          </button>
+          <button 
+            className={`pipeline-tab ${activeFilter === 'Próximo' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('Próximo')}
+          >
+            🟡 Próximos ({schedule.filter(s => s.status === 'Próximo a Vencer').length})
+          </button>
+          <button 
+            className={`pipeline-tab ${activeFilter === 'Programado' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('Programado')}
+          >
+            🟢 Programados ({schedule.filter(s => s.status === 'Programado').length})
+          </button>
+        </div>
+
+        <div style={{ position: 'relative', width: '260px' }}>
+          <Search size={16} color="#8A919E" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+          <input 
+            type="text" 
+            placeholder="Buscar por activo, actividad o CECO..." 
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '8px 12px 8px 36px',
+              borderRadius: '8px',
+              border: '1px solid #D8DCE5',
+              fontSize: '13px',
+              background: '#F9FAFB',
+              outline: 'none'
+            }}
+          />
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
@@ -79,62 +154,74 @@ export default function Schedule({ currentUser }) {
         <span className="badge badge-success">🟢 Programado OK</span>
       </div>
 
-      <div className="siatc-card" style={{ padding: '24px' }}>
-        <div className="table-container" style={{ marginTop: 0 }}>
-          <table className="custom-table">
-            <thead>
-              <tr>
-                <th>Activo o Área (CECO)</th>
-                <th>Actividad Mantenimiento</th>
-                <th>Frecuencia</th>
-                <th>Próxima Fecha Programada</th>
-                <th>Estado Cronograma</th>
-                <th>Acción Supervisor</th>
-              </tr>
-            </thead>
-            <tbody>
-              {schedule.map((s, idx) => {
-                let badgeClass = 'badge-success';
-                if (s.status === 'Vencido') badgeClass = 'badge-danger';
-                if (s.status === 'Próximo a Vencer') badgeClass = 'badge-warning';
-
-                return (
-                  <tr key={s.id || idx}>
-                    <td>
-                      <div style={{ fontWeight: '800', color: '#1A1C1E' }}>[{s.assetCode}] {s.assetName}</div>
-                      <div style={{ fontSize: '12px', color: '#4C5F80', fontWeight: '700' }}>{s.areaName} ({s.costCenterCode})</div>
-                    </td>
-                    <td style={{ fontWeight: '600', color: '#1A1C1E' }}>{s.activityName}</td>
-                    <td><span className="badge badge-mono">{s.frequencyType}</span></td>
-                    <td style={{ fontWeight: '800', fontSize: '15px', color: '#1A1C1E' }}>
-                      📅 {s.nextDueDate}
-                    </td>
-                    <td><span className={`badge ${badgeClass}`}>{s.status}</span></td>
-                    <td>
-                      {canReprogram ? (
-                        <button 
-                          className="btn btn-secondary" 
-                          style={{ padding: '7px 12px', fontSize: '13px' }}
-                          onClick={() => {
-                            setSelectedItem(s);
-                            setNewDate(s.nextDueDate);
-                          }}
-                        >
-                          <Edit3 size={14} /> Reprogramar Fecha
-                        </button>
-                      ) : (
-                        <span style={{ fontSize: '12px', color: '#8A919E', fontStyle: 'italic' }}>
-                          🔒 Solo Supervisores (RBAC)
-                        </span>
-                      )}
+      {loading && !schedule.length ? (
+        <TableSkeleton rows={5} cols={6} />
+      ) : (
+        <div className="siatc-card" style={{ padding: '24px' }}>
+          <div className="table-container" style={{ marginTop: 0 }}>
+            <table className="custom-table">
+              <thead>
+                <tr>
+                  <th>Activo o Área (CECO)</th>
+                  <th>Actividad Mantenimiento</th>
+                  <th>Frecuencia</th>
+                  <th>Próxima Fecha Programada</th>
+                  <th>Estado Cronograma</th>
+                  <th>Acción Supervisor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredSchedule.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: '#8A919E' }}>
+                      No se encontraron actividades preventivas para el filtro seleccionado.
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ) : (
+                  filteredSchedule.map((s, idx) => {
+                    let badgeClass = 'badge-success';
+                    if (s.status === 'Vencido') badgeClass = 'badge-danger';
+                    if (s.status === 'Próximo a Vencer') badgeClass = 'badge-warning';
+
+                    return (
+                      <tr key={s.id || idx}>
+                        <td>
+                          <div style={{ fontWeight: '800', color: '#1A1C1E' }}>[{s.assetCode}] {s.assetName}</div>
+                          <div style={{ fontSize: '12px', color: '#4C5F80', fontWeight: '700' }}>{s.areaName} ({s.costCenterCode})</div>
+                        </td>
+                        <td style={{ fontWeight: '600', color: '#1A1C1E' }}>{s.activityName}</td>
+                        <td><span className="badge badge-mono">{s.frequencyType}</span></td>
+                        <td style={{ fontWeight: '800', fontSize: '15px', color: '#1A1C1E' }}>
+                          📅 {s.nextDueDate}
+                        </td>
+                        <td><span className={`badge ${badgeClass}`}>{s.status}</span></td>
+                        <td>
+                          {canReprogram ? (
+                            <button 
+                              className="btn btn-secondary" 
+                              style={{ padding: '7px 12px', fontSize: '13px' }}
+                              onClick={() => {
+                                setSelectedItem(s);
+                                setNewDate(s.nextDueDate);
+                              }}
+                            >
+                              <Edit3 size={14} /> Reprogramar Fecha
+                            </button>
+                          ) : (
+                            <span style={{ fontSize: '12px', color: '#8A919E', fontStyle: 'italic' }}>
+                              🔒 Solo Supervisores (RBAC)
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {selectedItem && (
         <div className="modal-overlay" onClick={() => setSelectedItem(null)}>

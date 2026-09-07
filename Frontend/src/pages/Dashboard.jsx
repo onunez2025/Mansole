@@ -1,20 +1,39 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { TrendingUp, Clock, Cpu, CheckCircle2, AlertTriangle, DollarSign, Boxes, ArrowUpRight } from 'lucide-react';
+import { CardSkeleton, TableSkeleton } from '../components/UI';
+
+// Caché en cliente para que al volver a la pestaña Dashboard cargue en 0ms
+let cachedKpiData = null;
 
 export default function Dashboard({ currentUser }) {
-  const [kpi, setKpi] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [kpi, setKpi] = useState(cachedKpiData);
+  const [loading, setLoading] = useState(!cachedKpiData);
 
   useEffect(() => {
     api.getKPIs().then(data => {
+      cachedKpiData = data;
       setKpi(data);
+      setLoading(false);
+    }).catch(() => {
       setLoading(false);
     });
   }, []);
 
-  if (loading || !kpi) {
-    return <div style={{ padding: '40px', textAlign: 'center', color: '#8A919E', fontWeight: '600' }}>⏳ Cargando telemetría e indicadores SQL Server...</div>;
+  if (loading && !kpi) {
+    return (
+      <div>
+        <div style={{ marginBottom: '28px' }}>
+          <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#1A1C1E' }}>Resumen Ejecutivo Operativo</h3>
+          <p style={{ fontSize: '14px', color: '#8A919E' }}>Sincronizando telemetría en tiempo real desde Azure SQL...</p>
+        </div>
+        <CardSkeleton count={4} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+          <TableSkeleton rows={3} cols={3} />
+          <TableSkeleton rows={3} cols={3} />
+        </div>
+      </div>
+    );
   }
 
   const cards = [

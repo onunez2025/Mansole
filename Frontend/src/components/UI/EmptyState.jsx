@@ -77,3 +77,63 @@ export function LoadingContainer({ children, isLoading, size = 'md' }) {
     </div>
   );
 }
+
+export function CardSkeleton({ count = 4 }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="siatc-card" style={{ display: 'flex', alignItems: 'center', gap: '18px', padding: '22px 24px' }}>
+          <div className="skeleton" style={{ width: '54px', height: '54px', borderRadius: '12px', flexShrink: 0 }} />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className="skeleton" style={{ height: '12px', width: '60%' }} />
+            <div className="skeleton" style={{ height: '24px', width: '40%' }} />
+            <div className="skeleton" style={{ height: '10px', width: '80%' }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function TableSkeleton({ rows = 5, cols = 5 }) {
+  return (
+    <div className="siatc-card" style={{ padding: '24px' }}>
+      <div className="skeleton" style={{ height: '20px', width: '250px', marginBottom: '18px' }} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {Array.from({ length: rows }).map((_, r) => (
+          <div key={r} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            {Array.from({ length: cols }).map((_, c) => (
+              <div key={c} className="skeleton" style={{ height: '36px', flex: c === 1 ? 2 : 1, borderRadius: '6px' }} />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function OrderCardSkeleton({ count = 4 }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="siatc-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '22px 24px', gap: '18px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '280px' }}>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <div className="skeleton" style={{ height: '22px', width: '100px' }} />
+              <div className="skeleton" style={{ height: '22px', width: '80px', borderRadius: '999px' }} />
+              <div className="skeleton" style={{ height: '22px', width: '70px', borderRadius: '999px' }} />
+            </div>
+            <div className="skeleton" style={{ height: '22px', width: '80%' }} />
+            <div className="skeleton" style={{ height: '14px', width: '50%' }} />
+          </div>
+          <div className="skeleton" style={{ height: '70px', width: '240px', borderRadius: '10px' }} />
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <div className="skeleton" style={{ height: '40px', width: '120px', borderRadius: '8px' }} />
+            <div className="skeleton" style={{ height: '40px', width: '90px', borderRadius: '8px' }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+

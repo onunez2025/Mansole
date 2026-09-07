@@ -55,17 +55,19 @@ export default function Activities({ currentUser }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Catálogo Maestro de Actividades</h3>
-          <p className="text-sm text-slate-500 mt-0.5">Procedimientos estandarizados y tareas rutinarias para órdenes de trabajo preventivas</p>
+          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Catálogo de Actividades</h3>
+          <p className="text-sm text-slate-500 mt-0.5 hidden sm:block">Procedimientos estandarizados y tareas rutinarias para órdenes de trabajo preventivas</p>
         </div>
-        <button className="btn btn-primary text-xs" onClick={() => {
+        <button className="btn btn-primary text-xs py-1.5 px-3 self-start sm:self-auto" onClick={() => {
           setEditingActivity(null);
           setNewActivity({ name: '', type: 'Mecánico', estimatedMinutes: 60, resources: '' });
           setShowModal(true);
         }}>
-          <Plus size={15} /> Nueva Actividad
+          <Plus size={15} /> 
+          <span className="hidden sm:inline">Nueva Actividad</span>
+          <span className="sm:hidden">Nueva</span>
         </button>
       </div>
 
@@ -180,9 +182,11 @@ export default function Activities({ currentUser }) {
                 />
               </div>
 
-              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-200">
-                <button type="button" className="btn btn-secondary text-xs justify-center" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary text-xs justify-center">Guardar Actividad</button>
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                <button type="button" className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => setShowModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center">
+                  {editingActivity ? 'Guardar' : 'Crear'}
+                </button>
               </div>
             </form>
           </div>

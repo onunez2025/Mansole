@@ -286,13 +286,13 @@ export default function HelpModal({ isOpen, onClose, initialModule = 'workOrders
         </div>
 
         {/* Footer del Modal */}
-        <div className="p-3.5 sm:p-4 border-t border-slate-100 bg-white flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs text-slate-500">
-          <span className="text-center sm:text-left">Manual de Procedimientos v4.2 • División Rinnai Perú</span>
+        <div className="p-3 sm:p-4 border-t border-slate-100 bg-white flex items-center justify-between gap-2.5 text-xs text-slate-500">
+          <span className="truncate hidden sm:inline">Manual de Procedimientos • División Rinnai Perú</span>
           <button
             onClick={onClose}
-            className="w-full sm:w-auto px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-lg transition-all shadow-xs text-center"
+            className="w-full sm:w-auto px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-lg transition-all shadow-xs text-center ml-auto"
           >
-            Entendido, volver a la plataforma
+            Entendido
           </button>
         </div>
       </div>

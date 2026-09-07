@@ -336,21 +336,25 @@ export default function Users({ currentUser }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-xl font-bold text-slate-900 tracking-tight">
-            Usuarios, Roles & Matriz RBAC
+            Usuarios & Matriz RBAC
           </h3>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-slate-500 mt-0.5 hidden sm:block">
             Gobernanza y control granular de accesos por rol en la organización
           </p>
         </div>
         {(currentUser?.role || '') === 'Administrador' && (
           <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
             {activeTab === 'users' ? (
-              <button className="btn btn-primary text-xs flex-1 sm:flex-initial justify-center" onClick={handleOpenCreateUser}>
-                <UserPlus size={15} /> Nuevo Colaborador
+              <button className="btn btn-primary text-xs flex-1 sm:flex-initial justify-center py-1.5 px-3" onClick={handleOpenCreateUser}>
+                <UserPlus size={15} /> 
+                <span className="hidden sm:inline">Nuevo Colaborador</span>
+                <span className="sm:hidden">Nuevo</span>
               </button>
             ) : (
-              <button className="btn btn-primary text-xs flex-1 sm:flex-initial justify-center" onClick={() => setShowRoleModal(true)}>
-                <PlusCircle size={15} /> Crear Rol
+              <button className="btn btn-primary text-xs flex-1 sm:flex-initial justify-center py-1.5 px-3" onClick={() => setShowRoleModal(true)}>
+                <PlusCircle size={15} /> 
+                <span className="hidden sm:inline">Crear Rol</span>
+                <span className="sm:hidden">Nuevo Rol</span>
               </button>
             )}
           </div>
@@ -369,7 +373,7 @@ export default function Users({ currentUser }) {
                 {currentUser?.role || 'Consulta'}
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5 hidden sm:block">
               {(currentUser?.role || '') === 'Administrador' 
                 ? 'Privilegios de Administrador: Haz clic en cualquier celda para conceder o revocar permisos en tiempo real.' 
                 : 'Modo Consulta: Para modificar privilegios RBAC o dar de alta colaboradores, inicia sesión como Administrador.'}
@@ -753,9 +757,9 @@ export default function Users({ currentUser }) {
                 </button>
               </div>
 
-              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-200">
-                <button type="button" className="btn btn-secondary text-xs justify-center" onClick={() => setShowUserModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary text-xs justify-center">{editingUser ? 'Guardar Cambios' : 'Registrar Colaborador'}</button>
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                <button type="button" className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => setShowUserModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center">{editingUser ? 'Guardar' : 'Registrar'}</button>
               </div>
             </form>
           </div>
@@ -786,7 +790,7 @@ export default function Users({ currentUser }) {
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Descripción *</label>
                 <textarea 
                   className="form-textarea text-xs" 
-                  rows="2"
+                  rows="2" 
                   required 
                   placeholder="Explica las funciones o alcance de seguridad que tendrá este perfil..." 
                   value={roleDataForm.description} 
@@ -794,13 +798,13 @@ export default function Users({ currentUser }) {
                 />
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl text-xs text-blue-800 leading-relaxed">
-                ℹ️ Al crear un rol, se añadirá instantáneamente como una nueva columna interactiva con el nombre del rol explícito en cada celda.
+              <div className="bg-blue-50 border border-blue-200 p-2.5 rounded-xl text-xs text-blue-800 leading-relaxed">
+                ℹ️ Al crear un rol, se añadirá instantáneamente a la matriz interactiva de privilegios.
               </div>
 
-              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-200">
-                <button type="button" className="btn btn-secondary text-xs justify-center" onClick={() => setShowRoleModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary text-xs justify-center">Crear Rol e Integrar</button>
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                <button type="button" className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => setShowRoleModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center">Crear Rol</button>
               </div>
             </form>
           </div>

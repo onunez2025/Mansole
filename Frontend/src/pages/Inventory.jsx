@@ -138,27 +138,32 @@ export default function Inventory({ currentUser }) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Almacén y Trazabilidad de Repuestos</h3>
-          <p className="text-sm text-slate-500 mt-0.5">Control de inventario estándar y componentes de <strong className="text-emerald-600 font-semibold">Canibalización</strong> ($0 USD contable)</p>
+          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Almacén & Kardex</h3>
+          <p className="text-sm text-slate-500 mt-0.5 hidden sm:block">Control de inventario estándar y componentes de <strong className="text-emerald-600 font-semibold">Canibalización</strong> ($0 USD contable)</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           <button
             onClick={() => setShowHelpModal(true)}
-            className="flex-1 sm:flex-initial px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs"
+            className="px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs flex-shrink-0"
+            title="Guía Canibalización $0"
           >
             <HelpCircle size={15} className="text-emerald-600 flex-shrink-0" />
-            <span className="whitespace-nowrap">Guía $0</span>
+            <span className="hidden sm:inline">Guía $0</span>
+            <span className="sm:hidden">Guía</span>
           </button>
-          <button className="flex-1 sm:flex-initial btn btn-secondary text-xs justify-center" onClick={loadInventory}>
-            <RefreshCw size={14} /> <span className="whitespace-nowrap">Sincronizar</span>
+          <button className="btn btn-secondary text-xs px-2.5 sm:px-3 py-1.5 justify-center flex-shrink-0" onClick={loadInventory} title="Sincronizar Almacén">
+            <RefreshCw size={14} /> 
+            <span className="hidden sm:inline">Sincronizar</span>
           </button>
           {canRegister ? (
-            <button className="flex-1 sm:flex-initial btn btn-primary text-xs justify-center" onClick={openCreate}>
-              <Plus size={15} /> <span className="whitespace-nowrap">Ingresar Repuesto</span>
+            <button className="flex-1 sm:flex-initial btn btn-primary text-xs py-1.5 px-3 justify-center" onClick={openCreate}>
+              <Plus size={15} /> 
+              <span className="hidden sm:inline">Ingresar Repuesto</span>
+              <span className="sm:hidden">Nuevo</span>
             </button>
           ) : (
             <button className="btn btn-secondary text-xs opacity-50 cursor-not-allowed" disabled title="Bloqueado por RBAC para Operarios">
-              Ingreso Restringido
+              Restringido
             </button>
           )}
         </div>
@@ -380,10 +385,10 @@ export default function Inventory({ currentUser }) {
                 <input className="form-input text-xs" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
               </div>
 
-              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-200">
-                <button type="button" className="btn btn-secondary text-xs justify-center" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary text-xs justify-center">
-                  {editingItem ? 'Guardar Cambios' : 'Registrar en Almacén'}
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                <button type="button" className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => setShowModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center">
+                  {editingItem ? 'Guardar' : 'Registrar'}
                 </button>
               </div>
             </form>

@@ -1,40 +1,40 @@
 import React from 'react';
-import { Bell, Search, Menu, X, Database } from 'lucide-react';
+import { Bell, Search, Menu, X, Database, HelpCircle } from 'lucide-react';
 
 export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu, isMobileOpen, onOpenHelp }) {
   return (
-    <header className="h-16 px-4 md:px-8 bg-white border-b border-slate-200/80 sticky top-0 z-40 flex items-center justify-between gap-4">
+    <header className="h-14 sm:h-16 px-3 sm:px-6 md:px-8 bg-white border-b border-slate-200/80 sticky top-0 z-40 flex items-center justify-between gap-2 sm:gap-4">
       {/* Botón Hamburguesa Móvil + Título de la vista activa */}
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
         <button
           onClick={onToggleMobileMenu}
-          className="lg:hidden p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+          className="lg:hidden p-1.5 sm:p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors flex-shrink-0"
           title="Menú de Navegación"
           aria-label="Abrir menú de navegación"
         >
           {isMobileOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
 
-        <div>
-          <h2 className="text-base font-bold text-slate-900 tracking-tight leading-tight truncate">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight leading-tight truncate">
             {activeTabTitle}
           </h2>
-          <p className="text-[11px] text-slate-500 font-medium hidden sm:block leading-none">
+          <p className="text-[11px] text-slate-500 font-medium hidden sm:block leading-none truncate">
             Rinnai Perú • Planta Industrial
           </p>
         </div>
       </div>
 
       {/* Acciones del Navbar y Telemetría */}
-      <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
         {/* Indicador SQL Server / Azure Telemetry */}
-        <div className="hidden sm:inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+        <div className="hidden md:inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
           <span>Azure SQL Online</span>
         </div>
 
         {/* Buscador Rápido */}
-        <div className="relative hidden md:block w-56 lg:w-64">
+        <div className="relative hidden lg:block w-56">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input 
             type="text" 
@@ -49,16 +49,16 @@ export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu
         {/* Botón Central de Ayuda y Procedimientos */}
         <button
           onClick={onOpenHelp}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 text-xs font-semibold transition-all shadow-xs"
-          title="Manual de Procedimientos y Guías SOP"
+          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 text-xs font-semibold transition-all shadow-xs"
+          title="Manual de Procedimientos SOP"
         >
-          <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-          <span>Manual SOP</span>
+          <HelpCircle size={15} className="text-blue-600 flex-shrink-0" />
+          <span className="hidden sm:inline">Manual SOP</span>
         </button>
 
         {/* Alertas y Notificaciones */}
         <button 
-          className="relative p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+          className="relative p-1.5 sm:p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors flex-shrink-0"
           title="Notificaciones"
         >
           <Bell size={16} />

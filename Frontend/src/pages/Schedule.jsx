@@ -89,13 +89,13 @@ export default function Schedule({ currentUser }) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Cronograma de Mantenimientos Preventivos</h3>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Cronograma Preventivo</h3>
+          <p className="text-sm text-slate-500 mt-0.5 hidden sm:block">
             Cálculo por horómetro/frecuencia con reprogramación trazable para supervisores
           </p>
         </div>
-        <button className="btn btn-secondary text-xs self-start sm:self-auto" onClick={() => loadSchedule(false)}>
-          <RefreshCw size={14} /> Sincronizar
+        <button className="btn btn-secondary text-xs self-start sm:self-auto py-1.5 px-3" onClick={() => loadSchedule(false)} title="Sincronizar Cronograma">
+          <RefreshCw size={14} /> <span className="hidden sm:inline">Sincronizar</span>
         </button>
       </div>
 
@@ -249,9 +249,9 @@ export default function Schedule({ currentUser }) {
                 />
               </div>
 
-              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-200">
-                <button type="button" className="btn btn-secondary text-xs justify-center" onClick={() => setSelectedItem(null)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary text-xs justify-center">Guardar Nueva Fecha</button>
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                <button type="button" className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => setSelectedItem(null)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center">Guardar Fecha</button>
               </div>
             </form>
           </div>

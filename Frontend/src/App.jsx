@@ -48,15 +48,15 @@ export default function App() {
 
   const getTabTitle = () => {
     switch (activeTab) {
-      case 'dashboard': return 'Dashboard de Indicadores y KPIs';
-      case 'workOrders': return 'Control de Órdenes de Trabajo (OT) & IA';
-      case 'schedule': return 'Cronograma de Mantenimiento Preventivo';
-      case 'assets': return 'Gestión de Activos, Áreas y CECOs';
-      case 'inventory': return 'Repuestos, Almacén & Canibalización';
-      case 'activities': return 'Catálogo Maestro de Actividades';
-      case 'catalogs': return 'Configuración & Catálogos Maestros (CRUD)';
-      case 'users': return 'Gestión de Usuarios & Seguridad RBAC';
-      default: return 'Plataforma CMMS Grupo SOLE';
+      case 'dashboard': return 'Dashboard & KPIs';
+      case 'workOrders': return 'Órdenes de Trabajo';
+      case 'schedule': return 'Cronograma Preventivo';
+      case 'assets': return 'Gestión de Activos';
+      case 'inventory': return 'Almacén & Kardex';
+      case 'activities': return 'Catálogo de Actividades';
+      case 'catalogs': return 'Configuración & Catálogos';
+      case 'users': return 'Usuarios & Seguridad';
+      default: return 'MANSOLE CMMS';
     }
   };
 

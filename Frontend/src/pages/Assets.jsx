@@ -113,9 +113,9 @@ export default function Assets({ currentUser }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-xl font-bold text-slate-900 tracking-tight">Activos Industriales & CECOs</h3>
-          <p className="text-sm text-slate-500 mt-0.5">Jerarquía de costos: Planta Industrial → Áreas de Producción → Equipos</p>
+          <p className="text-sm text-slate-500 mt-0.5 hidden sm:block">Jerarquía de costos: Planta Industrial → Áreas de Producción → Equipos</p>
         </div>
-        <div className="flex items-center gap-2.5 flex-wrap w-full sm:w-auto">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           <div className="relative flex-1 sm:w-64">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input 
@@ -123,11 +123,13 @@ export default function Assets({ currentUser }) {
               placeholder="Buscar máquina, código o CECO..." 
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all"
+              className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all"
             />
           </div>
           <button className="btn btn-primary text-xs flex-shrink-0" onClick={openCreate}>
-            <Plus size={15} /> Registrar Activo
+            <Plus size={15} /> 
+            <span className="hidden sm:inline">Registrar Activo</span>
+            <span className="sm:hidden">Nuevo</span>
           </button>
         </div>
       </div>
@@ -178,7 +180,9 @@ export default function Assets({ currentUser }) {
 
               <div className="mt-auto pt-3 border-t border-slate-100 flex items-center gap-2">
                 <button className="btn btn-secondary flex-1 text-xs py-1.5" onClick={() => setSelectedAsset(a)}>
-                  <FileText size={14} /> Ficha Técnica
+                  <FileText size={14} /> 
+                  <span className="hidden sm:inline">Ficha Técnica</span>
+                  <span className="sm:hidden">Ficha</span>
                 </button>
                 <button className="btn btn-secondary text-xs p-1.5" onClick={() => openEdit(a)} title="Editar activo">
                   <Edit3 size={14} />
@@ -225,10 +229,10 @@ export default function Assets({ currentUser }) {
                 </div>
               ))}
             </div>
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-200">
-              <button className="btn btn-secondary text-xs justify-center" onClick={() => setSelectedAsset(null)}>Cerrar</button>
-              <button className="btn btn-primary text-xs justify-center" onClick={() => { setSelectedAsset(null); openEdit(selectedAsset); }}>
-                <Wrench size={14} /> Editar Activo
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+              <button className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => setSelectedAsset(null)}>Cerrar</button>
+              <button className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center" onClick={() => { setSelectedAsset(null); openEdit(selectedAsset); }}>
+                <Wrench size={14} /> <span>Editar Activo</span>
               </button>
             </div>
           </div>
@@ -303,10 +307,10 @@ export default function Assets({ currentUser }) {
                   </select>
                 </div>
               </div>
-              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-200">
-                <button type="button" className="btn btn-secondary text-xs justify-center" onClick={() => setShowCreateModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary text-xs justify-center">
-                  {editingAsset ? 'Guardar Cambios' : 'Registrar en Azure SQL'}
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                <button type="button" className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => setShowCreateModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center">
+                  {editingAsset ? 'Guardar' : 'Registrar'}
                 </button>
               </div>
             </form>

@@ -72,8 +72,8 @@ export default function Dashboard({ currentUser }) {
       {/* Encabezado */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Indicadores Clave de Desempeño (KPIs)</h3>
-          <p className="text-sm text-slate-500 mt-0.5">Monitoreo en tiempo real de disponibilidad, confiabilidad y costos en planta</p>
+          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Indicadores de Desempeño (KPIs)</h3>
+          <p className="text-sm text-slate-500 mt-0.5 hidden sm:block">Monitoreo en tiempo real de disponibilidad, confiabilidad y costos en planta</p>
         </div>
         <div className="inline-flex items-center self-start sm:self-auto gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-600 shadow-xs">
           <span>Período:</span>
@@ -111,7 +111,7 @@ export default function Dashboard({ currentUser }) {
             </div>
             <div>
               <h4 className="text-sm font-bold text-slate-900 tracking-tight">Activos con Mayor Incidencia</h4>
-              <p className="text-xs text-slate-500">Equipos prioritarios para mantenimiento preventivo</p>
+              <p className="text-xs text-slate-500 hidden sm:block">Equipos prioritarios para mantenimiento preventivo</p>
             </div>
           </div>
 
@@ -157,7 +157,7 @@ export default function Dashboard({ currentUser }) {
               </div>
               <div>
                 <h4 className="text-sm font-bold text-slate-900 tracking-tight">Imputación de Gastos por CECO</h4>
-                <p className="text-xs text-slate-500">Distribución de costos de mantenimiento</p>
+                <p className="text-xs text-slate-500 hidden sm:block">Distribución de costos de mantenimiento</p>
               </div>
             </div>
             <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md font-mono self-start sm:self-auto">
@@ -212,7 +212,7 @@ export default function Dashboard({ currentUser }) {
             <h4 className="text-sm font-bold text-slate-900 tracking-tight">
               Consumo de Repuestos en Almacén & Canibalización
             </h4>
-            <p className="text-xs text-slate-500">Trazabilidad de piezas estándar vs componentes reutilizados con valorización $0 USD</p>
+            <p className="text-xs text-slate-500 hidden sm:block">Trazabilidad de piezas estándar vs componentes reutilizados con valorización $0 USD</p>
           </div>
         </div>
 

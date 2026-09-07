@@ -213,11 +213,11 @@ export default function Catalogs({ currentUser }) {
               Administración Central
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <Settings className="text-slate-900 flex-shrink-0" size={22} />
-            <span>Configuración de Catálogos Maestros</span>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <Settings className="text-slate-900 flex-shrink-0" size={20} />
+            <span>Configuración de Catálogos</span>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 hidden sm:block">
             Gobierna las tablas base del CMMS en Azure SQL: Áreas de Planta, Familias de Maquinaria y Centros de Costos.
           </p>
         </div>
@@ -225,10 +225,12 @@ export default function Catalogs({ currentUser }) {
         <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           <button
             onClick={() => setShowHelp(true)}
-            className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs"
+            className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs flex-shrink-0"
+            title="Guía SOP Catálogos"
           >
             <HelpCircle size={15} className="text-blue-600 flex-shrink-0" />
-            <span className="whitespace-nowrap">Guía SOP</span>
+            <span className="hidden sm:inline">Guía SOP</span>
+            <span className="sm:hidden">Guía</span>
           </button>
 
           <button
@@ -237,14 +239,15 @@ export default function Catalogs({ currentUser }) {
               if (activeTab === 'categories') handleOpenCatModal();
               if (activeTab === 'cecos') handleOpenCecoModal();
             }}
-            className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs"
+            className="flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs"
           >
             <Plus size={15} />
-            <span className="whitespace-nowrap">
+            <span className="hidden sm:inline">
               {activeTab === 'areas' && 'Nueva Área'}
               {activeTab === 'categories' && 'Nueva Categoría'}
               {activeTab === 'cecos' && 'Nuevo CECO'}
             </span>
+            <span className="sm:hidden">Nuevo</span>
           </button>
         </div>
       </div>
@@ -542,9 +545,9 @@ export default function Catalogs({ currentUser }) {
                     className="w-full px-3.5 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:border-slate-900"
                   />
                 </div>
-                <div className="pt-3 border-t border-slate-200 flex flex-col-reverse sm:flex-row justify-end gap-2">
-                  <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg text-center">Cancelar</button>
-                  <button type="submit" className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800 text-center">Guardar en Azure SQL</button>
+                <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+                  <button type="button" onClick={() => setShowModal(false)} className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg flex-1 sm:flex-initial text-center">Cancelar</button>
+                  <button type="submit" className="px-4 py-1.5 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800 flex-1 sm:flex-initial text-center">Guardar</button>
                 </div>
               </form>
             )}
@@ -573,9 +576,9 @@ export default function Catalogs({ currentUser }) {
                     className="w-full px-3.5 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:border-slate-900"
                   />
                 </div>
-                <div className="pt-3 border-t border-slate-200 flex flex-col-reverse sm:flex-row justify-end gap-2">
-                  <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg text-center">Cancelar</button>
-                  <button type="submit" className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800 text-center">Guardar en Azure SQL</button>
+                <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+                  <button type="button" onClick={() => setShowModal(false)} className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg flex-1 sm:flex-initial text-center">Cancelar</button>
+                  <button type="submit" className="px-4 py-1.5 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800 flex-1 sm:flex-initial text-center">Guardar</button>
                 </div>
               </form>
             )}
@@ -627,9 +630,9 @@ export default function Catalogs({ currentUser }) {
                     className="w-full px-3.5 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:border-slate-900"
                   />
                 </div>
-                <div className="pt-3 border-t border-slate-200 flex flex-col-reverse sm:flex-row justify-end gap-2">
-                  <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg text-center">Cancelar</button>
-                  <button type="submit" className="px-4 py-2 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800 text-center">Guardar en Azure SQL</button>
+                <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+                  <button type="button" onClick={() => setShowModal(false)} className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg flex-1 sm:flex-initial text-center">Cancelar</button>
+                  <button type="submit" className="px-4 py-1.5 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800 flex-1 sm:flex-initial text-center">Guardar</button>
                 </div>
               </form>
             )}

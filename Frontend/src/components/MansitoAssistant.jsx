@@ -123,21 +123,113 @@ export default function MansitoAssistant({ currentUser }) {
     setMessages([]);
   };
 
-  // Renderizado simple de Markdown (negritas, viñetas, saltos)
-  // Renderizado simple de Markdown (negritas, viñetas, saltos)
+  // Helpers para parsear tablas Markdown
+  const isSeparatorRow = (row) => {
+    const cells = row.replace(/^\|/, '').replace(/\|$/, '').split('|');
+    return cells.length > 0 && cells.every(c => /^[\s:-]+$/.test(c.trim()) && c.trim().length > 0);
+  };
+
+  const splitCells = (row) => {
+    return row.replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+  };
+
+  // Renderizado avanzado de Markdown (tablas, negritas, viñetas, listas numeradas, títulos y divisores)
   const formatMarkdown = (content) => {
     if (!content) return null;
 
-    const lines = content.split('\n');
-    return lines.map((line, idx) => {
-      // Línea vacía
-      if (!line.trim()) return <div key={idx} className="h-1.5" />;
+    const rawLines = content.split('\n');
+    const blocks = [];
+    let currentTable = null;
 
-      // Elementos de lista
-      if (line.trim().startsWith('* ') || line.trim().startsWith('- ')) {
-        const itemText = line.trim().substring(2);
+    for (let i = 0; i < rawLines.length; i++) {
+      const line = rawLines[i];
+      const trimmed = line.trim();
+
+      const isTableRow = trimmed.startsWith('|') && trimmed.includes('|', 1);
+
+      if (isTableRow) {
+        if (!currentTable) {
+          currentTable = [];
+        }
+        currentTable.push(trimmed);
+      } else {
+        if (currentTable) {
+          if (currentTable.length >= 2 && isSeparatorRow(currentTable[1])) {
+            blocks.push({ type: 'table', lines: currentTable });
+          } else {
+            currentTable.forEach(tl => blocks.push({ type: 'line', line: tl }));
+          }
+          currentTable = null;
+        }
+        blocks.push({ type: 'line', line });
+      }
+    }
+
+    if (currentTable) {
+      if (currentTable.length >= 2 && isSeparatorRow(currentTable[1])) {
+        blocks.push({ type: 'table', lines: currentTable });
+      } else {
+        currentTable.forEach(tl => blocks.push({ type: 'line', line: tl }));
+      }
+    }
+
+    return blocks.map((block, bIdx) => {
+      // 1. Renderizado de TABLAS Markdown estilizadas
+      if (block.type === 'table') {
+        const headers = splitCells(block.lines[0]);
+        const rows = block.lines.slice(2).map(splitCells);
+
         return (
-          <div key={idx} className="flex items-start gap-1.5 ml-1 my-0.5">
+          <div key={bIdx} className="w-full max-w-full overflow-x-auto my-2.5 rounded-xl border border-slate-200/90 shadow-2xs bg-white">
+            <table className="min-w-full divide-y divide-slate-200 border-collapse text-left text-[11px]">
+              <thead className="bg-slate-100/90 text-slate-900 border-b border-slate-200 font-bold">
+                <tr>
+                  {headers.map((h, hIdx) => (
+                    <th 
+                      key={hIdx} 
+                      className="px-2.5 py-1.5 font-bold tracking-tight text-slate-900 border-r border-slate-200/70 last:border-r-0 whitespace-nowrap bg-slate-100"
+                      dangerouslySetInnerHTML={{ __html: parseBold(h) }}
+                    />
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {rows.map((row, rIdx) => (
+                  <tr 
+                    key={rIdx} 
+                    className={rIdx % 2 === 0 ? 'bg-white hover:bg-indigo-50/40 transition-colors' : 'bg-slate-50/50 hover:bg-indigo-50/40 transition-colors'}
+                  >
+                    {row.map((cell, cIdx) => (
+                      <td 
+                        key={cIdx} 
+                        className="px-2.5 py-1.5 text-slate-800 border-r border-slate-100 last:border-r-0 whitespace-nowrap leading-snug font-normal"
+                        dangerouslySetInnerHTML={{ __html: parseBold(cell) }}
+                      />
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+
+      const line = block.line;
+      const trimmed = line.trim();
+
+      // Línea vacía
+      if (!trimmed) return <div key={bIdx} className="h-1.5" />;
+
+      // Separador horizontal
+      if (trimmed === '---' || trimmed === '***') {
+        return <hr key={bIdx} className="my-2 border-slate-200" />;
+      }
+
+      // Elementos de lista no ordenada
+      if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+        const itemText = trimmed.substring(2);
+        return (
+          <div key={bIdx} className="flex items-start gap-1.5 ml-1 my-0.5">
             <span className="text-blue-600 font-black leading-tight select-none shrink-0">•</span>
             <span 
               className="flex-1 font-normal leading-relaxed text-slate-900" 
@@ -148,11 +240,28 @@ export default function MansitoAssistant({ currentUser }) {
         );
       }
 
-      // Títulos simples
+      // Elementos de lista ordenada (ej. 1. , 2. )
+      const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+      if (numMatch) {
+        return (
+          <div key={bIdx} className="flex items-start gap-1.5 ml-1 my-0.5">
+            <span className="text-indigo-600 font-bold leading-tight select-none shrink-0 text-[11px]">
+              {numMatch[1]}.
+            </span>
+            <span 
+              className="flex-1 font-normal leading-relaxed text-slate-900" 
+              style={{ color: '#0f172a' }} 
+              dangerouslySetInnerHTML={{ __html: parseBold(numMatch[2]) }} 
+            />
+          </div>
+        );
+      }
+
+      // Títulos
       if (line.startsWith('### ')) {
         return (
           <h5 
-            key={idx} 
+            key={bIdx} 
             className="font-bold text-xs sm:text-sm mt-2 mb-1 text-slate-950" 
             style={{ color: '#020617' }} 
             dangerouslySetInnerHTML={{ __html: parseBold(line.replace('### ', '')) }} 
@@ -162,17 +271,27 @@ export default function MansitoAssistant({ currentUser }) {
       if (line.startsWith('## ')) {
         return (
           <h4 
-            key={idx} 
-            className="font-bold text-sm mt-2 mb-1 text-slate-950" 
+            key={bIdx} 
+            className="font-bold text-sm mt-2.5 mb-1 text-slate-950" 
             style={{ color: '#020617' }} 
             dangerouslySetInnerHTML={{ __html: parseBold(line.replace('## ', '')) }} 
+          />
+        );
+      }
+      if (line.startsWith('# ')) {
+        return (
+          <h3 
+            key={bIdx} 
+            className="font-extrabold text-sm sm:text-base mt-3 mb-1 text-slate-950" 
+            style={{ color: '#020617' }} 
+            dangerouslySetInnerHTML={{ __html: parseBold(line.replace('# ', '')) }} 
           />
         );
       }
 
       return (
         <p 
-          key={idx} 
+          key={bIdx} 
           className="leading-relaxed my-0.5 font-normal text-slate-900" 
           style={{ color: '#0f172a' }} 
           dangerouslySetInnerHTML={{ __html: parseBold(line) }} 
@@ -182,10 +301,11 @@ export default function MansitoAssistant({ currentUser }) {
   };
 
   const parseBold = (str) => {
+    if (!str) return '';
     // Reemplaza **texto** por <strong>texto</strong> y `code` por <code>code</code>
     return str
       .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-950" style="color: #020617;">$1</strong>')
-      .replace(/`([^`]+)`/g, '<code class="bg-blue-50 text-blue-700 px-1 py-0.5 rounded text-[11px] font-mono font-bold" style="color: #1d4ed8; background-color: #eff6ff;">$1</code>');
+      .replace(/`([^`]+)`/g, '<code class="bg-blue-50 text-blue-700 px-1 py-0.5 rounded text-[10.5px] font-mono font-bold" style="color: #1d4ed8; background-color: #eff6ff;">$1</code>');
   };
 
 
@@ -232,7 +352,7 @@ export default function MansitoAssistant({ currentUser }) {
 
       {/* Ventana de Chat Flotante */}
       {isOpen && (
-        <div className="w-88 sm:w-[430px] h-[550px] max-h-[86vh] max-w-[calc(100vw-24px)] bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-fadeIn duration-200">
+        <div className="w-88 sm:w-[460px] h-[560px] max-h-[86vh] max-w-[calc(100vw-24px)] bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-fadeIn duration-200">
           {/* Cabecera del Asistente */}
           <div className="px-4 py-3 sm:py-3.5 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white flex items-center justify-between gap-2 shrink-0 border-b border-slate-700/60">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -276,7 +396,7 @@ export default function MansitoAssistant({ currentUser }) {
           </div>
 
           {/* Cuerpo de Mensajes */}
-          <div className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-3 bg-slate-50/50 text-xs">
+          <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 bg-slate-50/50 text-xs">
             {messages.length === 0 ? (
               <div className="py-3 space-y-3.5">
                 {/* Saludo Inicial */}
@@ -324,7 +444,7 @@ export default function MansitoAssistant({ currentUser }) {
                   key={msg.id}
                   className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
                 >
-                  <div className="flex items-end gap-1.5 max-w-[92%]">
+                  <div className={`flex items-end gap-1.5 ${msg.sender === 'user' ? 'max-w-[85%]' : 'max-w-[98%] w-full min-w-0'}`}>
                     {msg.sender === 'mansito' && (
                       <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 mb-1">
                         <Bot size={13} />
@@ -332,12 +452,12 @@ export default function MansitoAssistant({ currentUser }) {
                     )}
 
                     <div
-                      className={`p-3 rounded-2xl shadow-xs text-[11px] sm:text-xs leading-relaxed ${
+                      className={`p-3 rounded-2xl shadow-xs text-[11px] sm:text-xs leading-relaxed min-w-0 ${
                         msg.sender === 'user'
-                          ? 'bg-blue-600 text-white rounded-br-xs font-normal'
+                          ? 'bg-blue-600 text-white rounded-br-xs font-normal ml-auto'
                           : msg.isError
-                          ? 'bg-rose-50 text-rose-900 border border-rose-200 rounded-bl-xs'
-                          : 'bg-white text-slate-900 border border-slate-200/90 rounded-bl-xs shadow-xs'
+                          ? 'bg-rose-50 text-rose-900 border border-rose-200 rounded-bl-xs w-full'
+                          : 'bg-white text-slate-900 border border-slate-200/90 rounded-bl-xs shadow-xs w-full overflow-hidden'
                       }`}
                       style={
                         msg.sender === 'user'
@@ -350,7 +470,7 @@ export default function MansitoAssistant({ currentUser }) {
                           {msg.text}
                         </p>
                       ) : (
-                        <div className="space-y-1 font-normal text-slate-900" style={{ color: '#0f172a' }}>
+                        <div className="space-y-1 font-normal text-slate-900 min-w-0" style={{ color: '#0f172a' }}>
                           {formatMarkdown(msg.text)}
                         </div>
                       )}

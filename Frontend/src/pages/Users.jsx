@@ -1,5 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Shield, UserPlus, Lock, CheckCircle2, XCircle, Key, Users as UsersIcon, Edit3, Trash2, PlusCircle, ToggleLeft, ToggleRight, Check, AlertCircle, Layers, ChevronRight, UserCheck } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Shield, UserPlus, Lock, CheckCircle2, XCircle, Key, 
+  Users as UsersIcon, Edit3, Trash2, PlusCircle, ToggleLeft, 
+  ToggleRight, Check, AlertCircle, Layers, ChevronRight, 
+  UserCheck, ChevronDown, ChevronUp, X, Search, Copy 
+} from 'lucide-react';
+import { toast } from 'sonner';
 import { api } from '../services/api';
 
 export default function Users({ currentUser }) {
@@ -13,6 +19,14 @@ export default function Users({ currentUser }) {
   // Roles reales desde MANSOLE.Roles: Administrador, Supervisor, Técnico, Operador
   const [rolesList, setRolesList] = useState([]);
   const [rolesLoading, setRolesLoading] = useState(true);
+
+  // Rol actualmente seleccionado en la vista Master-Detail
+  const [selectedRoleName, setSelectedRoleName] = useState('Supervisor');
+  // Acordeones abiertos por módulo
+  const [openModules, setOpenModules] = useState({});
+  // Buscador de capacidades/acciones
+  const [permissionSearch, setPermissionSearch] = useState('');
+  const [allExpanded, setAllExpanded] = useState(true);
 
   // Matriz RBAC con permisos vinculados directamente al NOMBRE DEL ROL para que sea 100% explícito
   const [modulesRBAC, setModulesRBAC] = useState([
@@ -154,13 +168,20 @@ export default function Users({ currentUser }) {
       .catch(() => setRolesLoading(false));
   }, []);
 
+  // Sincronizar rol seleccionado cuando cargan los roles
+  useEffect(() => {
+    if (rolesList.length > 0 && !rolesList.some(r => r.name === selectedRoleName)) {
+      setSelectedRoleName(rolesList[0].name);
+    }
+  }, [rolesList]);
+
   const togglePermission = (modIdx, actionIdx, roleName) => {
     if ((currentUser?.role || '') !== 'Administrador') {
-      alert('⚠️ Solo el Administrador general puede alterar la matriz de seguridad en vivo.');
+      toast.error('Solo el Administrador general puede alterar los permisos en vivo.');
       return;
     }
     if ((roleName || '').toLowerCase().includes('admin')) {
-      alert('⚠️ No se puede restringir permisos al rol Administrador por seguridad del sistema.');
+      toast.warning('El rol Administrador siempre cuenta con acceso total por seguridad.');
       return;
     }
     const copy = [...modulesRBAC];
@@ -170,6 +191,115 @@ export default function Users({ currentUser }) {
       setModulesRBAC(copy);
     }
   };
+
+  // Conceder o revocar todos los permisos de un módulo específico para el rol actual
+  const setModuleAllPermissions = (modIdx, roleName, value) => {
+    if ((currentUser?.role || '') !== 'Administrador') {
+      toast.error('Solo el Administrador general puede alterar los permisos.');
+      return;
+    }
+    if ((roleName || '').toLowerCase().includes('admin')) {
+      toast.warning('El rol Administrador siempre cuenta con acceso total por seguridad.');
+      return;
+    }
+    const copy = [...modulesRBAC];
+    if (copy[modIdx]) {
+      copy[modIdx] = {
+        ...copy[modIdx],
+        actions: copy[modIdx].actions.map(act => ({
+          ...act,
+          [roleName]: value
+        }))
+      };
+      setModulesRBAC(copy);
+      toast.success(value ? `Permisos concedidos en ${copy[modIdx].moduleName}` : `Módulo bloqueado para ${roleName}`);
+    }
+  };
+
+  // Conceder o revocar TODOS los permisos del sistema para el rol actual
+  const setAllPermissions = (roleName, value) => {
+    if ((currentUser?.role || '') !== 'Administrador') {
+      toast.error('Solo el Administrador general puede alterar los permisos.');
+      return;
+    }
+    if ((roleName || '').toLowerCase().includes('admin')) {
+      toast.warning('El rol Administrador siempre cuenta con acceso total por seguridad.');
+      return;
+    }
+    const copy = modulesRBAC.map(mod => ({
+      ...mod,
+      actions: mod.actions.map(act => ({
+        ...act,
+        [roleName]: value
+      }))
+    }));
+    setModulesRBAC(copy);
+    toast.success(value ? `Todos los permisos concedidos al rol "${roleName}"` : `Todos los permisos revocados al rol "${roleName}"`);
+  };
+
+  // Duplicar un rol existente para acelerar la creación de perfiles
+  const handleDuplicateRole = (sourceRole) => {
+    const defaultName = `${sourceRole.name} Personalizado`;
+    const newName = window.prompt(`Ingresa el nombre para el nuevo rol basado en "${sourceRole.name}":`, defaultName);
+    if (!newName || !newName.trim()) return;
+    const cleanName = newName.trim();
+    if (rolesList.some(r => (r.name || '').toLowerCase() === cleanName.toLowerCase())) {
+      toast.error('Ya existe un rol con ese nombre.');
+      return;
+    }
+    const newRoleObj = {
+      id: Date.now(),
+      name: cleanName,
+      description: `Perfil clonado a partir de ${sourceRole.name}`,
+      isSystem: false
+    };
+    setRolesList(prev => [...prev, newRoleObj]);
+    setModulesRBAC(prev => prev.map(mod => ({
+      ...mod,
+      actions: mod.actions.map(act => ({
+        ...act,
+        [cleanName]: Boolean(act[sourceRole.name])
+      }))
+    })));
+    setSelectedRoleName(cleanName);
+    toast.success(`Rol "${cleanName}" creado con la copia de permisos de "${sourceRole.name}".`);
+  };
+
+  const toggleModuleAccordion = (modId) => {
+    setOpenModules(prev => ({
+      ...prev,
+      [modId]: prev[modId] === false ? true : false
+    }));
+  };
+
+  const toggleAllModules = () => {
+    const nextState = !allExpanded;
+    setAllExpanded(nextState);
+    const newOpen = {};
+    modulesRBAC.forEach(m => {
+      newOpen[m.moduleId] = nextState;
+    });
+    setOpenModules(newOpen);
+  };
+
+  // Filtro de búsqueda dentro de los módulos y capacidades
+  const filteredModules = useMemo(() => {
+    return modulesRBAC.map((mod, modIdx) => {
+      const q = permissionSearch.trim().toLowerCase();
+      const matchingActions = mod.actions
+        .map((act, actIdx) => ({ ...act, originalActionIdx: actIdx }))
+        .filter(act => {
+          if (!q) return true;
+          return act.label.toLowerCase().includes(q) || mod.moduleName.toLowerCase().includes(q);
+        });
+
+      return {
+        ...mod,
+        originalIdx: modIdx,
+        actions: matchingActions
+      };
+    }).filter(mod => mod.actions.length > 0);
+  }, [modulesRBAC, permissionSearch]);
 
   const handleOpenCreateUser = () => {
     setEditingUser(null);
@@ -513,45 +643,76 @@ export default function Users({ currentUser }) {
       )}
 
       {activeTab === 'roles' && (
-        <>
-          <div className="stat-card p-3.5 sm:p-5 mb-6 shadow-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-4">
+        <div className="space-y-5">
+          {/* 1. Selector Horizontal de Roles */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3.5">
               <div>
-                <h4 className="text-base sm:text-lg font-bold text-slate-900">Catálogo de Roles Corporativos</h4>
-                <span className="text-xs text-slate-500">Crea roles personalizados y asígnalos a los colaboradores de Grupo SOLE</span>
+                <h4 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Shield size={18} className="text-blue-600" />
+                  <span>Roles Corporativos ({rolesList.length})</span>
+                </h4>
+                <p className="text-xs text-slate-500">
+                  Selecciona un rol para auditar o personalizar sus privilegios por módulo.
+                </p>
               </div>
+              {(currentUser?.role || '') === 'Administrador' && (
+                <button 
+                  onClick={() => setShowRoleModal(true)}
+                  className="btn btn-primary text-xs py-1.5 px-3 self-start sm:self-auto flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                >
+                  <PlusCircle size={14} /> <span>Crear Nuevo Rol</span>
+                </button>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
               {rolesList.map(r => {
-                const count = usersList.filter(u => u.role === r.name).length;
+                const isSelected = r.name === selectedRoleName;
+                const usersCount = usersList.filter(u => (u.role || '').toLowerCase() === r.name.toLowerCase()).length;
+                let activePerms = 0;
+                let totalPerms = 0;
+                modulesRBAC.forEach(m => {
+                  m.actions.forEach(a => {
+                    totalPerms++;
+                    if (a[r.name]) activePerms++;
+                  });
+                });
+
                 return (
-                  <div key={r.id} className="border border-slate-200 rounded-xl p-3.5 sm:p-4 bg-slate-50/60 flex flex-col justify-between gap-3">
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="font-bold text-sm sm:text-base text-slate-900">{r.name}</span>
-                        {r.isSystem ? (
-                          <span className="badge badge-mono text-[11px]">🔒 Sistema</span>
-                        ) : (
-                          <span className="badge badge-success text-[11px]">✨ Custom</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                        {r.description}
-                      </p>
-                    </div>
-                    <div className="flex justify-between items-center border-t border-slate-200/80 pt-2.5 mt-auto">
-                      <span className="text-xs font-bold text-slate-600">
-                        👥 {count} {count === 1 ? 'colaborador' : 'colaboradores'}
+                  <div
+                    key={r.id}
+                    onClick={() => setSelectedRoleName(r.name)}
+                    className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex flex-col justify-between gap-2 ${
+                      isSelected 
+                        ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-xs' 
+                        : 'bg-slate-50/60 border-slate-200 hover:bg-slate-100/70 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className={`font-bold text-xs truncate ${isSelected ? 'text-blue-900' : 'text-slate-900'}`}>
+                        {r.name}
                       </span>
-                      {!r.isSystem && (currentUser?.role || '') === 'Administrador' && (
-                        <button 
-                          onClick={() => handleDeleteRole(r)} 
-                          className="px-2 py-1 rounded bg-red-50 text-red-700 text-xs font-bold hover:bg-red-100 flex items-center gap-1 transition-colors"
-                        >
-                          <Trash2 size={13} /> Eliminar
-                        </button>
+                      {r.isSystem ? (
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-200 text-slate-700">
+                          🔒 Sistema
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800">
+                          Custom
+                        </span>
                       )}
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1.5 border-t border-slate-200/60">
+                      <span>👥 {usersCount} {usersCount === 1 ? 'colab' : 'colabs'}</span>
+                      <span className={`font-mono font-bold text-[10px] ${
+                        activePerms === totalPerms 
+                          ? 'text-emerald-700' 
+                          : (activePerms > 0 ? 'text-blue-700' : 'text-slate-400')
+                      }`}>
+                        {activePerms}/{totalPerms}
+                      </span>
                     </div>
                   </div>
                 );
@@ -559,122 +720,224 @@ export default function Users({ currentUser }) {
             </div>
           </div>
 
-          <div className="stat-card p-3.5 sm:p-6 bg-white shadow-xs">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-slate-900 text-white flex items-center justify-center flex-shrink-0">
-                <Layers size={18} />
-              </div>
-              <div>
-                <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
-                  Matriz Interactiva de Privilegios por Rol & Módulo
-                </h4>
-                <span className="text-xs text-slate-500">
-                  Haz clic en el recuadro para alternar los permisos en tiempo real.
-                </span>
-              </div>
-            </div>
+          {/* 2. Panel Detalle de Privilegios del Rol Seleccionado */}
+          {(() => {
+            const selectedRole = rolesList.find(r => r.name === selectedRoleName) || rolesList[0];
+            if (!selectedRole) return null;
+            const isAdminRole = selectedRole.name.toLowerCase().includes('admin');
 
-            <div className="text-[11px] text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg mb-3 flex items-center gap-1.5 font-medium sm:hidden">
-              <span>👉 Desliza horizontalmente la tabla para ver todos los roles y permisos</span>
-            </div>
+            return (
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-6 shadow-xs space-y-4">
+                {/* Cabecera y Controles Maestros */}
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-4 border-b border-slate-200">
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-base sm:text-lg font-extrabold text-slate-900">
+                        Privilegios de: <span className="text-blue-600">{selectedRole.name}</span>
+                      </h4>
+                      {selectedRole.isSystem ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                          🔒 Rol Protegido de Sistema
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          ✨ Rol Personalizado
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {selectedRole.description || 'Configuración granular de capacidades y accesos en el sistema.'}
+                    </p>
+                  </div>
 
-            <div className="table-container border border-slate-300 rounded-xl overflow-x-auto shadow-xs">
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '850px' }}>
-                <thead>
-                  <tr style={{ background: '#0F172A', color: '#FFFFFF' }}>
-                    <th style={{ padding: '18px 22px', fontSize: '15px', fontWeight: '800', color: '#FFFFFF', width: '38%', borderBottom: '3px solid #334155' }}>
-                      MÓDULO OPERATIVO / CAPACIDAD
-                    </th>
-                    {rolesList.map(r => (
-                      <th key={r.id} style={{ textAlign: 'center', padding: '14px 10px', background: '#1E293B', borderLeft: '1px solid #334155', borderBottom: '3px solid #334155', minWidth: '150px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '14px', fontWeight: '800', color: '#F8FAFC', letterSpacing: '0.5px' }}>
-                            👤 {r.name.toUpperCase()}
-                          </span>
-                          <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '700', background: '#0F172A', padding: '2px 10px', borderRadius: '20px', border: '1px solid #334155' }}>
-                            {usersList.filter(u => (u.role || '').toLowerCase() === r.name.toLowerCase()).length} {usersList.filter(u => (u.role || '').toLowerCase() === r.name.toLowerCase()).length === 1 ? 'usuario' : 'usuarios'}
-                          </span>
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {modulesRBAC.map((mod, modIdx) => (
-                    <React.Fragment key={mod.moduleId}>
-                      {/* Cabecera del Módulo */}
-                      <tr style={{ background: '#E2E8F0', borderTop: '2px solid #94A3B8', borderBottom: '2px solid #94A3B8' }}>
-                        <td colSpan={1 + rolesList.length} style={{ padding: '14px 22px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div>
-                              <strong style={{ fontSize: '16px', color: '#0F172A', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                {mod.moduleName}
-                              </strong>
-                              <span style={{ fontSize: '12px', color: '#475569', display: 'block', marginTop: '2px', fontWeight: '600' }}>
-                                ℹ️ {mod.description}
+                  {/* Acciones Rápidas */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="relative">
+                      <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Filtrar capacidades..."
+                        value={permissionSearch}
+                        onChange={e => setPermissionSearch(e.target.value)}
+                        className="pl-8 pr-2.5 py-1 text-xs rounded-lg border border-slate-300 bg-slate-50 focus:bg-white focus:outline-none focus:border-slate-900 w-40 sm:w-48 transition-all"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={toggleAllModules}
+                      className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition-colors flex items-center gap-1 cursor-pointer"
+                      title={allExpanded ? "Colapsar todos los módulos" : "Desplegar todos los módulos"}
+                    >
+                      {allExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                      <span>{allExpanded ? "Colapsar Todo" : "Expandir Todo"}</span>
+                    </button>
+
+                    {(currentUser?.role || '') === 'Administrador' && !isAdminRole && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setAllPermissions(selectedRole.name, true)}
+                          className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors flex items-center gap-1 cursor-pointer"
+                          title="Habilitar todos los permisos para este rol"
+                        >
+                          <Check size={13} />
+                          <span>Conceder Todo</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setAllPermissions(selectedRole.name, false)}
+                          className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors flex items-center gap-1 cursor-pointer"
+                          title="Deshabilitar todos los permisos para este rol"
+                        >
+                          <X size={13} />
+                          <span>Revocar Todo</span>
+                        </button>
+                      </>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleDuplicateRole(selectedRole)}
+                      className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition-colors flex items-center gap-1 cursor-pointer"
+                      title="Crear un nuevo rol con la misma base de permisos"
+                    >
+                      <Copy size={13} />
+                      <span>Duplicar Rol</span>
+                    </button>
+
+                    {!selectedRole.isSystem && (currentUser?.role || '') === 'Administrador' && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteRole(selectedRole)}
+                        className="px-2 py-1 text-xs font-bold rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition-colors flex items-center gap-1 cursor-pointer"
+                        title="Eliminar este rol personalizado"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Acordeones por Módulo */}
+                <div className="space-y-3">
+                  {filteredModules.map((mod) => {
+                    const isOpen = openModules[mod.moduleId] !== false;
+                    const activeCount = mod.actions.filter(a => a[selectedRole.name]).length;
+                    const totalCount = mod.actions.length;
+                    const allGranted = activeCount === totalCount;
+                    const noneGranted = activeCount === 0;
+
+                    return (
+                      <div 
+                        key={mod.moduleId} 
+                        className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-2xs transition-all"
+                      >
+                        <div 
+                          className="p-3 sm:p-3.5 flex items-center justify-between gap-3 flex-wrap cursor-pointer select-none hover:bg-slate-50/70 transition-colors"
+                          onClick={() => toggleModuleAccordion(mod.moduleId)}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h5 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                                  {mod.moduleName}
+                                </h5>
+                                <span className={`text-[10px] font-bold px-2 py-0.2 rounded-full border ${
+                                  allGranted 
+                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                                    : (noneGranted ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-amber-50 text-amber-800 border-amber-200')
+                                }`}>
+                                  {activeCount}/{totalCount} Habilitados
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 block truncate">
+                                {mod.description}
                               </span>
                             </div>
-                            <span style={{ background: '#0F172A', color: '#FFFFFF', padding: '5px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', letterSpacing: '0.5px' }}>
-                              {mod.actions.length} CAPACIDADES
-                            </span>
                           </div>
-                        </td>
-                      </tr>
 
-                      {/* Acciones del Módulo */}
-                      {mod.actions.map((act, actIdx) => (
-                        <tr key={act.id} style={{ borderBottom: '1px solid #E2E8F0', background: actIdx % 2 === 0 ? '#FFFFFF' : '#F8FAFC', transition: 'all 0.1s' }}>
-                          <td style={{ padding: '16px 22px', fontWeight: '700', color: '#1E293B', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <ChevronRight size={18} color="#3B82F6" strokeWidth={3} />
-                            <span>{act.label}</span>
-                          </td>
-                          
-                          {rolesList.map(r => {
-                            // Evaluación ultra robusta que busca por nombre de rol exacto
-                            const isAllowed = Boolean(act[r.name]);
-                            const isAdmin = r.name.toLowerCase().includes('admin');
+                          <div className="flex items-center gap-2 ml-auto" onClick={e => e.stopPropagation()}>
+                            {(currentUser?.role || '') === 'Administrador' && !isAdminRole && (
+                              <button
+                                type="button"
+                                onClick={() => setModuleAllPermissions(mod.originalIdx, selectedRole.name, !allGranted)}
+                                className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 cursor-pointer ${
+                                  allGranted
+                                    ? 'bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-700 border-slate-200 hover:border-red-200'
+                                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+                                }`}
+                                title={allGranted ? 'Bloquear todo este módulo' : 'Conceder todas las capacidades de este módulo'}
+                              >
+                                {allGranted ? <span>Bloquear Módulo</span> : <><Check size={12} /><span>Permitir Módulo</span></>}
+                              </button>
+                            )}
 
-                            return (
-                              <td key={r.id} style={{ padding: '12px', textAlign: 'center', borderLeft: '1px solid #E2E8F0' }}>
+                            <button
+                              type="button"
+                              onClick={() => toggleModuleAccordion(mod.moduleId)}
+                              className="p-1 text-slate-400 hover:text-slate-700 rounded transition-transform"
+                            >
+                              {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </button>
+                          </div>
+                        </div>
+
+                        {isOpen && (
+                          <div className="px-3 sm:px-4 pb-3 pt-1 border-t border-slate-100 bg-slate-50/40 divide-y divide-slate-100">
+                            {mod.actions.map((act) => {
+                              const isAllowed = Boolean(act[selectedRole.name]);
+
+                              return (
                                 <div 
-                                  onClick={() => togglePermission(modIdx, actIdx, r.name)}
-                                  style={{
-                                    padding: '10px 8px',
-                                    borderRadius: '10px',
-                                    border: `2px solid ${isAllowed ? '#10B981' : '#F43F5E'}`,
-                                    background: isAllowed ? '#ECFDF5' : '#FFF1F2',
-                                    cursor: (currentUser?.role === 'Administrador' && !isAdmin) ? 'pointer' : 'not-allowed',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    transition: 'transform 0.1s'
-                                  }}
-                                  title={isAdmin ? 'El Administrador tiene permisos fijos totales por sistema.' : `Clic para alternar permiso en ${r.name}`}
+                                  key={act.id}
+                                  className="py-2.5 flex items-center justify-between gap-3 flex-wrap hover:bg-slate-100/50 px-2 rounded-lg transition-colors"
                                 >
-                                  {/* Nombre del Rol dentro de la misma celda para CERO confusión */}
-                                  <span style={{ fontSize: '11px', fontWeight: '800', color: isAllowed ? '#047857' : '#9F1239', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                    👤 {r.name}
-                                  </span>
-                                  
-                                  {/* Estado del permiso */}
-                                  <span style={{ fontSize: '13px', fontWeight: '800', color: isAllowed ? '#059669' : '#E11D48', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                    {isAllowed ? <><Check size={16} strokeWidth={3} /> PERMITIDO</> : <><XCircle size={15} /> RESTRINGIDO</>}
-                                  </span>
+                                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    <ChevronRight size={14} className="text-blue-500 flex-shrink-0" />
+                                    <span className="text-xs font-semibold text-slate-800 leading-snug">
+                                      {act.label}
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    {isAdminRole ? (
+                                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                                        🔒 Permitido Fijo
+                                      </span>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        disabled={(currentUser?.role || '') !== 'Administrador'}
+                                        onClick={() => togglePermission(mod.originalIdx, act.originalActionIdx, selectedRole.name)}
+                                        className={`px-3 py-1 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer ${
+                                          isAllowed
+                                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700'
+                                            : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-300'
+                                        }`}
+                                      >
+                                        {isAllowed ? (
+                                          <><Check size={13} /><span>Permitido</span></>
+                                        ) : (
+                                          <><X size={13} className="text-slate-400" /><span className="text-slate-500">Restringido</span></>
+                                        )}
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
       )}
 
       {showUserModal && (

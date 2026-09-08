@@ -254,6 +254,11 @@ p {
   color: var(--text-secondary);
 }
 
+.text-white, .text-white p, p.text-white {
+  color: #FFFFFF !important;
+}
+
+
 /* Modern Card / Surface */
 .siatc-card, .modern-card {
   background: #FFFFFF;

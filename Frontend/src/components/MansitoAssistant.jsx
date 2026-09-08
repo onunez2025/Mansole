@@ -76,7 +76,7 @@ export default function MansitoAssistant({ currentUser }) {
       }));
 
       const res = await api.askMansito(textToSend.trim(), historyForAi, currentUser);
-      const aiResponse = res?.data?.answer || 'Lo siento, no pude procesar la consulta en este momento.';
+      const aiResponse = res?.data?.answer || (res?.data?.error ? `⚠️ ${res.data.error}` : 'Lo siento, no pude procesar la consulta en este momento.');
 
       setMessages(prev => [
         ...prev,
@@ -85,9 +85,10 @@ export default function MansitoAssistant({ currentUser }) {
           sender: 'mansito',
           text: aiResponse,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          model: res?.data?.model || 'DeepSeek V4 Flash'
+          model: res?.data?.model || 'Mansito Experto'
         }
       ]);
+
     } catch (err) {
       console.error('Error al consultar a Mansito:', err);
       setMessages(prev => [
@@ -117,35 +118,59 @@ export default function MansitoAssistant({ currentUser }) {
   };
 
   // Renderizado simple de Markdown (negritas, viñetas, saltos)
+  // Renderizado simple de Markdown (negritas, viñetas, saltos)
   const formatMarkdown = (content) => {
     if (!content) return null;
 
     const lines = content.split('\n');
     return lines.map((line, idx) => {
       // Línea vacía
-      if (!line.trim()) return <div key={idx} className="h-2" />;
+      if (!line.trim()) return <div key={idx} className="h-1.5" />;
 
       // Elementos de lista
       if (line.trim().startsWith('* ') || line.trim().startsWith('- ')) {
         const itemText = line.trim().substring(2);
         return (
           <div key={idx} className="flex items-start gap-1.5 ml-1 my-0.5">
-            <span className="text-indigo-500 font-bold leading-tight select-none shrink-0">•</span>
-            <span className="flex-1" dangerouslySetInnerHTML={{ __html: parseBold(itemText) }} />
+            <span className="text-blue-600 font-black leading-tight select-none shrink-0">•</span>
+            <span 
+              className="flex-1 font-normal leading-relaxed text-slate-900" 
+              style={{ color: '#0f172a' }} 
+              dangerouslySetInnerHTML={{ __html: parseBold(itemText) }} 
+            />
           </div>
         );
       }
 
       // Títulos simples
       if (line.startsWith('### ')) {
-        return <h5 key={idx} className="font-bold text-xs sm:text-sm text-slate-900 mt-2 mb-1" dangerouslySetInnerHTML={{ __html: parseBold(line.replace('### ', '')) }} />;
+        return (
+          <h5 
+            key={idx} 
+            className="font-bold text-xs sm:text-sm mt-2 mb-1 text-slate-950" 
+            style={{ color: '#020617' }} 
+            dangerouslySetInnerHTML={{ __html: parseBold(line.replace('### ', '')) }} 
+          />
+        );
       }
       if (line.startsWith('## ')) {
-        return <h4 key={idx} className="font-bold text-sm text-slate-900 mt-2 mb-1" dangerouslySetInnerHTML={{ __html: parseBold(line.replace('## ', '')) }} />;
+        return (
+          <h4 
+            key={idx} 
+            className="font-bold text-sm mt-2 mb-1 text-slate-950" 
+            style={{ color: '#020617' }} 
+            dangerouslySetInnerHTML={{ __html: parseBold(line.replace('## ', '')) }} 
+          />
+        );
       }
 
       return (
-        <p key={idx} className="leading-relaxed my-0.5" dangerouslySetInnerHTML={{ __html: parseBold(line) }} />
+        <p 
+          key={idx} 
+          className="leading-relaxed my-0.5 font-normal text-slate-900" 
+          style={{ color: '#0f172a' }} 
+          dangerouslySetInnerHTML={{ __html: parseBold(line) }} 
+        />
       );
     });
   };
@@ -153,9 +178,10 @@ export default function MansitoAssistant({ currentUser }) {
   const parseBold = (str) => {
     // Reemplaza **texto** por <strong>texto</strong> y `code` por <code>code</code>
     return str
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
-      .replace(/`([^`]+)`/g, '<code class="bg-slate-100 text-indigo-700 px-1 py-0.5 rounded text-[11px] font-mono">$1</code>');
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-950" style="color: #020617;">$1</strong>')
+      .replace(/`([^`]+)`/g, '<code class="bg-blue-50 text-blue-700 px-1 py-0.5 rounded text-[11px] font-mono font-bold" style="color: #1d4ed8; background-color: #eff6ff;">$1</code>');
   };
+
 
   return (
     <aside aria-label="Asistente de IA Mansito" className="fixed bottom-4 sm:bottom-6 right-4 sm:right-6 z-40 select-none">
@@ -300,23 +326,31 @@ export default function MansitoAssistant({ currentUser }) {
                     )}
 
                     <div
-                      className={`p-3 rounded-2xl shadow-2xs text-[11px] sm:text-xs leading-relaxed ${
+                      className={`p-3 rounded-2xl shadow-xs text-[11px] sm:text-xs leading-relaxed ${
                         msg.sender === 'user'
-                          ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-br-xs'
+                          ? 'bg-blue-600 text-white rounded-br-xs font-normal'
                           : msg.isError
-                          ? 'bg-rose-50 text-rose-800 border border-rose-200 rounded-bl-xs'
-                          : 'bg-white text-slate-800 border border-slate-200/90 rounded-bl-xs'
+                          ? 'bg-rose-50 text-rose-900 border border-rose-200 rounded-bl-xs'
+                          : 'bg-white text-slate-900 border border-slate-200/90 rounded-bl-xs shadow-xs'
                       }`}
+                      style={
+                        msg.sender === 'user'
+                          ? { backgroundColor: '#2563eb', color: '#ffffff' }
+                          : { backgroundColor: '#ffffff', color: '#0f172a' }
+                      }
                     >
                       {msg.sender === 'user' ? (
-                        <p className="whitespace-pre-wrap">{msg.text}</p>
+                        <p className="whitespace-pre-wrap font-medium m-0 text-white" style={{ color: '#ffffff' }}>
+                          {msg.text}
+                        </p>
                       ) : (
-                        <div className="space-y-1 text-slate-700">
+                        <div className="space-y-1 font-normal text-slate-900" style={{ color: '#0f172a' }}>
                           {formatMarkdown(msg.text)}
                         </div>
                       )}
                     </div>
                   </div>
+
 
                   {/* Metadata y hora */}
                   <div className="flex items-center gap-1.5 text-[9px] text-slate-400 mt-1 px-1">

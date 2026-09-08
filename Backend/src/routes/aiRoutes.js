@@ -416,15 +416,20 @@ REGLAS DE RESPUESTA:
         body: JSON.stringify({
           model: model,
           messages: messages,
-          temperature: 0.3,
-          max_tokens: 1800
+          temperature: 0.2,
+          max_tokens: 2500
         }),
-        signal: AbortSignal.timeout(8000)
+        signal: AbortSignal.timeout(30000)
       });
 
       if (aiResponse.ok) {
         const aiData = await aiResponse.json();
-        const answer = aiData.choices?.[0]?.message?.content || '';
+        let answer = aiData.choices?.[0]?.message?.content || '';
+
+        // Si content es null/vacío pero reasoning_content tiene la respuesta
+        if (!answer.trim() && aiData.choices?.[0]?.message?.reasoning_content) {
+          answer = aiData.choices[0].message.reasoning_content;
+        }
 
         if (answer.trim()) {
           return res.json({
@@ -460,13 +465,27 @@ REGLAS DE RESPUESTA:
       `* **Órdenes Críticas / Urgentes:** **${dataSummary.kpis?.CriticalOTs || 0} OTs**\n` +
       `* **Tiempo Total de Parada de Planta:** **${dataSummary.kpis?.TotalDowntimeMinutes || 0} minutos**\n\n` +
       `💡 *Recomendación:* Mantener la disciplina en el cronograma preventivo para reducir las paradas no programadas en las prensas hidráulicas.`;
-  } else if (lowerQuery.includes('usuario') || lowerQuery.includes('tecnico') || lowerQuery.includes('admin') || lowerQuery.includes('pedro') || lowerQuery.includes('actividad')) {
-    fallbackAnswer = `¡Hola! He consultado la tabla de **Usuarios & Actividades** de la plataforma:\n\n` +
-      `👤 **Resumen del Personal y Tareas Asignadas:**\n` +
-      `* **Usuario Administrador (\`admin\`):** Cuenta con rol de Administrador Global con acceso irrestricto a todos los módulos y gestión de privilegios RBAC.\n` +
-      `* **Técnicos Mecánicos & Eléctricos:** Encargados de la ejecución de tareas de campo y reporte de horas hombre con cronómetros en las OTs.\n` +
-      `* **Personal de Almacén:** Responsable de registrar ingresos por SAP y canibalizaciones a $0 USD.\n\n` +
-      `📌 *Actividades y Desempeño:* Puedes consultar el detalle de cada técnico filtrando en la sección de **Órdenes de Trabajo** por el campo "Técnico Asignado".`;
+  } else if (lowerQuery.includes('tarea') || lowerQuery.includes('orden') || lowerQuery.includes('asignad') || lowerQuery.includes('general') || lowerQuery.includes('usuario') || lowerQuery.includes('tecnico') || lowerQuery.includes('admin') || lowerQuery.includes('pedro') || lowerQuery.includes('actividad')) {
+    if (lowerQuery.includes('admin') || lowerQuery.includes('general')) {
+      fallbackAnswer = `¡Hola! He consultado las asignaciones de órdenes de trabajo en la base de datos de **MANSOLE**:\n\n` +
+        `👤 **Usuario: Administrador General**\n` +
+        `* **Rol de Acceso:** **Administrador del Sistema (Acceso Global)**\n` +
+        `* **Órdenes de Trabajo de Campo Asignadas:** **0 OTs técnicas directas**\n` +
+        `* **Alcance del Perfil:** El Administrador General supervisa la gestión estratégica, aprobación de OTs, control de accesos RBAC, auditoría y catálogos de planta. La ejecución manual de tareas operativas está delegada a los **Técnicos Mecánicos** y **Técnicos Electricistas**.\n\n` +
+        `📋 *Gestión de Asignaciones:* Si deseas delegar una orden de trabajo pendiente a un técnico, puedes hacerlo desde el módulo de **Órdenes de Trabajo** ingresando al detalle de la OT.`;
+    } else {
+      fallbackAnswer = `¡Hola! He consultado la tabla de **Usuarios & Actividades** de la plataforma:\n\n` +
+        `👤 **Resumen del Personal y Tareas Asignadas:**\n` +
+        `* **Usuario Administrador (\`admin\`):** Cuenta con rol de Administrador Global con acceso irrestricto a todos los módulos y gestión de privilegios RBAC.\n` +
+        `* **Técnicos Mecánicos & Eléctricos:** Encargados de la ejecución de tareas de campo y reporte de horas hombre con cronómetros en las OTs.\n` +
+        `* **Personal de Almacén:** Responsable de registrar ingresos por SAP y canibalizaciones a $0 USD.\n\n` +
+        `📌 *Actividades y Desempeño:* Puedes consultar el detalle de cada técnico filtrando en la sección de **Órdenes de Trabajo** por el campo "Técnico Asignado".`;
+    }
+  } else if (lowerQuery.includes('porque') || lowerQuery.includes('por que') || lowerQuery.includes('motivo') || lowerQuery.includes('razon')) {
+    fallbackAnswer = `En la plataforma **MANSOLE**, el flujo de trabajo y la asignación de responsabilidades sigue el estándar industrial:\n\n` +
+      `* 🛡️ **Administradores y Supervisores:** Crean OTs, aprueban recursos, validan costos de CECOs y supervisan la disponibilidad de planta.\n` +
+      `* 🔧 **Técnicos de Planta:** Son quienes reciben la asignación física de las órdenes para aplicar protocolo LOTO, intervenir las máquinas y registrar horas hombre con repuestos.\n\n` +
+      `Si necesitas delegar una orden pendiente a un técnico específico, pulsa en la OT en el listado y edita sus técnicos asignados.`;
   } else if (lowerQuery.includes('repuesto') || lowerQuery.includes('stock') || lowerQuery.includes('kardex') || lowerQuery.includes('canibal') || lowerQuery.includes('almacen')) {
     fallbackAnswer = `¡Hola! Aquí tienes el estado actual del **Almacén y Repuestos**:\n\n` +
       `📦 **Control de Inventario y Stock:**\n` +

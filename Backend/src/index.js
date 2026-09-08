@@ -76,12 +76,14 @@ app.use('/api/kpi', requireModule('reports'), require('./routes/kpiRoutes'));
 // Catálogos Maestros de Configuración (Áreas, CECOs, Categorías)
 app.use('/api/catalogs', requireModule('assets'), require('./routes/catalogRoutes'));
 
-// El diagnóstico IA lo consume el técnico sobre una OT.
+// El diagnóstico IA y Asistente Mansito
 app.use('/api/ai',
   requireModule('workorders', [
-    { method: 'POST', pattern: /^\/diagnose$/, action: 'view' }
+    { method: 'POST', pattern: /^\/diagnose$/, action: 'view' },
+    { method: 'POST', pattern: /^\/mansito$/, action: 'view' }
   ]),
   require('./routes/aiRoutes'));
+
 
 // Gestión de Archivos y Evidencias en Azure Blob Storage (Manuales, Planos, Fotos)
 app.use('/api/attachments', require('./routes/attachmentRoutes'));

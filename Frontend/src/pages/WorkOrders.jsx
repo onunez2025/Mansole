@@ -815,17 +815,19 @@ export default function WorkOrders({ currentUser }) {
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">2. Asistente IA Diagnóstico</h4>
-                      {aiDiagnosis && (
-                        <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
-                          openSections.ai ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-amber-50 text-amber-800 border-amber-200'
-                        }`}>
-                          {openSections.ai ? 'Desplegado' : 'Oculto'}
+                      {aiDiagnosis ? (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full border bg-indigo-100 text-indigo-700 border-indigo-200">
+                          Diagnóstico Listo
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full border bg-slate-100 text-slate-600 border-slate-200">
+                          Sin Consultar
                         </span>
                       )}
                     </div>
                     <span className="text-[10px] sm:text-[11px] text-slate-500 block truncate">
                       {aiDiagnosis 
-                        ? (openSections.ai ? 'DeepSeek V4 Flash con Histórico de Azure SQL' : '💡 Diagnóstico generado. Pulsa para desplegarlo.')
+                        ? (openSections.ai ? 'DeepSeek V4 Flash con Histórico de Azure SQL' : '💡 Diagnóstico generado. Haz clic para desplegarlo.')
                         : 'DeepSeek V4 Flash con Histórico de Azure SQL'}
                     </span>
                   </div>
@@ -850,19 +852,7 @@ export default function WorkOrders({ currentUser }) {
                   ) : (
                     <>
                       <button 
-                        className="text-[11px] font-semibold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 px-2 py-1 rounded-md transition-colors flex items-center gap-1 shadow-2xs"
-                        onClick={() => toggleSection('ai')}
-                        title={openSections.ai ? 'Ocultar diagnóstico para ver tareas' : 'Desplegar diagnóstico completo'}
-                      >
-                        {openSections.ai ? (
-                          <><ChevronUp size={13} /> <span>Ocultar</span></>
-                        ) : (
-                          <><ChevronDown size={13} /> <span>Ver Diagnóstico</span></>
-                        )}
-                      </button>
-
-                      <button 
-                        className="text-[11px] font-semibold text-indigo-700 hover:text-indigo-900 bg-indigo-100/70 hover:bg-indigo-100 px-2 py-1 rounded-md transition-colors hidden sm:inline-flex items-center gap-1"
+                        className="text-[11px] font-semibold text-indigo-700 hover:text-indigo-900 bg-indigo-100/70 hover:bg-indigo-100 px-2 py-1 rounded-md transition-colors inline-flex items-center gap-1 shadow-2xs"
                         onClick={() => triggerAiHelp(selectedOT.assetName, selectedOT.description, selectedOT.assetCode)}
                         disabled={aiLoading}
                         title="Volver a consultar a la IA"
@@ -871,9 +861,9 @@ export default function WorkOrders({ currentUser }) {
                       </button>
 
                       <button 
-                        className="text-slate-400 hover:text-slate-700 p-1 hover:bg-slate-100 rounded transition-colors"
+                        className="text-slate-400 hover:text-red-600 p-1 hover:bg-red-50 rounded transition-colors"
                         onClick={() => setAiDiagnosis(null)}
-                        title="Cerrar diagnóstico y restaurar vista"
+                        title="Descartar diagnóstico"
                       >
                         <X size={14} />
                       </button>

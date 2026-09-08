@@ -117,7 +117,9 @@ async function queryDatabaseForMansito(userQuery, currentUser = null) {
   const isSparePart = /\b(repuesto|repuestos|stock|inventario|almacen|kardex|canibal|pieza|piezas)\b/i.test(lower);
 
   // 3. DOMINIO: ACTIVOS / MÁQUINAS / EQUIPOS / CECO / PRENSAS / HORNOS
-  const isAsset = /\b(activo|activos|maquina|maquinas|equipo|equipos|prensa|horno|linea|ceco|marca|modelo|serie)\b/i.test(lower);
+  const isAsset = /\b(activo|activos|maquina|maquinas|maquita|maquitas|maquinita|maquinitas|maquinaria|maquinarias|equipo|equipos|prensa|prensas|horno|hornos|linea|lineas|ceco|marca|modelo|serie|motores?|bombas?|torno|tornos)\b/i.test(lower) ||
+                  /cu[aá]nt[oa]s?.*(maqui|activ|equip)/i.test(lower);
+
 
   // 4. DOMINIO: USUARIOS / TÉCNICOS / HORAS / ASIGNACIONES / TAREAS
   const isUser = /\b(usuario|usuarios|tecnico|tecnicos|mecanico|electricista|quien|personal|horas|tarea|tareas)\b/i.test(lower) ||

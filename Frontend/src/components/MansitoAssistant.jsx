@@ -18,6 +18,8 @@ import {
   Cpu
 } from 'lucide-react';
 import { api } from '../services/api';
+import { CURRENT_VERSION } from '../data/changelogData';
+
 
 export default function MansitoAssistant({ currentUser }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -422,8 +424,9 @@ export default function MansitoAssistant({ currentUser }) {
             <div className="flex items-center justify-between mt-1.5 px-1 text-[9px] text-slate-400">
               <span className="flex items-center gap-1 font-mono">
                 <Database size={9} className="text-emerald-500" />
-                <span>MANSOLE v2.6.0 RAG</span>
+                <span>MANSOLE {CURRENT_VERSION} RAG</span>
               </span>
+
               <span>Presiona <strong>Enter</strong> para enviar</span>
             </div>
           </div>

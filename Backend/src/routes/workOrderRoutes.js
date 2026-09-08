@@ -287,7 +287,8 @@ router.post('/tasks/:taskId/spareparts', async (req, res) => {
     const taskRes = await pool.request()
       .input('taskId', sql.Int, taskId)
       .query(`
-        SELECT wt.Id, wt.WorkOrderId, wt.TechnicianName, wo.Code as OrderCode, act.Name as ActivityName
+        SELECT wt.Id, wt.WorkOrderId, wt.TechnicianName, wt.Status as TaskStatus, wt.IsCompleted,
+               wo.Code as OrderCode, wo.Status as OrderStatus, act.Name as ActivityName
         FROM MANSOLE.WorkOrderTasks wt
         INNER JOIN MANSOLE.WorkOrders wo ON wt.WorkOrderId = wo.Id
         LEFT JOIN MANSOLE.Activities act ON wt.ActivityId = act.Id
@@ -300,6 +301,19 @@ router.post('/tasks/:taskId/spareparts', async (req, res) => {
 
     const task = taskRes.recordset[0];
     const workOrderId = task.WorkOrderId;
+
+    // Control de Proceso Industrial: Bloquear si la tarea ya está finalizada o la OT cerrada
+    if (task.IsCompleted || task.TaskStatus === 'Completada') {
+      return res.status(400).json({ 
+        error: 'Operación no permitida: La tarea ya fue completada y cerrada. No se pueden imputar repuestos a una tarea finalizada.' 
+      });
+    }
+
+    if (task.OrderStatus === 'Finalizada' || task.OrderStatus === 'Cerrada') {
+      return res.status(400).json({ 
+        error: 'Operación no permitida: La Orden de Trabajo ya ha sido finalizada o cerrada.' 
+      });
+    }
 
     // 2. Obtener datos del repuesto en catálogo
     const partRes = await pool.request()
@@ -399,7 +413,8 @@ router.delete('/spareparts/:id', async (req, res) => {
     const itemRes = await pool.request()
       .input('id', sql.Int, recordId)
       .query(`
-        SELECT wsp.Id, wsp.WorkOrderId, wsp.SparePartId, wsp.Quantity, wsp.UnitCost, wo.Code as OrderCode, sp.Code as SparePartCode
+        SELECT wsp.Id, wsp.WorkOrderId, wsp.SparePartId, wsp.Quantity, wsp.UnitCost, 
+               wo.Code as OrderCode, wo.Status as OrderStatus, sp.Code as SparePartCode
         FROM MANSOLE.WorkOrderSpareParts wsp
         LEFT JOIN MANSOLE.WorkOrders wo ON wsp.WorkOrderId = wo.Id
         LEFT JOIN MANSOLE.SpareParts sp ON wsp.SparePartId = sp.Id
@@ -411,7 +426,11 @@ router.delete('/spareparts/:id', async (req, res) => {
     }
 
     const item = itemRes.recordset[0];
-    const { WorkOrderId, SparePartId, Quantity, UnitCost, OrderCode, SparePartCode } = item;
+    const { WorkOrderId, SparePartId, Quantity, UnitCost, OrderCode, SparePartCode, OrderStatus } = item;
+
+    if (OrderStatus === 'Finalizada' || OrderStatus === 'Cerrada') {
+      return res.status(400).json({ error: 'Operación no permitida: La Orden de Trabajo ya ha sido finalizada o cerrada.' });
+    }
 
     // 2. Restituir stock en SpareParts
     await pool.request()

@@ -742,29 +742,31 @@ export default function WorkOrders({ currentUser }) {
 
                           {/* Botones de Acción para el Técnico */}
                           <div className="flex items-center gap-1.5 flex-shrink-0 w-full sm:w-auto justify-end pt-1.5 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                            {/* Botón para asignar repuesto a esta tarea */}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (isAddingPart) {
-                                  setActiveTaskPartForm(null);
-                                } else {
-                                  setActiveTaskPartForm(task.Id);
-                                  if (catalogSpareParts.length > 0 && !partFormState.sparePartId) {
-                                    setPartFormState(prev => ({ ...prev, sparePartId: catalogSpareParts[0].Id || catalogSpareParts[0].id }));
+                            {/* Botón para asignar repuesto a esta tarea (Solo si NO está lista y la OT no está cerrada) */}
+                            {!isDone && selectedOT?.status !== 'Finalizada' && selectedOT?.status !== 'Cerrada' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (isAddingPart) {
+                                    setActiveTaskPartForm(null);
+                                  } else {
+                                    setActiveTaskPartForm(task.Id);
+                                    if (catalogSpareParts.length > 0 && !partFormState.sparePartId) {
+                                      setPartFormState(prev => ({ ...prev, sparePartId: catalogSpareParts[0].Id || catalogSpareParts[0].id }));
+                                    }
                                   }
-                                }
-                              }}
-                              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all border ${
-                                isAddingPart 
-                                  ? 'bg-slate-800 text-white border-slate-800' 
-                                  : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
-                              }`}
-                              title="Consumir repuesto para esta tarea específica"
-                            >
-                              <Package size={12} className={isAddingPart ? 'text-amber-400' : 'text-slate-500'} />
-                              <span className="text-[11px]">{isAddingPart ? 'Cerrar' : '+ Repuesto'}</span>
-                            </button>
+                                }}
+                                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all border ${
+                                  isAddingPart 
+                                    ? 'bg-slate-800 text-white border-slate-800' 
+                                    : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                                }`}
+                                title="Consumir repuesto para esta tarea específica"
+                              >
+                                <Package size={12} className={isAddingPart ? 'text-amber-400' : 'text-slate-500'} />
+                                <span className="text-[11px]">{isAddingPart ? 'Cerrar' : '+ Repuesto'}</span>
+                              </button>
+                            )}
 
                             {isPending && (
                               <button
@@ -794,14 +796,16 @@ export default function WorkOrders({ currentUser }) {
                               </span>
                             )}
 
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteTask(task.Id)}
-                              className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-auto sm:ml-0"
-                              title="Eliminar tarea"
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                            {!isDone && selectedOT?.status !== 'Finalizada' && selectedOT?.status !== 'Cerrada' && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteTask(task.Id)}
+                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-auto sm:ml-0"
+                                title="Eliminar tarea"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -881,14 +885,16 @@ export default function WorkOrders({ currentUser }) {
                                       </span>
                                     </div>
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteSparePart(p.id)}
-                                    className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                                    title="Devolver repuesto al almacén"
-                                  >
-                                    <Trash2 size={12} />
-                                  </button>
+                                  {!isDone && selectedOT?.status !== 'Finalizada' && selectedOT?.status !== 'Cerrada' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteSparePart(p.id)}
+                                      className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                      title="Devolver repuesto al almacén"
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -942,14 +948,16 @@ export default function WorkOrders({ currentUser }) {
                         <div className={`font-mono font-bold text-xs ${p.cost === 0 ? 'text-emerald-600' : 'text-slate-800'}`}>
                           ${p.totalCost ? p.totalCost.toFixed(2) : '0.00'} USD
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteSparePart(p.id)}
-                          className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                          title="Devolver al almacén"
-                        >
-                          <Trash2 size={13} />
-                        </button>
+                        {selectedOT?.status !== 'Finalizada' && selectedOT?.status !== 'Cerrada' && !otTasks.find(t => t.Id === p.taskId)?.IsCompleted && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSparePart(p.id)}
+                            className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Devolver al almacén"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}

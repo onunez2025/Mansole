@@ -14,7 +14,16 @@ export default function WorkOrders({ currentUser }) {
   const [selectedOT, setSelectedOT] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiDiagnosis, setAiDiagnosis] = useState(null);
-  const [aiCollapsed, setAiCollapsed] = useState(false);
+  const [openSections, setOpenSections] = useState({
+    desc: true,     // 1. Descripción de trabajo y tiempos de parada
+    ai: true,       // 2. Asistente IA Diagnóstico
+    tasks: true,    // 3. Control cronometrado de tareas
+    spares: true    // 4. Repuestos consumidos del almacén
+  });
+
+  const toggleSection = (key) => {
+    setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [availableAssets, setAvailableAssets] = useState([]);
@@ -312,7 +321,7 @@ export default function WorkOrders({ currentUser }) {
 
   const triggerAiHelp = async (assetName, description, code) => {
     setAiLoading(true);
-    setAiCollapsed(false);
+    setOpenSections(prev => ({ ...prev, ai: true }));
     const result = await api.diagnoseWithAI(assetName, description, code);
     setAiDiagnosis(result);
     setAiLoading(false);
@@ -613,21 +622,51 @@ export default function WorkOrders({ currentUser }) {
                 <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight truncate">{selectedOT.assetName}</h3>
                 <p className="text-[11px] text-slate-500 truncate">Área: {selectedOT.areaName} • CECO: {selectedOT.costCenterCode}</p>
               </div>
-              <button 
-                onClick={() => { setSelectedOT(null); setAiDiagnosis(null); }} 
-                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-                title="Cerrar ventana"
-              >
-                <X size={18} />
-              </button>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allOpen = Object.values(openSections).every(Boolean);
+                    setOpenSections({
+                      desc: !allOpen,
+                      ai: !allOpen,
+                      tasks: !allOpen,
+                      spares: !allOpen
+                    });
+                  }}
+                  className="text-[10px] font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-md transition-colors"
+                  title="Expandir o colapsar todas las secciones a la vez"
+                >
+                  {Object.values(openSections).every(Boolean) ? 'Colapsar todo' : 'Expandir todo'}
+                </button>
+                <button 
+                  onClick={() => { setSelectedOT(null); setAiDiagnosis(null); }} 
+                  className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                  title="Cerrar ventana"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
-            <div className="bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-200 mb-3 space-y-2">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Descripción de Trabajo</span>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[11px] font-semibold text-slate-500 hidden sm:inline">Estado Operativo:</span>
-                  <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center gap-1.5 ${
+            {/* 1. SECCIÓN: DESCRIPCIÓN DE TRABAJO & TIEMPO DE PARADA */}
+            <div className="bg-slate-50 rounded-xl border border-slate-200 mb-3 overflow-hidden shadow-2xs transition-all">
+              <div 
+                className="p-2.5 sm:p-3 flex items-center justify-between gap-2 flex-wrap cursor-pointer select-none hover:bg-slate-100/80 transition-colors"
+                onClick={() => toggleSection('desc')}
+                title={openSections.desc ? "Clic para colapsar descripción y parada" : "Clic para desplegar descripción y parada"}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="p-1.5 rounded-lg bg-slate-200/80 text-slate-700 flex-shrink-0">
+                    <FileText size={14} />
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                    1. Descripción y Tiempo de Parada
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-wrap ml-auto">
+                  <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold border inline-flex items-center gap-1 ${
                     selectedOT.status === 'Cerrada'
                       ? 'bg-slate-800 text-white border-slate-900 shadow-2xs'
                       : selectedOT.status === 'Finalizada'
@@ -636,145 +675,163 @@ export default function WorkOrders({ currentUser }) {
                           ? 'bg-blue-100 text-blue-800 border-blue-300 animate-pulse'
                           : 'bg-amber-100 text-amber-800 border-amber-300'
                   }`}>
-                    {selectedOT.status === 'Cerrada' ? '🔒 Cerrada y Liquidada' :
-                     selectedOT.status === 'Finalizada' ? '✅ Tareas Finalizadas' :
+                    {selectedOT.status === 'Cerrada' ? '🔒 Cerrada' :
+                     selectedOT.status === 'Finalizada' ? '✅ Finalizada' :
                      selectedOT.status === 'En Progreso' || selectedOT.status === 'Iniciado en Planta' ? '🔵 En Progreso' :
-                     '🟡 Pendiente de Inicio'}
+                     '🟡 Pendiente'}
                   </span>
-                  {otTasks.length > 0 && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                      {otTasks.filter(t => t.IsCompleted).length}/{otTasks.length} Tareas
+
+                  {!openSections.desc && (
+                    <span className="text-[10px] font-mono font-bold text-slate-700 bg-white border border-slate-200 px-2 py-0.5 rounded">
+                      ⏱️ {(() => {
+                        const pDown = parseInt(selectedOT.preDowntimeMinutes !== undefined ? selectedOT.preDowntimeMinutes : (selectedOT.PreDowntimeMinutes || 0)) || 0;
+                        const tMins = otTasks.reduce((sum, t) => sum + (Number(t.DurationMinutes) || 0), 0);
+                        return pDown + tMins;
+                      })()}m
                     </span>
                   )}
+
+                  <button 
+                    type="button" 
+                    className="p-1 text-slate-400 hover:text-slate-700 rounded transition-transform"
+                    onClick={(e) => { e.stopPropagation(); toggleSection('desc'); }}
+                  >
+                    {openSections.desc ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                  </button>
                 </div>
               </div>
-              <p className="text-xs text-slate-800 leading-relaxed m-0">{selectedOT.description}</p>
-              {/* Control y Desglose Automático del Tiempo de Parada */}
-              {(() => {
-                const preDowntime = parseInt(selectedOT.preDowntimeMinutes !== undefined ? selectedOT.preDowntimeMinutes : (selectedOT.PreDowntimeMinutes || 0)) || 0;
-                const taskInterventionMinutes = otTasks.reduce((sum, t) => sum + (Number(t.DurationMinutes) || 0), 0);
-                const totalCalculatedDowntime = preDowntime + taskInterventionMinutes;
-                const isClosed = selectedOT.status === 'Finalizada' || selectedOT.status === 'Cerrada';
 
-                return (
-                  <div className="pt-2.5 border-t border-slate-200/80 space-y-2">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                        <Clock size={13} className="text-blue-600" />
-                        Tiempo de Parada de Máquina
-                      </span>
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        ⚡ Calculado Automáticamente
-                      </span>
-                    </div>
+              {openSections.desc && (
+                <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-1 space-y-2 border-t border-slate-200/80">
+                  <p className="text-xs text-slate-800 leading-relaxed m-0">{selectedOT.description}</p>
+                  {/* Control y Desglose Automático del Tiempo de Parada */}
+                  {(() => {
+                    const preDowntime = parseInt(selectedOT.preDowntimeMinutes !== undefined ? selectedOT.preDowntimeMinutes : (selectedOT.PreDowntimeMinutes || 0)) || 0;
+                    const taskInterventionMinutes = otTasks.reduce((sum, t) => sum + (Number(t.DurationMinutes) || 0), 0);
+                    const totalCalculatedDowntime = preDowntime + taskInterventionMinutes;
+                    const isClosed = selectedOT.status === 'Finalizada' || selectedOT.status === 'Cerrada';
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                      {/* 1. Espera previa a la intervención */}
-                      <div className="bg-white p-2.5 rounded-lg border border-slate-200 flex flex-col justify-between">
-                        <div>
-                          <span className="text-[11px] font-bold text-slate-800 block mb-0.5">
-                            1. Espera Previa
+                    return (
+                      <div className="pt-2 border-t border-slate-200/70 space-y-2">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                            <Clock size={13} className="text-blue-600" />
+                            Tiempo de Parada de Máquina
                           </span>
-                          <span className="text-[10px] text-slate-400 block leading-tight mb-2">
-                            Tiempo detenida antes de iniciar atención
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                            ⚡ Calculado Automáticamente
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5 mt-auto">
-                          {isClosed ? (
-                            <span className="font-mono font-bold text-xs text-slate-800">{preDowntime} min</span>
-                          ) : (
-                            <>
-                              <input 
-                                type="number" 
-                                min="0"
-                                className="form-input w-20 py-1 px-2 text-xs font-bold text-right bg-slate-50 border border-slate-300 rounded"
-                                value={preDowntime} 
-                                onChange={e => {
-                                  const val = Math.max(0, parseInt(e.target.value) || 0);
-                                  setSelectedOT({ 
-                                    ...selectedOT, 
-                                    preDowntimeMinutes: val,
-                                    downtimeMinutes: val + taskInterventionMinutes 
-                                  });
-                                }}
-                              />
-                              <span className="text-slate-500 font-semibold text-[11px]">min</span>
-                            </>
-                          )}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                          {/* 1. Espera previa a la intervención */}
+                          <div className="bg-white p-2.5 rounded-lg border border-slate-200 flex flex-col justify-between">
+                            <div>
+                              <span className="text-[11px] font-bold text-slate-800 block mb-0.5">
+                                1. Espera Previa
+                              </span>
+                              <span className="text-[10px] text-slate-400 block leading-tight mb-2">
+                                Tiempo detenida antes de iniciar
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-auto">
+                              {isClosed ? (
+                                <span className="font-mono font-bold text-xs text-slate-800">{preDowntime} min</span>
+                              ) : (
+                                <>
+                                  <input 
+                                    type="number" 
+                                    min="0" 
+                                    className="form-input w-20 py-1 px-2 text-xs font-bold text-right bg-slate-50 border border-slate-300 rounded"
+                                    value={preDowntime} 
+                                    onChange={e => {
+                                      const val = Math.max(0, parseInt(e.target.value) || 0);
+                                      setSelectedOT({ 
+                                        ...selectedOT, 
+                                        preDowntimeMinutes: val,
+                                        downtimeMinutes: val + taskInterventionMinutes 
+                                      });
+                                    }}
+                                  />
+                                  <span className="text-slate-500 font-semibold text-[11px]">min</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 2. Tiempo de intervención técnica cronometrada */}
+                          <div className="bg-white p-2.5 rounded-lg border border-slate-200 flex flex-col justify-between">
+                            <div>
+                              <span className="text-[11px] font-bold text-slate-800 block mb-0.5">
+                                2. Intervención Técnica
+                              </span>
+                              <span className="text-[10px] text-slate-400 block leading-tight mb-2">
+                                Sumatoria de tareas finalizadas
+                              </span>
+                            </div>
+                            <div className="mt-auto">
+                              <span className="font-mono font-bold text-xs text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded inline-block">
+                                ⏱️ {taskInterventionMinutes} min
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* 3. Tiempo Total de Parada de Máquina (Calculado & Bloqueado) */}
+                          <div className="bg-slate-900 text-white p-2.5 rounded-lg flex flex-col justify-between shadow-xs">
+                            <div>
+                              <span className="text-[11px] font-bold text-slate-200 block mb-0.5">
+                                Total Parada Real (KPI)
+                              </span>
+                              <span className="text-[10px] text-slate-400 block leading-tight mb-2">
+                                {preDowntime}m espera + {taskInterventionMinutes}m tareas
+                              </span>
+                            </div>
+                            <div className="mt-auto flex items-baseline gap-1">
+                              <span className="font-mono font-extrabold text-base text-amber-400">
+                                {totalCalculatedDowntime}
+                              </span>
+                              <span className="text-slate-300 font-semibold text-[11px]">minutos</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-
-                      {/* 2. Tiempo de intervención técnica cronometrada */}
-                      <div className="bg-white p-2.5 rounded-lg border border-slate-200 flex flex-col justify-between">
-                        <div>
-                          <span className="text-[11px] font-bold text-slate-800 block mb-0.5">
-                            2. Intervención Técnica
-                          </span>
-                          <span className="text-[10px] text-slate-400 block leading-tight mb-2">
-                            Sumatoria de tareas finalizadas
-                          </span>
-                        </div>
-                        <div className="mt-auto">
-                          <span className="font-mono font-bold text-xs text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded inline-block">
-                            ⏱️ {taskInterventionMinutes} min
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* 3. Tiempo Total de Parada de Máquina (Calculado & Bloqueado) */}
-                      <div className="bg-slate-900 text-white p-2.5 rounded-lg flex flex-col justify-between shadow-xs">
-                        <div>
-                          <span className="text-[11px] font-bold text-slate-200 block mb-0.5">
-                            Total Parada Real (KPI)
-                          </span>
-                          <span className="text-[10px] text-slate-400 block leading-tight mb-2">
-                            {preDowntime}m espera + {taskInterventionMinutes}m tareas
-                          </span>
-                        </div>
-                        <div className="mt-auto flex items-baseline gap-1">
-                          <span className="font-mono font-extrabold text-base text-amber-400">
-                            {totalCalculatedDowntime}
-                          </span>
-                          <span className="text-slate-300 font-semibold text-[11px]">minutos</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
+                    );
+                  })()}
+                </div>
+              )}
             </div>
 
-            {/* ASISTENTE DE INTELIGENCIA ARTIFICIAL (Módulo 8 con RAG e Historial de Azure SQL) */}
-            <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-2.5 sm:p-3 mb-3 shadow-xs transition-all">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div 
-                  className={`flex items-center gap-2.5 min-w-0 ${aiDiagnosis ? 'cursor-pointer select-none' : ''}`}
-                  onClick={() => aiDiagnosis && setAiCollapsed(!aiCollapsed)}
-                  title={aiDiagnosis ? (aiCollapsed ? 'Clic para expandir diagnóstico' : 'Clic para colapsar diagnóstico') : ''}
-                >
+            {/* 2. SECCIÓN: ASISTENTE DE INTELIGENCIA ARTIFICIAL */}
+            <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl mb-3 overflow-hidden shadow-2xs transition-all">
+              <div 
+                className="p-2.5 sm:p-3 flex items-center justify-between gap-2 flex-wrap cursor-pointer select-none hover:bg-indigo-50/80 transition-colors"
+                onClick={() => toggleSection('ai')}
+                title={openSections.ai ? "Clic para colapsar diagnóstico IA" : "Clic para desplegar diagnóstico IA"}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
                   <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
                     <Bot size={16} />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">Asistente IA Diagnóstico</h4>
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">2. Asistente IA Diagnóstico</h4>
                       {aiDiagnosis && (
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
-                          aiCollapsed ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                        <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
+                          openSections.ai ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-amber-50 text-amber-800 border-amber-200'
                         }`}>
-                          {aiCollapsed ? 'Oculto' : 'Desplegado'}
+                          {openSections.ai ? 'Desplegado' : 'Oculto'}
                         </span>
                       )}
                     </div>
                     <span className="text-[10px] sm:text-[11px] text-slate-500 block truncate">
                       {aiDiagnosis 
-                        ? (aiCollapsed ? '💡 Diagnóstico generado. Pulsa "Ver Diagnóstico" para desplegarlo.' : 'DeepSeek V4 Flash con Histórico de Azure SQL')
+                        ? (openSections.ai ? 'DeepSeek V4 Flash con Histórico de Azure SQL' : '💡 Diagnóstico generado. Pulsa para desplegarlo.')
                         : 'DeepSeek V4 Flash con Histórico de Azure SQL'}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 ml-auto flex-wrap">
+                <div className="flex items-center gap-1.5 ml-auto flex-wrap" onClick={e => e.stopPropagation()}>
                   {!aiDiagnosis ? (
                     <button 
                       className="btn btn-primary text-xs py-1 px-2.5 flex-shrink-0 flex items-center gap-1" 
@@ -792,20 +849,18 @@ export default function WorkOrders({ currentUser }) {
                     </button>
                   ) : (
                     <>
-                      {/* Botón Colapsar / Expandir para ahorrar espacio vertical al operario */}
                       <button 
                         className="text-[11px] font-semibold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 px-2 py-1 rounded-md transition-colors flex items-center gap-1 shadow-2xs"
-                        onClick={() => setAiCollapsed(!aiCollapsed)}
-                        title={aiCollapsed ? 'Desplegar diagnóstico completo' : 'Ocultar diagnóstico para ver tareas'}
+                        onClick={() => toggleSection('ai')}
+                        title={openSections.ai ? 'Ocultar diagnóstico para ver tareas' : 'Desplegar diagnóstico completo'}
                       >
-                        {aiCollapsed ? (
-                          <><ChevronDown size={13} /> <span>Ver Diagnóstico</span></>
-                        ) : (
+                        {openSections.ai ? (
                           <><ChevronUp size={13} /> <span>Ocultar</span></>
+                        ) : (
+                          <><ChevronDown size={13} /> <span>Ver Diagnóstico</span></>
                         )}
                       </button>
 
-                      {/* Botón Reconsultar */}
                       <button 
                         className="text-[11px] font-semibold text-indigo-700 hover:text-indigo-900 bg-indigo-100/70 hover:bg-indigo-100 px-2 py-1 rounded-md transition-colors hidden sm:inline-flex items-center gap-1"
                         onClick={() => triggerAiHelp(selectedOT.assetName, selectedOT.description, selectedOT.assetCode)}
@@ -815,7 +870,6 @@ export default function WorkOrders({ currentUser }) {
                         {aiLoading ? 'Analizando...' : '↻ Reconsultar'}
                       </button>
 
-                      {/* Botón Descartar / Quitar para liberar la pantalla */}
                       <button 
                         className="text-slate-400 hover:text-slate-700 p-1 hover:bg-slate-100 rounded transition-colors"
                         onClick={() => setAiDiagnosis(null)}
@@ -825,11 +879,18 @@ export default function WorkOrders({ currentUser }) {
                       </button>
                     </>
                   )}
+                  <button 
+                    type="button" 
+                    className="p-1 text-slate-400 hover:text-slate-700 rounded transition-transform"
+                    onClick={() => toggleSection('ai')}
+                  >
+                    {openSections.ai ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                  </button>
                 </div>
               </div>
 
-              {aiDiagnosis && !aiCollapsed && (
-                <div className="mt-2.5 pt-2.5 border-t border-indigo-100 text-xs space-y-2.5 leading-relaxed max-h-80 overflow-y-auto pr-1">
+              {aiDiagnosis && openSections.ai && (
+                <div className="px-3 pb-3 pt-1 border-t border-indigo-100 text-xs space-y-2.5 leading-relaxed max-h-80 overflow-y-auto pr-1">
                   {/* Análisis de Histórico RAG */}
                   <div className="bg-white border border-indigo-200 rounded-lg p-2.5 shadow-2xs">
                     <div className="flex items-center justify-between gap-1 mb-1.5 flex-wrap">
@@ -870,55 +931,99 @@ export default function WorkOrders({ currentUser }) {
                 </div>
               )}
 
-              {!aiDiagnosis && (
-                <p className="text-[11px] text-slate-500 mt-1.5 hidden sm:block m-0">
-                  Presiona el botón para que DeepSeek analice el historial de fallas en Azure SQL y brinde diagnóstico predictivo y solución técnica.
-                </p>
+              {!aiDiagnosis && openSections.ai && (
+                <div className="px-3 pb-2.5 border-t border-indigo-100">
+                  <p className="text-[11px] text-slate-500 mt-1.5 hidden sm:block m-0">
+                    Presiona el botón para que DeepSeek analice el historial de fallas en Azure SQL y brinde diagnóstico predictivo y solución técnica.
+                  </p>
+                </div>
               )}
             </div>
 
-            {/* Control de Tareas con Catálogo de Actividades y Tiempos de Inicio/Fin */}
-            <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-xs mb-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3 pb-2.5 border-b border-slate-100">
-                <div>
-                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
-                    <Timer className="text-blue-600 flex-shrink-0" size={16} />
-                    <span>Control Cronometrado de Tareas</span>
-                  </h4>
-                  <p className="text-[11px] text-slate-500 hidden sm:block">
-                    Selecciona cada actividad del catálogo, iníciala al intervenir y finalízala al concluir.
-                  </p>
+            {/* 3. SECCIÓN: CONTROL CRONOMETRADO DE TAREAS */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-xs mb-3 overflow-hidden transition-all">
+              <div 
+                className="p-2.5 sm:p-3 flex items-center justify-between gap-2.5 flex-wrap cursor-pointer select-none hover:bg-slate-50/80 transition-colors"
+                onClick={() => toggleSection('tasks')}
+                title={openSections.tasks ? "Clic para colapsar tareas" : "Clic para desplegar tareas"}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                    <Timer size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">3. Control Cronometrado de Tareas</h4>
+                      {otTasks.length > 0 ? (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
+                          {otTasks.filter(t => t.IsCompleted).length}/{otTasks.length} Listas
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                          0 Tareas
+                        </span>
+                      )}
+                      {otTasks.some(t => t.StartedAt && !t.IsCompleted) && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 animate-pulse flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                          En Curso
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] sm:text-[11px] text-slate-500 block truncate">
+                      {openSections.tasks 
+                        ? 'Selecciona cada actividad del catálogo, iníciala al intervenir y finalízala al concluir.'
+                        : `Haz clic para desplegar y gestionar las tareas (${otTasks.length} registradas).`}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Formulario para Asignar Actividad a la OT */}
-                {selectedOT.status !== 'Cerrada' ? (
-                  <form onSubmit={handleAddTaskToOT} className="flex items-center gap-1.5 w-full sm:w-auto">
-                    <select
-                      value={selectedActivityId}
-                      onChange={e => setSelectedActivityId(e.target.value)}
-                      className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-slate-900 flex-1 sm:w-64 min-w-0"
-                    >
-                      {catalogActivities.map(act => (
-                        <option key={act.Id || act.id} value={act.Id || act.id}>
-                          [{act.Type ? act.Type.substring(0,3) : 'Mec'}] {act.Name || act.name} ({act.EstimatedMinutes || 30}m)
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="submit"
-                      className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-1 transition-all shadow-xs flex-shrink-0"
-                      title="Asignar Actividad"
-                    >
-                      <Plus size={14} />
-                      <span className="hidden sm:inline">Asignar</span>
-                    </button>
-                  </form>
-                ) : (
-                  <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
-                    🔒 OT Cerrada (No admite nuevas tareas)
-                  </span>
-                )}
+                <div className="flex items-center gap-2 ml-auto">
+                  <button 
+                    type="button" 
+                    className="p-1 text-slate-400 hover:text-slate-700 rounded transition-transform"
+                    onClick={(e) => { e.stopPropagation(); toggleSection('tasks'); }}
+                  >
+                    {openSections.tasks ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                  </button>
+                </div>
               </div>
+
+              {openSections.tasks && (
+                <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-1 border-t border-slate-100">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 my-2.5 pb-2.5 border-b border-slate-100">
+                    <div className="text-xs text-slate-600 font-medium">
+                      Asignar actividades del catálogo:
+                    </div>
+                    {/* Formulario para Asignar Actividad a la OT */}
+                    {selectedOT.status !== 'Cerrada' ? (
+                      <form onSubmit={handleAddTaskToOT} className="flex items-center gap-1.5 w-full sm:w-auto">
+                        <select
+                          value={selectedActivityId}
+                          onChange={e => setSelectedActivityId(e.target.value)}
+                          className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-slate-900 flex-1 sm:w-64 min-w-0"
+                        >
+                          {catalogActivities.map(act => (
+                            <option key={act.Id || act.id} value={act.Id || act.id}>
+                              [{act.Type ? act.Type.substring(0,3) : 'Mec'}] {act.Name || act.name} ({act.EstimatedMinutes || 30}m)
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="submit"
+                          className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-1 transition-all shadow-xs flex-shrink-0"
+                          title="Asignar Actividad"
+                        >
+                          <Plus size={14} />
+                          <span className="hidden sm:inline">Asignar</span>
+                        </button>
+                      </form>
+                    ) : (
+                      <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                        🔒 OT Cerrada (No admite nuevas tareas)
+                      </span>
+                    )}
+                  </div>
 
               {/* Lista de Tareas con Tiempos y Estado */}
               {tasksLoading ? (
@@ -1155,62 +1260,96 @@ export default function WorkOrders({ currentUser }) {
                   })}
                 </div>
               )}
+                </div>
+              )}
             </div>
 
-            {/* Repuestos Consumidos del Almacén (Consolidado de la OT por Tarea) */}
-            <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-xs mb-3">
-              <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
-                <strong className="text-slate-900 font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                  <Boxes size={14} className="text-slate-600" />
-                  Repuestos Consumidos del Almacén (Total OT)
-                </strong>
-                <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
-                  ${otSpareParts.reduce((acc, p) => acc + (Number(p.totalCost) || 0), 0).toFixed(2)} USD
-                </span>
+            {/* 4. SECCIÓN: REPUESTOS CONSUMIDOS DEL ALMACÉN */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-xs mb-3 overflow-hidden transition-all">
+              <div 
+                className="p-2.5 sm:p-3 flex items-center justify-between gap-2.5 flex-wrap cursor-pointer select-none hover:bg-slate-50/80 transition-colors"
+                onClick={() => toggleSection('spares')}
+                title={openSections.spares ? "Clic para colapsar repuestos" : "Clic para desplegar repuestos"}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                    <Boxes size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">4. Repuestos Consumidos del Almacén</h4>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                        {otSpareParts.length} {otSpareParts.length === 1 ? 'repuesto' : 'repuestos'}
+                      </span>
+                    </div>
+                    <span className="text-[10px] sm:text-[11px] text-slate-500 block truncate">
+                      {openSections.spares 
+                        ? 'Consolidado de piezas y componentes consumidos por tarea desde el inventario.'
+                        : 'Haz clic para desplegar y revisar el consumo de repuestos.'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 ml-auto" onClick={e => e.stopPropagation()}>
+                  <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                    ${otSpareParts.reduce((acc, p) => acc + (Number(p.totalCost) || 0), 0).toFixed(2)} USD
+                  </span>
+                  <button 
+                    type="button" 
+                    className="p-1 text-slate-400 hover:text-slate-700 rounded transition-transform"
+                    onClick={() => toggleSection('spares')}
+                  >
+                    {openSections.spares ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                  </button>
+                </div>
               </div>
 
-              {sparePartsLoading ? (
-                <div className="text-center py-3 text-xs text-slate-400">Cargando repuestos...</div>
-              ) : otSpareParts.length === 0 ? (
-                <div className="py-3 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200 text-xs text-slate-400">
-                  No se han asignado repuestos a las tareas de esta OT. Pulsa "+ Repuesto" en cada tarea para consumir repuestos del almacén.
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  {otSpareParts.map((p) => (
-                    <div key={p.id} className="p-2 rounded-lg bg-slate-50/70 border border-slate-200/80 flex justify-between items-center text-xs gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-slate-900 text-[11px] sm:text-xs truncate">
-                          [{p.code}] {p.name}
-                        </div>
-                        <div className="text-[10px] text-slate-500 flex items-center gap-2 flex-wrap mt-0.5">
-                          <span>Cant: <strong>{p.quantity} {p.unitOfMeasure || 'und'}</strong></span>
-                          <span>•</span>
-                          <span className="bg-slate-200/70 px-1.5 py-0.5 rounded text-slate-700 font-medium">
-                            📌 {p.activityName ? `Tarea: ${p.activityName}` : 'Tarea general'}
-                          </span>
-                          {p.technicianName && (
-                            <span className="text-slate-600">👤 {p.technicianName}</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <div className={`font-mono font-bold text-xs ${p.cost === 0 ? 'text-emerald-600' : 'text-slate-800'}`}>
-                          ${p.totalCost ? p.totalCost.toFixed(2) : '0.00'} USD
-                        </div>
-                        {selectedOT?.status !== 'Finalizada' && selectedOT?.status !== 'Cerrada' && !otTasks.find(t => t.Id === p.taskId)?.IsCompleted && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteSparePart(p.id)}
-                            className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                            title="Devolver al almacén"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        )}
-                      </div>
+              {openSections.spares && (
+                <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-1 border-t border-slate-100">
+                  {sparePartsLoading ? (
+                    <div className="text-center py-3 text-xs text-slate-400">Cargando repuestos...</div>
+                  ) : otSpareParts.length === 0 ? (
+                    <div className="py-3 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200 text-xs text-slate-400 my-1">
+                      No se han asignado repuestos a las tareas de esta OT. Pulsa "+ Repuesto" en cada tarea para consumir repuestos del almacén.
                     </div>
-                  ))}
+                  ) : (
+                    <div className="space-y-1.5 my-1">
+                      {otSpareParts.map((p) => (
+                        <div key={p.id} className="p-2 rounded-lg bg-slate-50/70 border border-slate-200/80 flex justify-between items-center text-xs gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-slate-900 text-[11px] sm:text-xs truncate">
+                              [{p.code}] {p.name}
+                            </div>
+                            <div className="text-[10px] text-slate-500 flex items-center gap-2 flex-wrap mt-0.5">
+                              <span>Cant: <strong>{p.quantity} {p.unitOfMeasure || 'und'}</strong></span>
+                              <span>•</span>
+                              <span className="bg-slate-200/70 px-1.5 py-0.5 rounded text-slate-700 font-medium">
+                                📌 {p.activityName ? `Tarea: ${p.activityName}` : 'Tarea general'}
+                              </span>
+                              {p.technicianName && (
+                                <span className="text-slate-600">👤 {p.technicianName}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className={`font-mono font-bold text-xs ${p.cost === 0 ? 'text-emerald-600' : 'text-slate-800'}`}>
+                              ${p.totalCost ? p.totalCost.toFixed(2) : '0.00'} USD
+                            </div>
+                            {selectedOT?.status !== 'Finalizada' && selectedOT?.status !== 'Cerrada' && !otTasks.find(t => t.Id === p.taskId)?.IsCompleted && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSparePart(p.id)}
+                                className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                title="Devolver al almacén"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

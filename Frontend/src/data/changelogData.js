@@ -3,11 +3,56 @@
  * Cada entrada documenta el PR asociado, fecha, resumen ejecutivo y detalle de cambios por categoría.
  */
 
-export const CURRENT_VERSION = 'v2.8.1';
+export const CURRENT_VERSION = 'v2.9.0';
 export const LAST_RELEASE_DATE = '08 de Septiembre, 2026';
 export const GITHUB_REPO_URL = 'https://github.com/onunez2025/Mansole';
 
 export const CHANGELOG_DATA = [
+  {
+    version: 'v2.9.0',
+    prNumber: 28,
+    prTitle: 'feat(reports): fichas tecnicas con firmas, historial ConsuMan por fechas, programacion preventiva y Mansito lateral con DeepSeek',
+    prUrl: `${GITHUB_REPO_URL}/pull/28`,
+    commitHash: '858288b',
+    commitUrl: `${GITHUB_REPO_URL}/commit/858288b`,
+    date: '08 de Septiembre, 2026',
+    isLatest: true,
+    tag: 'Actual / Major Release',
+    tagColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    summary: 'Lanzamiento integral de módulos de reportes oficiales para Planta Callao / Metusa: Ficha Técnica individual de Orden de Trabajo con firmas tripartitas, Módulo de Reportes con Historial ConsuMan por fechas (PDF y CSV), Programación Preventiva interactiva y modernización de Mansito con panel lateral expandible y motor DeepSeek.',
+    highlights: [
+      'Reporte 1: Ficha Técnica de Orden de Trabajo con cronometraje de horas hombre, repuestos valorizados y 3 bloques de firmas (Técnico, Supervisor y Producción).',
+      'Reporte 2: Historial ConsuMan por rango de fechas agrupado por Layout de Activo, duración en HH:MM, subtotales y total general de planta con exportación a PDF y Excel.',
+      'Carga de Mantenimientos Programados: Modal en Cronograma para vincular activos con tareas del catálogo maestro y frecuencias periódicas.',
+      'Mansito Drawer Lateral: Asistente de IA rediseñado como panel lateral deslizable y expandible con renderizado elegante de tablas Markdown y soporte de lenguaje natural.'
+    ],
+    changes: [
+      {
+        type: 'feat',
+        scope: 'Reportes OT',
+        title: 'Ficha Técnica de Servicio con Firmas de Conformidad',
+        desc: 'Modal imprimible en formato A4 con membrete corporativo SOLE, registro de horas efectivas de técnicos, repuestos consumidos de almacén y casilleros para firmas físicas.'
+      },
+      {
+        type: 'feat',
+        scope: 'Reportes Planta',
+        title: 'Historial de Hs de Mantenimiento (Formato ConsuMan)',
+        desc: 'Réplica fidedigna del estándar ConsuMan con agrupación por ruta de activo (Nave de Producción / Metusa), cálculo de tiempos en HH:MM y exportación instantánea a PDF y CSV.'
+      },
+      {
+        type: 'feat',
+        scope: 'Cronograma',
+        title: 'Programación Preventiva Directa en Azure SQL',
+        desc: 'Nueva funcionalidad para programar rutinas cíclicas (semanal, quincenal, mensual, horómetro) asociando el catálogo maestro de actividades a los activos de planta.'
+      },
+      {
+        type: 'feat',
+        scope: 'IA Mansito',
+        title: 'Panel Lateral Deslizante y Motor DeepSeek',
+        desc: 'Transición de chat flotante a drawer lateral con opción de pantalla ancha, dibujo visual de tablas Markdown y comprensión de consultas en lenguaje natural.'
+      }
+    ]
+  },
   {
     version: 'v2.8.1',
     prNumber: 27,
@@ -16,9 +61,9 @@ export const CHANGELOG_DATA = [
     commitHash: '24fe643',
     commitUrl: `${GITHUB_REPO_URL}/commit/24fe643`,
     date: '08 de Septiembre, 2026',
-    isLatest: true,
-    tag: 'Actual / Hotfix AI',
-    tagColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    isLatest: false,
+    tag: 'Hotfix AI',
+    tagColor: 'bg-slate-50 text-slate-700 border-slate-200',
     summary: 'Optimización de rendimiento y resiliencia del asistente Mansito: conexión HTTPS con IPv4 nativo (family: 4) para erradicar el retardo DNS de Windows, cascada multimodelo automática (DeepSeek V4 Pro -> Llama 3.2 11B -> GPT-OSS 20B) y motor dinámico de Azure SQL para responder de forma personalizada según cada consulta.',
     highlights: [
       'Conexión HTTPS nativa con resolución IPv4 forzada (family: 4) reduciendo el tiempo de respuesta de +18s a menos de 2s.',

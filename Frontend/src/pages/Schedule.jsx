@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import { CalendarClock, Edit3, RefreshCw, Search, CalendarDays, Table as TableIcon, ChevronLeft, ChevronRight, Clock, AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { TableSkeleton } from '../components/UI';
+import ModalPortal from '../components/UI/ModalPortal';
 
 // Caché en cliente para transiciones instantáneas (0ms)
 let cachedScheduleList = null;
@@ -528,62 +529,65 @@ export default function Schedule({ currentUser }) {
 
       {/* Modal para Ver Todas las Actividades de un Día */}
       {activeDayModal && (
-        <div className="modal-overlay" onClick={() => setActiveDayModal(null)}>
-          <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
-              <div>
-                <h3 className="text-base font-bold text-slate-900">
-                  Actividades Programadas: {formatDisplayDate(activeDayModal.dateKey)}
-                </h3>
-                <span className="text-xs text-slate-500">
-                  {activeDayModal.events.length} mantenimientos registrados para esta fecha
-                </span>
-              </div>
-              <button onClick={() => setActiveDayModal(null)} className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer">
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
-              {activeDayModal.events.map((evt) => (
-                <div key={evt.id} className="p-3 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <span className="font-mono font-bold text-xs text-slate-900">[{evt.assetCode}]</span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
-                        evt.status === 'Vencido' 
-                          ? 'bg-red-100 text-red-800 border-red-200' 
-                          : evt.status === 'Próximo a Vencer' 
-                          ? 'bg-amber-100 text-amber-800 border-amber-200' 
-                          : 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                      }`}>
-                        {evt.status}
-                      </span>
-                    </div>
-                    <div className="text-xs font-semibold text-slate-800 truncate">{evt.activityName}</div>
-                    <div className="text-[11px] text-slate-500 font-mono">{evt.assetName} • {evt.frequencyType}</div>
-                  </div>
-
-                  {canReprogram && (
-                    <button
-                      type="button"
-                      onClick={() => openReprogramModal(evt)}
-                      className="btn btn-secondary text-xs py-1 px-2.5 flex-shrink-0 cursor-pointer"
-                    >
-                      <Edit3 size={12} /> Reprogramar
-                    </button>
-                  )}
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setActiveDayModal(null)}>
+            <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Actividades Programadas: {formatDisplayDate(activeDayModal.dateKey)}
+                  </h3>
+                  <span className="text-xs text-slate-500">
+                    {activeDayModal.events.length} mantenimientos registrados para esta fecha
+                  </span>
                 </div>
-              ))}
+                <button onClick={() => setActiveDayModal(null)} className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+                {activeDayModal.events.map((evt) => (
+                  <div key={evt.id} className="p-3 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="font-mono font-bold text-xs text-slate-900">[{evt.assetCode}]</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
+                          evt.status === 'Vencido' 
+                            ? 'bg-red-100 text-red-800 border-red-200' 
+                            : evt.status === 'Próximo a Vencer' 
+                            ? 'bg-amber-100 text-amber-800 border-amber-200' 
+                            : 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                        }`}>
+                          {evt.status}
+                        </span>
+                      </div>
+                      <div className="text-xs font-semibold text-slate-800 truncate">{evt.activityName}</div>
+                      <div className="text-[11px] text-slate-500 font-mono">{evt.assetName} • {evt.frequencyType}</div>
+                    </div>
+
+                    {canReprogram && (
+                      <button
+                        type="button"
+                        onClick={() => openReprogramModal(evt)}
+                        className="btn btn-secondary text-xs py-1 px-2.5 flex-shrink-0 cursor-pointer"
+                      >
+                        <Edit3 size={12} /> Reprogramar
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {/* Modal de Reprogramación */}
       {selectedItem && (
-        <div className="modal-overlay" onClick={() => setSelectedItem(null)}>
-          <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setSelectedItem(null)}>
+            <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
               <h3 className="text-base sm:text-lg font-bold text-slate-900">Reprogramación de Preventivo</h3>
               <button onClick={() => setSelectedItem(null)} className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer">
@@ -631,6 +635,7 @@ export default function Schedule({ currentUser }) {
             </form>
           </div>
         </div>
+      </ModalPortal>
       )}
     </div>
   );

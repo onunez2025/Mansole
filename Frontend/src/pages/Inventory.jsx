@@ -4,6 +4,7 @@ import { Boxes, AlertCircle, Plus, RefreshCw, CheckCircle2, Edit3, Trash2, Searc
 import { toast } from 'sonner';
 import { TableSkeleton } from '../components/UI';
 import HelpModal from '../components/HelpModal';
+import ModalPortal from '../components/UI/ModalPortal';
 
 // Caché en cliente para transiciones instantáneas (0ms)
 let cachedInventoryList = null;
@@ -311,8 +312,9 @@ export default function Inventory({ currentUser }) {
       )}
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setShowModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
               <h3 className="text-base sm:text-lg font-bold text-slate-900">
                 {editingItem ? `Editar Repuesto: ${editingItem.code}` : 'Ingreso de Repuesto / Canibalización'}
@@ -394,6 +396,7 @@ export default function Inventory({ currentUser }) {
             </form>
           </div>
         </div>
+      </ModalPortal>
       )}
 
       {/* Modal de Ayuda & SOP */}

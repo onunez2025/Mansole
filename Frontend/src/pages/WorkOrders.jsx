@@ -4,6 +4,7 @@ import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle
 import { toast } from 'sonner';
 import { OrderCardSkeleton } from '../components/UI';
 import HelpModal from '../components/HelpModal';
+import ModalPortal from '../components/UI/ModalPortal';
 
 // Caché en cliente para que al volver a OTs cargue de inmediato (0ms)
 let cachedWorkOrdersList = null;
@@ -614,8 +615,9 @@ export default function WorkOrders({ currentUser }) {
 
       {/* Modal Detalle OT & Asistente IA */}
       {selectedOT && (
-        <div className="modal-overlay" onClick={() => { setSelectedOT(null); setAiDiagnosis(null); }}>
-          <div className="modal-content" style={{ maxWidth: '760px' }} onClick={(e) => e.stopPropagation()}>
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => { setSelectedOT(null); setAiDiagnosis(null); }}>
+            <div className="modal-content" style={{ maxWidth: '760px' }} onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-3 pb-2.5 border-b border-slate-200 gap-2">
               <div className="min-w-0 flex-1">
                 <span className="text-[11px] font-extrabold text-slate-500 font-mono">{selectedOT.code} • {selectedOT.type}</span>
@@ -1396,12 +1398,14 @@ export default function WorkOrders({ currentUser }) {
             </div>
           </div>
         </div>
+      </ModalPortal>
       )}
 
       {/* Modal Crear OT con Múltiples Técnicos */}
       {showCreateModal && (
-        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div className="modal-content max-w-xl" onClick={(e) => e.stopPropagation()}>
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+            <div className="modal-content max-w-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
               <h3 className="text-base sm:text-lg font-bold text-slate-900">Emisión de Orden de Trabajo</h3>
               <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-700 text-lg leading-none p-1">✕</button>
@@ -1493,6 +1497,7 @@ export default function WorkOrders({ currentUser }) {
             </form>
           </div>
         </div>
+      </ModalPortal>
       )}
 
       {/* Modal de Ayuda Contextual y Procedimiento LOTO */}

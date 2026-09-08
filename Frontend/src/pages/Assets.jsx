@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import { Wrench, FileText, Plus, CheckCircle2, AlertOctagon, Layers, Edit3, Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { TableSkeleton } from '../components/UI';
+import ModalPortal from '../components/UI/ModalPortal';
 
 // Caché en cliente para carga instantánea
 let cachedAssetsList = null;
@@ -199,50 +200,53 @@ export default function Assets({ currentUser }) {
 
       {/* Modal Ficha Técnica */}
       {selectedAsset && (
-        <div className="modal-overlay" onClick={() => setSelectedAsset(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-start mb-4 pb-3 border-b border-slate-200">
-              <div className="min-w-0 flex-1">
-                <h3 className="text-base sm:text-lg font-bold text-slate-900">Ficha Técnica y Hoja de Vida</h3>
-                <p className="text-xs text-slate-500 font-mono mt-0.5 truncate">[{selectedAsset.code}] {selectedAsset.name} • {selectedAsset.costCenterCode}</p>
-              </div>
-              <button onClick={() => setSelectedAsset(null)} className="text-slate-400 hover:text-slate-700 text-lg leading-none p-1">✕</button>
-            </div>
-            <div className="bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200 mb-4 text-xs leading-relaxed text-slate-700">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-                <div><span className="text-slate-500">Marca:</span> <strong className="text-slate-900">{selectedAsset.brand || '—'}</strong></div>
-                <div><span className="text-slate-500">Modelo:</span> <strong className="text-slate-900">{selectedAsset.model || '—'}</strong></div>
-                <div><span className="text-slate-500">Num. Serie:</span> <strong className="text-slate-900 font-mono">{selectedAsset.serialNumber || '—'}</strong></div>
-                <div><span className="text-slate-500">Adquisición:</span> <strong className="text-slate-900">{selectedAsset.acquisitionDate || 'N/A'}</strong></div>
-                <div><span className="text-slate-500">Área Planta:</span> <strong className="text-slate-900">{selectedAsset.areaName}</strong></div>
-                <div><span className="text-slate-500">Estado Actual:</span> <span className="badge badge-success ml-1">{selectedAsset.status}</span></div>
-              </div>
-            </div>
-            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2.5 flex items-center gap-2">
-              <Layers size={15} className="text-slate-500" /> Archivos y Planos Adjuntos (Azure Blob Storage)
-            </h4>
-            <div className="space-y-2 mb-4">
-              {[`Manual_Operacion_${selectedAsset.brand || 'Equipo'}.pdf`, `Plano_LOTO_${selectedAsset.code}.dwg`].map(f => (
-                <div key={f} className="flex items-center justify-between p-2.5 sm:p-3 bg-white rounded-lg border border-slate-200 text-xs gap-2">
-                  <span className="font-medium text-slate-800 truncate">📄 {f}</span>
-                  <button className="btn btn-secondary text-xs py-1 px-2.5 flex-shrink-0">Descargar Blob</button>
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setSelectedAsset(null)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-between items-start mb-4 pb-3 border-b border-slate-200">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">Ficha Técnica y Hoja de Vida</h3>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5 truncate">[{selectedAsset.code}] {selectedAsset.name} • {selectedAsset.costCenterCode}</p>
                 </div>
-              ))}
-            </div>
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
-              <button className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => setSelectedAsset(null)}>Cerrar</button>
-              <button className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center" onClick={() => { setSelectedAsset(null); openEdit(selectedAsset); }}>
-                <Wrench size={14} /> <span>Editar Activo</span>
-              </button>
+                <button onClick={() => setSelectedAsset(null)} className="text-slate-400 hover:text-slate-700 text-lg leading-none p-1">✕</button>
+              </div>
+              <div className="bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200 mb-4 text-xs leading-relaxed text-slate-700">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                  <div><span className="text-slate-500">Marca:</span> <strong className="text-slate-900">{selectedAsset.brand || '—'}</strong></div>
+                  <div><span className="text-slate-500">Modelo:</span> <strong className="text-slate-900">{selectedAsset.model || '—'}</strong></div>
+                  <div><span className="text-slate-500">Num. Serie:</span> <strong className="text-slate-900 font-mono">{selectedAsset.serialNumber || '—'}</strong></div>
+                  <div><span className="text-slate-500">Adquisición:</span> <strong className="text-slate-900">{selectedAsset.acquisitionDate || 'N/A'}</strong></div>
+                  <div><span className="text-slate-500">Área Planta:</span> <strong className="text-slate-900">{selectedAsset.areaName}</strong></div>
+                  <div><span className="text-slate-500">Estado Actual:</span> <span className="badge badge-success ml-1">{selectedAsset.status}</span></div>
+                </div>
+              </div>
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2.5 flex items-center gap-2">
+                <Layers size={15} className="text-slate-500" /> Archivos y Planos Adjuntos (Azure Blob Storage)
+              </h4>
+              <div className="space-y-2 mb-4">
+                {[`Manual_Operacion_${selectedAsset.brand || 'Equipo'}.pdf`, `Plano_LOTO_${selectedAsset.code}.dwg`].map(f => (
+                  <div key={f} className="flex items-center justify-between p-2.5 sm:p-3 bg-white rounded-lg border border-slate-200 text-xs gap-2">
+                    <span className="font-medium text-slate-800 truncate">📄 {f}</span>
+                    <button className="btn btn-secondary text-xs py-1 px-2.5 flex-shrink-0">Descargar Blob</button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                <button className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => setSelectedAsset(null)}>Cerrar</button>
+                <button className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center" onClick={() => { setSelectedAsset(null); openEdit(selectedAsset); }}>
+                  <Wrench size={14} /> <span>Editar Activo</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {/* Modal Crear / Editar Activo */}
       {showCreateModal && (
-        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
               <h3 className="text-base sm:text-lg font-bold text-slate-900">
                 {editingAsset ? `Editar Activo: ${editingAsset.code}` : 'Registrar Nuevo Activo'}
@@ -316,6 +320,7 @@ export default function Assets({ currentUser }) {
             </form>
           </div>
         </div>
+      </ModalPortal>
       )}
     </div>
   );

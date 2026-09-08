@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import LandingBackground from '../components/LandingBackground';
 import { CURRENT_VERSION } from '../data/changelogData';
+import ModalPortal from '../components/UI/ModalPortal';
 
 export default function Landing({ onNavigateToLogin, onOpenChangelog }) {
   const [showArchModal, setShowArchModal] = useState(false);
@@ -782,51 +783,53 @@ export default function Landing({ onNavigateToLogin, onOpenChangelog }) {
 
       {/* Modal de Arquitectura Técnica */}
       {showArchModal && (
-        <div className="modal-overlay p-3 sm:p-4" onClick={() => setShowArchModal(false)}>
-          <div className="modal-content max-w-xl w-full p-4 sm:p-6 rounded-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4 sm:mb-5 pb-3 border-b border-slate-200">
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Database size={18} className="text-blue-600 shrink-0" />
-                <span>Arquitectura Técnica de MANSOLE</span>
-              </h3>
-              <button 
-                onClick={() => setShowArchModal(false)}
-                className="text-slate-400 hover:text-slate-700 p-1 text-lg leading-none cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs text-slate-600">
-              <div className="bg-slate-50 p-3 sm:p-3.5 rounded-xl border border-slate-200">
-                <strong className="text-slate-900 block mb-1 font-semibold flex items-center gap-1.5">
-                  <Cpu size={14} className="text-blue-600 shrink-0" /> Frontend SPA React 18
-                </strong>
-                Construido con Vite, Tailwind CSS y Framer Motion. 100% responsive optimizado para tabletas industriales y celulares de operarios en planta.
+        <ModalPortal>
+          <div className="modal-overlay p-3 sm:p-4" onClick={() => setShowArchModal(false)}>
+            <div className="modal-content max-w-xl w-full p-4 sm:p-6 rounded-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-4 sm:mb-5 pb-3 border-b border-slate-200">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Database size={18} className="text-blue-600 shrink-0" />
+                  <span>Arquitectura Técnica de MANSOLE</span>
+                </h3>
+                <button 
+                  onClick={() => setShowArchModal(false)}
+                  className="text-slate-400 hover:text-slate-700 p-1 text-lg leading-none cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
               </div>
 
-              <div className="bg-slate-50 p-3 sm:p-3.5 rounded-xl border border-slate-200">
-                <strong className="text-slate-900 block mb-1 font-semibold flex items-center gap-1.5">
-                  <Server size={14} className="text-emerald-600 shrink-0" /> Backend Node.js & Express
-                </strong>
-                API RESTful protegida con JWT, Helmet, Rate Limiting y Pool de conexiones de alta concurrencia con reconexión automática.
+              <div className="space-y-3 text-xs text-slate-600">
+                <div className="bg-slate-50 p-3 sm:p-3.5 rounded-xl border border-slate-200">
+                  <strong className="text-slate-900 block mb-1 font-semibold flex items-center gap-1.5">
+                    <Cpu size={14} className="text-blue-600 shrink-0" /> Frontend SPA React 18
+                  </strong>
+                  Construido con Vite, Tailwind CSS y Framer Motion. 100% responsive optimizado para tabletas industriales y celulares de operarios en planta.
+                </div>
+
+                <div className="bg-slate-50 p-3 sm:p-3.5 rounded-xl border border-slate-200">
+                  <strong className="text-slate-900 block mb-1 font-semibold flex items-center gap-1.5">
+                    <Server size={14} className="text-emerald-600 shrink-0" /> Backend Node.js & Express
+                  </strong>
+                  API RESTful protegida con JWT, Helmet, Rate Limiting y Pool de conexiones de alta concurrencia con reconexión automática.
+                </div>
+
+                <div className="bg-slate-50 p-3 sm:p-3.5 rounded-xl border border-slate-200">
+                  <strong className="text-slate-900 block mb-1 font-semibold flex items-center gap-1.5">
+                    <Database size={14} className="text-purple-600 shrink-0" /> Azure SQL Database Persistente
+                  </strong>
+                  Base de datos Microsoft Azure SQL (`soledb-puntoventa`), esquema `MANSOLE`. Tablas con integridad referencial completa y Row-Level Security (RLS) por CECO.
+                </div>
               </div>
 
-              <div className="bg-slate-50 p-3 sm:p-3.5 rounded-xl border border-slate-200">
-                <strong className="text-slate-900 block mb-1 font-semibold flex items-center gap-1.5">
-                  <Database size={14} className="text-purple-600 shrink-0" /> Azure SQL Database Persistente
-                </strong>
-                Base de datos Microsoft Azure SQL (`soledb-puntoventa`), esquema `MANSOLE`. Tablas con integridad referencial completa y Row-Level Security (RLS) por CECO.
+              <div className="mt-4 sm:mt-5 pt-3 sm:pt-4 border-t border-slate-200 flex justify-end">
+                <button className="btn btn-primary text-xs w-full sm:w-auto cursor-pointer" onClick={() => setShowArchModal(false)}>
+                  Cerrar Documentación
+                </button>
               </div>
-            </div>
-
-            <div className="mt-4 sm:mt-5 pt-3 sm:pt-4 border-t border-slate-200 flex justify-end">
-              <button className="btn btn-primary text-xs w-full sm:w-auto cursor-pointer" onClick={() => setShowArchModal(false)}>
-                Cerrar Documentación
-              </button>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../services/api';
+import ModalPortal from '../components/UI/ModalPortal';
 
 export default function Users({ currentUser }) {
   const [activeTab, setActiveTab] = useState('users');
@@ -941,138 +942,143 @@ export default function Users({ currentUser }) {
       )}
 
       {showUserModal && (
-        <div className="modal-overlay" onClick={() => setShowUserModal(false)}>
-          <div className="modal-content" style={{ maxWidth: '520px' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #E4E7ED', paddingBottom: '14px' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1B365D' }}>
-                {editingUser ? `Editar Colaborador: ${editingUser.name}` : 'Registrar Nuevo Colaborador'}
-              </h3>
-              <button onClick={() => setShowUserModal(false)} style={{ fontSize: '20px', color: '#8A919E', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
-            </div>
-
-            <form onSubmit={handleSaveUser}>
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#1A1C1E' }}>Nombre y Apellidos *</label>
-                <input 
-                  className="form-input" 
-                  required 
-                  placeholder="Ej. Fernando Silva" 
-                  value={userDataForm.name} 
-                  onChange={e => setUserDataForm({...userDataForm, name: e.target.value})} 
-                />
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setShowUserModal(false)}>
+            <div className="modal-content" style={{ maxWidth: '520px' }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #E4E7ED', paddingBottom: '14px' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1B365D' }}>
+                  {editingUser ? `Editar Colaborador: ${editingUser.name}` : 'Registrar Nuevo Colaborador'}
+                </h3>
+                <button onClick={() => setShowUserModal(false)} style={{ fontSize: '20px', color: '#8A919E', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
               </div>
 
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#1A1C1E' }}>Correo Electrónico *</label>
-                <input 
-                  className="form-input" 
-                  type="email" 
-                  required 
-                  placeholder="fsilva@gruposole.com" 
-                  value={userDataForm.email} 
-                  onChange={e => setUserDataForm({...userDataForm, email: e.target.value})} 
-                />
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#1A1C1E' }}>Rol de Acceso *</label>
-                <select 
-                  className="form-select" 
-                  value={userDataForm.role} 
-                  onChange={e => setUserDataForm({...userDataForm, role: e.target.value})}
-                >
-                  {rolesList.map(r => (
-                    <option key={r.id} value={r.name}>{r.name} {r.isSystem ? '(Nativo)' : '(Personalizado)'}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#1A1C1E' }}>CECO / RLS</label>
-                <select 
-                  className="form-select" 
-                  value={userDataForm.ceco} 
-                  onChange={e => setUserDataForm({...userDataForm, ceco: e.target.value})}
-                >
-                  <option value="CECO-SOL-101 (Ensamble)">CECO-SOL-101 (Línea Ensamble Termos)</option>
-                  <option value="CECO-SOL-102 (Metalmecánica)">CECO-SOL-102 (Prensas y Estampado)</option>
-                  <option value="CECO-SOL-103 (Pintura)">CECO-SOL-103 (Tratamiento y Pintura)</option>
-                  <option value="CECO-SOL-999 (Planta General)">CECO-SOL-999 (Infraestructural General)</option>
-                </select>
-              </div>
-
-              <div className="bg-slate-50 p-3 sm:p-3.5 rounded-xl border border-slate-200 mb-4 flex items-center justify-between gap-2">
-                <div>
-                  <strong className="text-xs sm:text-sm font-bold text-slate-900 block">Estado de Acceso al Sistema</strong>
-                  <span className="text-[11px] text-slate-500">
-                    {userDataForm.isActive ? 'Cuenta habilitada para iniciar sesión' : 'Cuenta suspendida/bloqueada del sistema'}
-                  </span>
+              <form onSubmit={handleSaveUser}>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#1A1C1E' }}>Nombre y Apellidos *</label>
+                  <input 
+                    className="form-input" 
+                    required 
+                    placeholder="Ej. Fernando Silva" 
+                    value={userDataForm.name} 
+                    onChange={e => setUserDataForm({...userDataForm, name: e.target.value})} 
+                  />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setUserDataForm({ ...userDataForm, isActive: !userDataForm.isActive })}
-                  className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg border transition-colors ${
-                    userDataForm.isActive ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-red-700 bg-red-50 border-red-200'
-                  }`}
-                >
-                  {userDataForm.isActive ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
-                  <span>{userDataForm.isActive ? 'ACTIVA' : 'SUSPENDIDA'}</span>
-                </button>
-              </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
-                <button type="button" className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => setShowUserModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center">{editingUser ? 'Guardar' : 'Registrar'}</button>
-              </div>
-            </form>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#1A1C1E' }}>Correo Electrónico *</label>
+                  <input 
+                    className="form-input" 
+                    type="email" 
+                    required 
+                    placeholder="fsilva@gruposole.com" 
+                    value={userDataForm.email} 
+                    onChange={e => setUserDataForm({...userDataForm, email: e.target.value})} 
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#1A1C1E' }}>Rol de Acceso *</label>
+                  <select 
+                    className="form-select" 
+                    value={userDataForm.role} 
+                    onChange={e => setUserDataForm({...userDataForm, role: e.target.value})}
+                  >
+                    {rolesList.map(r => (
+                      <option key={r.id} value={r.name}>{r.name} {r.isSystem ? '(Nativo)' : '(Personalizado)'}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#1A1C1E' }}>CECO / RLS</label>
+                  <select 
+                    className="form-select" 
+                    value={userDataForm.ceco} 
+                    onChange={e => setUserDataForm({...userDataForm, ceco: e.target.value})}
+                  >
+                    <option value="CECO-SOL-101 (Ensamble)">CECO-SOL-101 (Línea Ensamble Termos)</option>
+                    <option value="CECO-SOL-102 (Metalmecánica)">CECO-SOL-102 (Prensas y Estampado)</option>
+                    <option value="CECO-SOL-103 (Pintura)">CECO-SOL-103 (Tratamiento y Pintura)</option>
+                    <option value="CECO-SOL-999 (Planta General)">CECO-SOL-999 (Infraestructural General)</option>
+                  </select>
+                </div>
+
+                <div className="bg-slate-50 p-3 sm:p-3.5 rounded-xl border border-slate-200 mb-4 flex items-center justify-between gap-2">
+                  <div>
+                    <strong className="text-xs sm:text-sm font-bold text-slate-900 block">Estado de Acceso al Sistema</strong>
+                    <span className="text-[11px] text-slate-500">
+                      {userDataForm.isActive ? 'Cuenta habilitada para iniciar sesión' : 'Cuenta suspendida/bloqueada del sistema'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setUserDataForm({ ...userDataForm, isActive: !userDataForm.isActive })}
+                    className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg border transition-colors ${
+                      userDataForm.isActive ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-red-700 bg-red-50 border-red-200'
+                    }`}
+                  >
+                    {userDataForm.isActive ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
+                    <span>{userDataForm.isActive ? 'ACTIVA' : 'SUSPENDIDA'}</span>
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                  <button type="button" className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => setShowUserModal(false)}>Cancelar</button>
+                  <button type="submit" className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center">{editingUser ? 'Guardar' : 'Registrar'}</button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {showRoleModal && (
-        <div className="modal-overlay" onClick={() => setShowRoleModal(false)}>
-          <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">Crear Nuevo Rol Corporativo</h3>
-              <button onClick={() => setShowRoleModal(false)} className="text-slate-400 hover:text-slate-700 text-lg leading-none p-1">✕</button>
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setShowRoleModal(false)}>
+            <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900">Crear Nuevo Rol Corporativo</h3>
+                <button onClick={() => setShowRoleModal(false)} className="text-slate-400 hover:text-slate-700 text-lg leading-none p-1">✕</button>
+              </div>
+
+              <form onSubmit={handleCreateRole} className="space-y-3">
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Nombre del Rol *</label>
+                  <input 
+                    className="form-input text-xs" 
+                    required 
+                    placeholder="Ej. Inspector de Calidad, Jefe de Almacén..." 
+                    value={roleDataForm.name} 
+                    onChange={e => setRoleDataForm({...roleDataForm, name: e.target.value})} 
+                  />
+                </div>
+
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Descripción *</label>
+                  <textarea 
+                    className="form-textarea text-xs" 
+                    rows="2" 
+                    required 
+                    placeholder="Explica las funciones o alcance de seguridad que tendrá este perfil..." 
+                    value={roleDataForm.description} 
+                    onChange={e => setRoleDataForm({...roleDataForm, description: e.target.value})} 
+                  />
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 p-2.5 rounded-xl text-xs text-blue-800 leading-relaxed">
+                  ℹ️ Al crear un rol, se añadirá instantáneamente a la matriz interactiva de privilegios.
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                  <button type="button" className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => setShowRoleModal(false)}>Cancelar</button>
+                  <button type="submit" className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center">Crear Rol</button>
+                </div>
+              </form>
             </div>
-
-            <form onSubmit={handleCreateRole} className="space-y-3">
-              <div className="form-group mb-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Nombre del Rol *</label>
-                <input 
-                  className="form-input text-xs" 
-                  required 
-                  placeholder="Ej. Inspector de Calidad, Jefe de Almacén..." 
-                  value={roleDataForm.name} 
-                  onChange={e => setRoleDataForm({...roleDataForm, name: e.target.value})} 
-                />
-              </div>
-
-              <div className="form-group mb-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Descripción *</label>
-                <textarea 
-                  className="form-textarea text-xs" 
-                  rows="2" 
-                  required 
-                  placeholder="Explica las funciones o alcance de seguridad que tendrá este perfil..." 
-                  value={roleDataForm.description} 
-                  onChange={e => setRoleDataForm({...roleDataForm, description: e.target.value})} 
-                />
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 p-2.5 rounded-xl text-xs text-blue-800 leading-relaxed">
-                ℹ️ Al crear un rol, se añadirá instantáneamente a la matriz interactiva de privilegios.
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
-                <button type="button" className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => setShowRoleModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center">Crear Rol</button>
-              </div>
-            </form>
           </div>
-        </div>
+        </ModalPortal>
       )}
+
     </div>
   );
 }

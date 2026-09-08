@@ -16,6 +16,7 @@ import AccessDeniedPage from './pages/AccessDeniedPage';
 import HelpModal from './components/HelpModal';
 import ChangelogModal from './components/ChangelogModal';
 import MansitoAssistant from './components/MansitoAssistant';
+import ModalPortal from './components/UI/ModalPortal';
 import { useAuth } from './hooks/useAuth';
 import './index.css';
 
@@ -168,10 +169,10 @@ export default function App() {
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.18 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
             >
               {renderTab()}
             </motion.div>
@@ -180,17 +181,26 @@ export default function App() {
       </main>
 
       {/* Modal Global de Ayuda y Procedimientos */}
-      <HelpModal 
-        isOpen={showGlobalHelp} 
-        onClose={() => setShowGlobalHelp(false)} 
-        initialModule={activeTab === 'catalogs' ? 'catalogs' : (activeTab === 'inventory' ? 'inventory' : (activeTab === 'schedule' ? 'schedule' : (activeTab === 'assets' ? 'assets' : 'workOrders')))} 
-      />
+      {showGlobalHelp && (
+        <ModalPortal>
+          <HelpModal 
+            isOpen={showGlobalHelp} 
+            onClose={() => setShowGlobalHelp(false)} 
+            initialModule={activeTab === 'catalogs' ? 'catalogs' : (activeTab === 'inventory' ? 'inventory' : (activeTab === 'schedule' ? 'schedule' : (activeTab === 'assets' ? 'assets' : 'workOrders')))} 
+          />
+        </ModalPortal>
+      )}
 
       {/* Modal Global de Registro de Cambios (Changelog & Pull Requests) */}
-      <ChangelogModal 
-        isOpen={showChangelog} 
-        onClose={() => setShowChangelog(false)} 
-      />
+      {showChangelog && (
+        <ModalPortal>
+          <ChangelogModal 
+            isOpen={showChangelog} 
+            onClose={() => setShowChangelog(false)} 
+          />
+        </ModalPortal>
+      )}
+
 
       {/* Asistente Flotante de IA de Planta: Mansito */}
       <MansitoAssistant currentUser={user} />

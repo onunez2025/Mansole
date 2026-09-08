@@ -126,6 +126,7 @@ export const api = {
   updateInventoryItem:     async (id, data) => await client.put(`/inventory/${id}`, data),
   updateActivity:          async (id, data) => await client.put(`/activities/${id}`, data),
   updateWorkOrderStatus:   async (id, data) => await client.put(`/workorders/${id}/status`, data),
+  closeWorkOrder:          async (id) => await client.put(`/workorders/${id}/close`),
   reprogramSchedule:       async (id, newDueDate, reason) => await client.put(`/schedule/${id}/reprogram`, { newDueDate, reason }),
 
   // === DELETE (Eliminar) ===

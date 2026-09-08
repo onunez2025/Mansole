@@ -174,7 +174,13 @@ router.put('/tasks/:taskId/start', async (req, res) => {
       SET StartedAt = GETDATE(),
           Status = 'En Progreso',
           TechnicianName = ISNULL(@techName, TechnicianName)
-      WHERE Id = @taskId
+      WHERE Id = @taskId;
+
+      -- Transición automática de la OT a 'En Progreso'
+      UPDATE MANSOLE.WorkOrders
+      SET Status = 'En Progreso'
+      WHERE Id = (SELECT WorkOrderId FROM MANSOLE.WorkOrderTasks WHERE Id = @taskId)
+        AND Status IN ('Pendiente', 'Iniciada', 'Iniciado en Planta');
     `;
     await pool.request()
       .input('taskId', sql.Int, parseInt(req.params.taskId))
@@ -209,6 +215,20 @@ router.put('/tasks/:taskId/finish', async (req, res) => {
         WHERE WorkOrderId = (SELECT WorkOrderId FROM MANSOLE.WorkOrderTasks WHERE Id = @taskId)
       )
       WHERE Id = (SELECT WorkOrderId FROM MANSOLE.WorkOrderTasks WHERE Id = @taskId);
+
+      -- Si todas las tareas de la OT han concluido, pasar automáticamente la OT a 'Finalizada'
+      IF NOT EXISTS (
+        SELECT 1 FROM MANSOLE.WorkOrderTasks
+        WHERE WorkOrderId = (SELECT WorkOrderId FROM MANSOLE.WorkOrderTasks WHERE Id = @taskId)
+          AND (IsCompleted = 0 OR IsCompleted IS NULL)
+      )
+      BEGIN
+        UPDATE MANSOLE.WorkOrders
+        SET Status = 'Finalizada',
+            ExecutionDate = ISNULL(ExecutionDate, GETDATE())
+        WHERE Id = (SELECT WorkOrderId FROM MANSOLE.WorkOrderTasks WHERE Id = @taskId)
+          AND Status NOT IN ('Cerrada');
+      END
     `;
     await pool.request()
       .input('taskId', sql.Int, parseInt(req.params.taskId))
@@ -589,6 +609,76 @@ router.put('/:id/status', async (req, res) => {
     res.json({ message: 'OT actualizada con éxito en Azure SQL' });
   } catch(e) {
     res.status(500).json({ error: 'Error actualizando OT', details: e.message });
+  }
+});
+
+// PUT /api/workorders/:id/close (Cierre formal y liquidación de la Orden de Trabajo)
+router.put('/:id/close', async (req, res) => {
+  const orderId = parseInt(req.params.id);
+  try {
+    const pool = await getDbConnection();
+
+    // 1. Validar que la orden exista
+    const otRes = await pool.request()
+      .input('id', sql.Int, orderId)
+      .query('SELECT Id, Code, Status FROM MANSOLE.WorkOrders WHERE Id = @id');
+
+    if (otRes.recordset.length === 0) {
+      return res.status(404).json({ error: 'Orden de Trabajo no encontrada.' });
+    }
+
+    const ot = otRes.recordset[0];
+    if (ot.Status === 'Cerrada') {
+      return res.status(400).json({ error: 'La Orden de Trabajo ya se encuentra cerrada y liquidada.' });
+    }
+
+    // 2. Validar que tenga tareas y que todas estén completadas
+    const tasksRes = await pool.request()
+      .input('id', sql.Int, orderId)
+      .query(`
+        SELECT 
+          COUNT(*) as TotalTasks,
+          SUM(CASE WHEN IsCompleted = 1 THEN 1 ELSE 0 END) as CompletedTasks
+        FROM MANSOLE.WorkOrderTasks 
+        WHERE WorkOrderId = @id
+      `);
+
+    const { TotalTasks, CompletedTasks } = tasksRes.recordset[0];
+
+    if (TotalTasks === 0) {
+      return res.status(400).json({ 
+        error: 'No se puede cerrar la OT: No tiene tareas registradas. Debe ingresar y ejecutar al menos una tarea técnica.' 
+      });
+    }
+
+    if (CompletedTasks < TotalTasks) {
+      const pending = TotalTasks - CompletedTasks;
+      return res.status(400).json({ 
+        error: `No se puede cerrar la OT: Aún tiene ${pending} tarea(s) pendiente(s) o en progreso.` 
+      });
+    }
+
+    // 3. Cerrar formalmente la OT, liquidar tiempos y costos
+    const updateQuery = `
+      UPDATE MANSOLE.WorkOrders
+      SET Status = 'Cerrada',
+          ExecutionDate = ISNULL(ExecutionDate, GETDATE()),
+          DowntimeMinutes = ISNULL(PreDowntimeMinutes, 0) + (
+            SELECT ISNULL(SUM(DurationMinutes), 0) FROM MANSOLE.WorkOrderTasks WHERE WorkOrderId = @id
+          ),
+          TotalCost = ISNULL(LaborCost, 0) + (
+            SELECT ISNULL(SUM(Quantity * UnitCost), 0) FROM MANSOLE.WorkOrderSpareParts WHERE WorkOrderId = @id
+          )
+      WHERE Id = @id
+    `;
+    await pool.request()
+      .input('id', sql.Int, orderId)
+      .query(updateQuery);
+
+    res.json({ message: `Orden de Trabajo ${ot.Code} cerrada y liquidada exitosamente.`, status: 'Cerrada' });
+  } catch (err) {
+    console.error('Error cerrando OT:', err);
+    res.status(500).json({ error: 'Error al cerrar la Orden de Trabajo', details: err.message });
   }
 });
 

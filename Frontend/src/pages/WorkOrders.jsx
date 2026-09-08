@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { api, API_BASE } from '../services/api';
-import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle2, AlertTriangle, Filter, CheckCircle, Clock, HelpCircle, Timer, Trash2, PlusCircle, Check, X, Package, Boxes } from 'lucide-react';
+import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle2, AlertTriangle, Filter, CheckCircle, Clock, HelpCircle, Timer, Trash2, PlusCircle, Check, X, Package, Boxes, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { OrderCardSkeleton } from '../components/UI';
 import HelpModal from '../components/HelpModal';
@@ -130,7 +130,11 @@ export default function WorkOrders({ currentUser }) {
       const techName = currentUser?.firstName ? `${currentUser.firstName} ${currentUser.lastName || ''}`.trim() : 'Técnico de Planta';
       await api.startOrderTask(taskId, techName);
       toast.success('⏱️ Tarea iniciada. Cronómetro en marcha.');
-      if (selectedOT) loadOtTasks(selectedOT.id || selectedOT.Id);
+      if (selectedOT) {
+        setSelectedOT(prev => prev ? { ...prev, status: 'En Progreso' } : null);
+        loadOtTasks(selectedOT.id || selectedOT.Id);
+        loadOrders(true);
+      }
     } catch (err) {
       toast.error('Error al iniciar tarea');
     }
@@ -140,9 +144,56 @@ export default function WorkOrders({ currentUser }) {
     try {
       await api.finishOrderTask(taskId, 'Trabajo completado según procedimiento estándar.');
       toast.success('✅ Tarea finalizada. Tiempo registrado en Azure SQL.');
-      if (selectedOT) loadOtTasks(selectedOT.id || selectedOT.Id);
+      if (selectedOT) {
+        const orderId = selectedOT.id || selectedOT.Id;
+        const currentTasks = await api.getOrderTasks(orderId);
+        const tasksArr = Array.isArray(currentTasks) ? currentTasks : [];
+        setOtTasks(tasksArr);
+        const allCompleted = tasksArr.length > 0 && tasksArr.every(t => t.IsCompleted);
+        if (allCompleted) {
+          setSelectedOT(prev => prev ? { ...prev, status: 'Finalizada' } : null);
+          toast.success('🎉 ¡Todas las tareas concluidas! La OT está lista para el Cierre.');
+        }
+        loadOrders(true);
+      }
     } catch (err) {
       toast.error('Error al finalizar tarea');
+    }
+  };
+
+  const handleCloseOT = async () => {
+    if (!selectedOT) return;
+    if (otTasks.length === 0) {
+      toast.error('No se puede cerrar la OT: No tiene tareas registradas. Ingrese y ejecute al menos una tarea técnica.');
+      return;
+    }
+    const pendingTasks = otTasks.filter(t => !t.IsCompleted);
+    if (pendingTasks.length > 0) {
+      toast.error(`No se puede cerrar la OT: Aún tiene ${pendingTasks.length} tarea(s) pendiente(s) o en ejecución.`);
+      return;
+    }
+
+    const taskInterventionMinutes = otTasks.reduce((sum, t) => sum + (Number(t.DurationMinutes) || 0), 0);
+    const preDowntime = parseInt(selectedOT.preDowntimeMinutes !== undefined ? selectedOT.preDowntimeMinutes : (selectedOT.PreDowntimeMinutes || 0)) || 0;
+    const totalDowntime = preDowntime + taskInterventionMinutes;
+
+    if (!window.confirm(`¿Confirmas el CIERRE Y LIQUIDACIÓN formal de la orden ${selectedOT.code}?\n\n• Tiempo Total de Parada: ${totalDowntime} min\n• Costo Total Liquidado: $${(selectedOT.totalCost || 0).toFixed(2)} USD\n• Estado: Se marcará como CERRADA definitivamente y no admitirá más cambios.`)) {
+      return;
+    }
+
+    try {
+      // Guardar ajuste previo si hubo
+      await api.updateWorkOrderStatus(selectedOT.id || selectedOT.Id, {
+        preDowntimeMinutes: preDowntime,
+        downtimeMinutes: totalDowntime
+      });
+      // Ejecutar cierre definitivo
+      const res = await api.closeWorkOrder(selectedOT.id || selectedOT.Id);
+      toast.success(res.message || 'Orden de Trabajo cerrada y liquidada exitosamente');
+      setSelectedOT(prev => prev ? { ...prev, status: 'Cerrada', downtimeMinutes: totalDowntime } : null);
+      loadOrders();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al cerrar la Orden de Trabajo');
     }
   };
 
@@ -552,19 +603,27 @@ export default function WorkOrders({ currentUser }) {
             <div className="bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-200 mb-3 space-y-2">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">Descripción de Trabajo</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-semibold text-slate-500 hidden sm:inline">Estado:</span>
-                  <select 
-                    className="form-select py-1 px-2 text-xs font-bold w-auto bg-white border border-slate-300 rounded-lg"
-                    value={selectedOT.status || 'Iniciado en Planta'}
-                    onChange={e => setSelectedOT({ ...selectedOT, status: e.target.value })}
-                  >
-                    <option value="Pendiente">🟡 Pendiente</option>
-                    <option value="En Progreso">🔵 En Progreso</option>
-                    <option value="Iniciado en Planta">⚙️ En Planta</option>
-                    <option value="Finalizada">✅ Finalizada</option>
-                    <option value="Cerrada">🔒 Cerrada</option>
-                  </select>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] font-semibold text-slate-500 hidden sm:inline">Estado Operativo:</span>
+                  <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border inline-flex items-center gap-1.5 ${
+                    selectedOT.status === 'Cerrada'
+                      ? 'bg-slate-800 text-white border-slate-900 shadow-2xs'
+                      : selectedOT.status === 'Finalizada'
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        : selectedOT.status === 'En Progreso' || selectedOT.status === 'Iniciado en Planta'
+                          ? 'bg-blue-100 text-blue-800 border-blue-300 animate-pulse'
+                          : 'bg-amber-100 text-amber-800 border-amber-300'
+                  }`}>
+                    {selectedOT.status === 'Cerrada' ? '🔒 Cerrada y Liquidada' :
+                     selectedOT.status === 'Finalizada' ? '✅ Tareas Finalizadas' :
+                     selectedOT.status === 'En Progreso' || selectedOT.status === 'Iniciado en Planta' ? '🔵 En Progreso' :
+                     '🟡 Pendiente de Inicio'}
+                  </span>
+                  {otTasks.length > 0 && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                      {otTasks.filter(t => t.IsCompleted).length}/{otTasks.length} Tareas
+                    </span>
+                  )}
                 </div>
               </div>
               <p className="text-xs text-slate-800 leading-relaxed m-0">{selectedOT.description}</p>
@@ -1047,30 +1106,55 @@ export default function WorkOrders({ currentUser }) {
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
-              <button className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => downloadPDF(selectedOT.id)} title="Descargar Acta PDF">
-                <Download size={14} /> <span className="hidden sm:inline">Acta PDF</span><span className="sm:hidden">PDF</span>
+            <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-200 flex-wrap">
+              <button className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1" onClick={() => downloadPDF(selectedOT.id)} title="Descargar Acta PDF">
+                <Download size={14} /> <span>Acta PDF</span>
               </button>
-              <button className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center" onClick={async () => {
-                try {
-                  const taskInterventionMinutes = otTasks.reduce((sum, t) => sum + (Number(t.DurationMinutes) || 0), 0);
-                  const preDowntime = parseInt(selectedOT.preDowntimeMinutes !== undefined ? selectedOT.preDowntimeMinutes : (selectedOT.PreDowntimeMinutes || 0)) || 0;
-                  const calculatedDowntime = preDowntime + taskInterventionMinutes;
 
-                  await api.updateWorkOrderStatus(selectedOT.id || selectedOT.Id, { 
-                    status: selectedOT.status || 'En Progreso', 
-                    preDowntimeMinutes: preDowntime,
-                    downtimeMinutes: calculatedDowntime 
-                  });
-                  setSelectedOT(null);
-                  toast.success("OT actualizada exitosamente con cálculo de tiempo de parada.");
-                  loadOrders();
-                } catch(e) {
-                  toast.error("Error al actualizar OT: " + (e.response?.data?.error || e.message));
-                }
-              }}>
-                <CheckCircle size={14} /> <span>Guardar</span>
-              </button>
+              <div className="flex items-center gap-2 flex-wrap ml-auto">
+                {selectedOT.status !== 'Cerrada' && (
+                  <button 
+                    className="btn btn-secondary text-xs py-1.5 px-3 text-slate-700 flex items-center gap-1"
+                    onClick={async () => {
+                      try {
+                        const taskInterventionMinutes = otTasks.reduce((sum, t) => sum + (Number(t.DurationMinutes) || 0), 0);
+                        const preDowntime = parseInt(selectedOT.preDowntimeMinutes !== undefined ? selectedOT.preDowntimeMinutes : (selectedOT.PreDowntimeMinutes || 0)) || 0;
+                        const calculatedDowntime = preDowntime + taskInterventionMinutes;
+                        await api.updateWorkOrderStatus(selectedOT.id || selectedOT.Id, { 
+                          preDowntimeMinutes: preDowntime,
+                          downtimeMinutes: calculatedDowntime 
+                        });
+                        toast.success("Espera previa guardada exitosamente.");
+                        loadOrders(true);
+                      } catch(e) {
+                        toast.error("Error al guardar: " + (e.response?.data?.error || e.message));
+                      }
+                    }}
+                    title="Guardar ajuste de tiempo previo sin cerrar la OT"
+                  >
+                    <Check size={13} /> <span>Guardar Espera</span>
+                  </button>
+                )}
+
+                {selectedOT.status === 'Cerrada' ? (
+                  <div className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 border border-slate-300 text-xs font-bold flex items-center gap-1.5">
+                    <Lock size={13} className="text-slate-500" />
+                    <span>OT Cerrada y Liquidada</span>
+                  </div>
+                ) : (
+                  <button 
+                    className={`btn text-xs py-1.5 px-4 font-bold flex items-center gap-1.5 shadow-xs transition-all ${
+                      otTasks.length > 0 && otTasks.every(t => t.IsCompleted)
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white ring-2 ring-emerald-200 animate-pulse'
+                        : 'bg-slate-800 hover:bg-slate-900 text-white'
+                    }`}
+                    onClick={handleCloseOT}
+                  >
+                    <Lock size={13} />
+                    <span>CERRAR Y LIQUIDAR OT</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

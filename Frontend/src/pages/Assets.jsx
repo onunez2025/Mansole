@@ -71,10 +71,11 @@ export default function Assets({ currentUser }) {
   const loadAttachments = (assetId) => {
     setLoadingAttachments(true);
     api.getAttachments('Asset', assetId)
-      .then(res => setAttachments(Array.isArray(res.data) ? res.data : []))
+      .then(res => setAttachments(Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : [])))
       .catch(() => setAttachments([]))
       .finally(() => setLoadingAttachments(false));
   };
+
 
   useEffect(() => {
     if (selectedAsset?.id) {

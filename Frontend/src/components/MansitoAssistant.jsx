@@ -76,7 +76,10 @@ export default function MansitoAssistant({ currentUser }) {
       }));
 
       const res = await api.askMansito(textToSend.trim(), historyForAi, currentUser);
-      const aiResponse = res?.data?.answer || (res?.data?.error ? `⚠️ ${res.data.error}` : 'Lo siento, no pude procesar la consulta en este momento.');
+      const answer = res?.answer || res?.data?.answer;
+      const errorMsg = res?.error || res?.data?.error;
+      const modelName = res?.model || res?.data?.model || 'DeepSeek V4 Flash';
+      const aiResponse = answer || (errorMsg ? `⚠️ ${errorMsg}` : 'Lo siento, no pude procesar la consulta en este momento.');
 
       setMessages(prev => [
         ...prev,
@@ -85,9 +88,10 @@ export default function MansitoAssistant({ currentUser }) {
           sender: 'mansito',
           text: aiResponse,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          model: res?.data?.model || 'Mansito Experto'
+          model: modelName
         }
       ]);
+
 
     } catch (err) {
       console.error('Error al consultar a Mansito:', err);

@@ -119,7 +119,13 @@ export default function WorkOrders({ currentUser }) {
       });
       toast.success('Actividad asignada a la OT con éxito');
       setTaskComments('');
+      // Si la OT figuraba como Finalizada, al sumar una nueva tarea pendiente vuelve a En Progreso
+      setSelectedOT(prev => prev ? { 
+        ...prev, 
+        status: (prev.status === 'Finalizada' || prev.status === 'Pendiente') ? 'En Progreso' : prev.status 
+      } : null);
       loadOtTasks(selectedOT.id || selectedOT.Id);
+      loadOrders(true);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Error al agregar tarea');
     }
@@ -203,8 +209,22 @@ export default function WorkOrders({ currentUser }) {
       await api.deleteOrderTask(taskId);
       toast.success('Tarea removida de la OT');
       if (selectedOT) {
-        loadOtTasks(selectedOT.id || selectedOT.Id);
-        loadOtSpareParts(selectedOT.id || selectedOT.Id);
+        const orderId = selectedOT.id || selectedOT.Id;
+        const currentTasks = await api.getOrderTasks(orderId);
+        const tasksArr = Array.isArray(currentTasks) ? currentTasks : [];
+        setOtTasks(tasksArr);
+        
+        // Actualizar estado reactivo de la OT en frontend
+        if (tasksArr.length === 0) {
+          setSelectedOT(prev => prev ? { ...prev, status: 'Pendiente' } : null);
+        } else if (tasksArr.every(t => t.IsCompleted)) {
+          setSelectedOT(prev => prev ? { ...prev, status: 'Finalizada' } : null);
+        } else {
+          setSelectedOT(prev => prev ? { ...prev, status: 'En Progreso' } : null);
+        }
+
+        loadOtSpareParts(orderId);
+        loadOrders(true);
       }
     } catch (err) {
       toast.error('Error al eliminar tarea');
@@ -788,27 +808,33 @@ export default function WorkOrders({ currentUser }) {
                 </div>
 
                 {/* Formulario para Asignar Actividad a la OT */}
-                <form onSubmit={handleAddTaskToOT} className="flex items-center gap-1.5 w-full sm:w-auto">
-                  <select
-                    value={selectedActivityId}
-                    onChange={e => setSelectedActivityId(e.target.value)}
-                    className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-slate-900 flex-1 sm:w-64 min-w-0"
-                  >
-                    {catalogActivities.map(act => (
-                      <option key={act.Id || act.id} value={act.Id || act.id}>
-                        [{act.Type ? act.Type.substring(0,3) : 'Mec'}] {act.Name || act.name} ({act.EstimatedMinutes || 30}m)
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="submit"
-                    className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-1 transition-all shadow-xs flex-shrink-0"
-                    title="Asignar Actividad"
-                  >
-                    <Plus size={14} />
-                    <span className="hidden sm:inline">Asignar</span>
-                  </button>
-                </form>
+                {selectedOT.status !== 'Cerrada' ? (
+                  <form onSubmit={handleAddTaskToOT} className="flex items-center gap-1.5 w-full sm:w-auto">
+                    <select
+                      value={selectedActivityId}
+                      onChange={e => setSelectedActivityId(e.target.value)}
+                      className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:border-slate-900 flex-1 sm:w-64 min-w-0"
+                    >
+                      {catalogActivities.map(act => (
+                        <option key={act.Id || act.id} value={act.Id || act.id}>
+                          [{act.Type ? act.Type.substring(0,3) : 'Mec'}] {act.Name || act.name} ({act.EstimatedMinutes || 30}m)
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="submit"
+                      className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-1 transition-all shadow-xs flex-shrink-0"
+                      title="Asignar Actividad"
+                    >
+                      <Plus size={14} />
+                      <span className="hidden sm:inline">Asignar</span>
+                    </button>
+                  </form>
+                ) : (
+                  <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                    🔒 OT Cerrada (No admite nuevas tareas)
+                  </span>
+                )}
               </div>
 
               {/* Lista de Tareas con Tiempos y Estado */}

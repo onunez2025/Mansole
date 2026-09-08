@@ -143,15 +143,35 @@ router.post('/:id/tasks', async (req, res) => {
   if (!activityId) {
     return res.status(400).json({ error: 'Debe seleccionar una actividad del catálogo' });
   }
+  const orderId = parseInt(req.params.id);
   try {
     const pool = await getDbConnection();
+
+    // Validar si la OT está cerrada
+    const otCheck = await pool.request()
+      .input('id', sql.Int, orderId)
+      .query('SELECT Status FROM MANSOLE.WorkOrders WHERE Id = @id');
+
+    if (otCheck.recordset.length === 0) {
+      return res.status(404).json({ error: 'Orden de Trabajo no encontrada.' });
+    }
+    if (otCheck.recordset[0].Status === 'Cerrada') {
+      return res.status(400).json({ error: 'No se pueden agregar tareas a una Orden de Trabajo que ya está Cerrada y Liquidada.' });
+    }
+
     const query = `
       INSERT INTO MANSOLE.WorkOrderTasks (WorkOrderId, ActivityId, TechnicianName, Comments, Status, IsCompleted)
       OUTPUT INSERTED.Id
-      VALUES (@workOrderId, @activityId, @techName, @comments, 'Pendiente', 0)
+      VALUES (@workOrderId, @activityId, @techName, @comments, 'Pendiente', 0);
+
+      -- Si la OT estaba como 'Finalizada' o 'Iniciada', al agregar una nueva tarea pendiente vuelve automáticamente a 'En Progreso'
+      UPDATE MANSOLE.WorkOrders
+      SET Status = 'En Progreso'
+      WHERE Id = @workOrderId 
+        AND Status IN ('Finalizada', 'Iniciada', 'Iniciado en Planta');
     `;
     const result = await pool.request()
-      .input('workOrderId', sql.Int, parseInt(req.params.id))
+      .input('workOrderId', sql.Int, orderId)
       .input('activityId', sql.Int, parseInt(activityId))
       .input('techName', sql.NVarChar, technicianName || 'Técnico de Planta')
       .input('comments', sql.NVarChar, comments || '')
@@ -176,11 +196,11 @@ router.put('/tasks/:taskId/start', async (req, res) => {
           TechnicianName = ISNULL(@techName, TechnicianName)
       WHERE Id = @taskId;
 
-      -- Transición automática de la OT a 'En Progreso'
+      -- Transición automática de la OT a 'En Progreso' (incluso si estaba previamente como Finalizada o Pendiente)
       UPDATE MANSOLE.WorkOrders
       SET Status = 'En Progreso'
       WHERE Id = (SELECT WorkOrderId FROM MANSOLE.WorkOrderTasks WHERE Id = @taskId)
-        AND Status IN ('Pendiente', 'Iniciada', 'Iniciado en Planta');
+        AND Status IN ('Pendiente', 'Iniciada', 'Iniciado en Planta', 'Finalizada');
     `;
     await pool.request()
       .input('taskId', sql.Int, parseInt(req.params.taskId))
@@ -258,6 +278,23 @@ router.delete('/tasks/:taskId', async (req, res) => {
           WHERE WorkOrderId = @woId
         )
         WHERE Id = @woId;
+
+        -- Recalcular estado de la OT tras eliminar tarea
+        IF NOT EXISTS (SELECT 1 FROM MANSOLE.WorkOrderTasks WHERE WorkOrderId = @woId)
+        BEGIN
+          UPDATE MANSOLE.WorkOrders SET Status = 'Pendiente' WHERE Id = @woId AND Status NOT IN ('Cerrada');
+        END
+        ELSE IF NOT EXISTS (
+          SELECT 1 FROM MANSOLE.WorkOrderTasks 
+          WHERE WorkOrderId = @woId AND (IsCompleted = 0 OR IsCompleted IS NULL)
+        )
+        BEGIN
+          UPDATE MANSOLE.WorkOrders SET Status = 'Finalizada' WHERE Id = @woId AND Status NOT IN ('Cerrada');
+        END
+        ELSE
+        BEGIN
+          UPDATE MANSOLE.WorkOrders SET Status = 'En Progreso' WHERE Id = @woId AND Status NOT IN ('Cerrada');
+        END
       END
     `;
     await pool.request()

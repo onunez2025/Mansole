@@ -3,21 +3,106 @@
  * Cada entrada documenta el PR asociado, fecha, resumen ejecutivo y detalle de cambios por categoría.
  */
 
-export const CURRENT_VERSION = 'v2.7.0';
+export const CURRENT_VERSION = 'v2.8.1';
 export const LAST_RELEASE_DATE = '08 de Septiembre, 2026';
 export const GITHUB_REPO_URL = 'https://github.com/onunez2025/Mansole';
 
 export const CHANGELOG_DATA = [
   {
+    version: 'v2.8.1',
+    prNumber: 27,
+    prTitle: 'fix(ai): alta disponibilidad de Mansito con IPv4 estricto, cascada multimodelo y respuestas dinamicas de Azure SQL',
+    prUrl: `${GITHUB_REPO_URL}/pull/27`,
+    commitHash: '24fe643',
+    commitUrl: `${GITHUB_REPO_URL}/commit/24fe643`,
+    date: '08 de Septiembre, 2026',
+    isLatest: true,
+    tag: 'Actual / Hotfix AI',
+    tagColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    summary: 'Optimización de rendimiento y resiliencia del asistente Mansito: conexión HTTPS con IPv4 nativo (family: 4) para erradicar el retardo DNS de Windows, cascada multimodelo automática (DeepSeek V4 Pro -> Llama 3.2 11B -> GPT-OSS 20B) y motor dinámico de Azure SQL para responder de forma personalizada según cada consulta.',
+    highlights: [
+      'Conexión HTTPS nativa con resolución IPv4 forzada (family: 4) reduciendo el tiempo de respuesta de +18s a menos de 2s.',
+      'Cascada de alta disponibilidad multimodelo automática: DeepSeek V4 Pro, Llama 3.2 11B y GPT-OSS 20B.',
+      'Respuestas dinámicas y específicas para asignaciones de usuarios, OTs pendientes y cronogramas semanales.',
+      'Afinación de extracción de tablas SQL y compresión de prompts para inferencia fluida y precisa.'
+    ],
+    changes: [
+      {
+        type: 'fix',
+        scope: 'IA Mansito',
+        title: 'Resolución de cuelgues DNS e IPv6 en Windows',
+        desc: 'Implementación de agente HTTPS con family: 4 estricto, eliminando el timeout provocado por la resolución de direcciones IPv6 en entornos Windows.'
+      },
+      {
+        type: 'perf',
+        scope: 'IA Cascada',
+        title: 'Arquitectura de respaldo automático de modelos',
+        desc: 'Inferencia analítica primaria con DeepSeek V4 Pro con conmutación transparente a Llama 3.2 11B en caso de picos de latencia en NVIDIA NIM.'
+      },
+      {
+        type: 'feat',
+        scope: 'Servicio RAG',
+        title: 'Respuestas contextuales dinámicas de Azure SQL',
+        desc: 'El asistente identifica con precisión la consulta del usuario (tareas personales, conteo de OTs pendientes o preventivos programados) evitando respuestas genéricas.'
+      }
+    ]
+  },
+  {
+    version: 'v2.8.0',
+    prNumber: 26,
+    prTitle: 'feat(inventory): catalogo maestro de codigos, recepciones de almacen SAP/canibalizacion $0, salidas por OT y kardex valorizado',
+    prUrl: `${GITHUB_REPO_URL}/pull/26`,
+    commitHash: '3330b63',
+    commitUrl: `${GITHUB_REPO_URL}/commit/3330b63`,
+    date: '08 de Septiembre, 2026',
+    isLatest: false,
+    tag: 'Major Feature',
+    tagColor: 'bg-blue-50 text-blue-700 border-blue-200',
+    summary: 'Lanzamiento del módulo integral de gestión de inventarios y almacén: Catálogo maestro de códigos de repuesto, registro de Entradas con N° Guía/OC SAP y canibalización $0 USD, control de Salidas por mantenimiento y Kardex Consolidado con trazabilidad valorizada.',
+    highlights: [
+      'Pestaña de Catálogo & Stock Maestro con búsqueda rápida por código de repuesto, ubicación y stock crítico.',
+      'Módulo de Entradas de Almacén con modal de registro para compras SAP y piezas canibalizadas a $0 USD.',
+      'Módulo de Salidas por Mantenimiento con egresos y consumos vinculados a Órdenes de Trabajo.',
+      'Kardex Consolidado cronológico con diferenciación visual de entradas (+) y salidas (-).',
+      'Corrección visual de cobertura superior "glass" en formularios y modales de detalle.'
+    ],
+    changes: [
+      {
+        type: 'feat',
+        scope: 'Almacén & Kardex',
+        title: 'Módulo de Entradas y Recepciones de Almacén',
+        desc: 'Nuevo endpoint y modal para registrar ingresos de repuestos sumando stock disponible de forma atómica en MANSOLE.SpareParts y registrando la transacción.'
+      },
+      {
+        type: 'feat',
+        scope: 'Almacén & Kardex',
+        title: 'Soporte Contable para Canibalización a $0 USD',
+        desc: 'Permite ingresar piezas recuperadas de equipos en desuso a costo cero para trazabilidad en OTs sin distorsionar el balance contable en SAP.'
+      },
+      {
+        type: 'feat',
+        scope: 'Almacén & Kardex',
+        title: 'Kardex Consolidado Multimovimiento',
+        desc: 'Historial completo de entradas y salidas ordenadas cronológicamente con usuario responsable, motivo, fecha y documento de respaldo.'
+      },
+      {
+        type: 'ui',
+        scope: 'Modales & Detalle',
+        title: 'Ajuste de fondo glass en cabeceras',
+        desc: 'Ampliación de cobertura superior translúcida para eliminar espacios residuales de vistas previas en formularios y detalles.'
+      }
+    ]
+  },
+  {
     version: 'v2.7.0',
     prNumber: 25,
     prTitle: 'feat(ai): copiloto interactivo Mansito con RAG en Azure SQL y DeepSeek V4 Flash para consultas globales',
     prUrl: `${GITHUB_REPO_URL}/pull/25`,
-    commitHash: 'pending',
-    commitUrl: `${GITHUB_REPO_URL}/commits/master`,
+    commitHash: 'bffdcb6',
+    commitUrl: `${GITHUB_REPO_URL}/commit/bffdcb6`,
     date: '08 de Septiembre, 2026',
-    isLatest: true,
-    tag: 'Actual / Major AI',
+    isLatest: false,
+    tag: 'Major AI',
     tagColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     summary: 'Lanzamiento del copiloto y asistente de inteligencia artificial "Mansito", ubicado en la esquina inferior derecha, capaz de responder cualquier consulta sobre indicadores, usuarios, activos, repuestos y cronogramas de toda la plataforma.',
     highlights: [

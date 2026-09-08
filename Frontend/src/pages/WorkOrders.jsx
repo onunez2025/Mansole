@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { api, API_BASE } from '../services/api';
-import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle2, AlertTriangle, Filter, CheckCircle, Clock, HelpCircle, Timer, Trash2, PlusCircle, Check, X, Package, Boxes, Lock } from 'lucide-react';
+import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle2, AlertTriangle, Filter, CheckCircle, Clock, HelpCircle, Timer, Trash2, PlusCircle, Check, X, Package, Boxes, Lock, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { OrderCardSkeleton } from '../components/UI';
 import HelpModal from '../components/HelpModal';
@@ -14,6 +14,7 @@ export default function WorkOrders({ currentUser }) {
   const [selectedOT, setSelectedOT] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiDiagnosis, setAiDiagnosis] = useState(null);
+  const [aiCollapsed, setAiCollapsed] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [availableAssets, setAvailableAssets] = useState([]);
@@ -311,6 +312,7 @@ export default function WorkOrders({ currentUser }) {
 
   const triggerAiHelp = async (assetName, description, code) => {
     setAiLoading(true);
+    setAiCollapsed(false);
     const result = await api.diagnoseWithAI(assetName, description, code);
     setAiDiagnosis(result);
     setAiLoading(false);
@@ -743,45 +745,91 @@ export default function WorkOrders({ currentUser }) {
             </div>
 
             {/* ASISTENTE DE INTELIGENCIA ARTIFICIAL (Módulo 8 con RAG e Historial de Azure SQL) */}
-            <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-3 sm:p-4 mb-3 shadow-xs">
+            <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-2.5 sm:p-3 mb-3 shadow-xs transition-all">
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-2.5 min-w-0">
+                <div 
+                  className={`flex items-center gap-2.5 min-w-0 ${aiDiagnosis ? 'cursor-pointer select-none' : ''}`}
+                  onClick={() => aiDiagnosis && setAiCollapsed(!aiCollapsed)}
+                  title={aiDiagnosis ? (aiCollapsed ? 'Clic para expandir diagnóstico' : 'Clic para colapsar diagnóstico') : ''}
+                >
                   <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
                     <Bot size={16} />
                   </div>
                   <div className="min-w-0">
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">Asistente IA Diagnóstico</h4>
-                    <span className="text-[11px] text-slate-500 hidden sm:block">DeepSeek V4 Flash con Histórico de Azure SQL</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">Asistente IA Diagnóstico</h4>
+                      {aiDiagnosis && (
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                          aiCollapsed ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                        }`}>
+                          {aiCollapsed ? 'Oculto' : 'Desplegado'}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] sm:text-[11px] text-slate-500 block truncate">
+                      {aiDiagnosis 
+                        ? (aiCollapsed ? '💡 Diagnóstico generado. Pulsa "Ver Diagnóstico" para desplegarlo.' : 'DeepSeek V4 Flash con Histórico de Azure SQL')
+                        : 'DeepSeek V4 Flash con Histórico de Azure SQL'}
+                    </span>
                   </div>
                 </div>
-                {!aiDiagnosis ? (
-                  <button 
-                    className="btn btn-primary text-xs py-1 px-2.5 flex-shrink-0 flex items-center gap-1" 
-                    disabled={aiLoading}
-                    onClick={() => triggerAiHelp(selectedOT.assetName, selectedOT.description, selectedOT.assetCode)}
-                  >
-                    {aiLoading ? (
-                      <span className="flex items-center gap-1">
-                        <span className="w-2.5 h-2.5 rounded-full border-2 border-white border-t-transparent animate-spin inline-block"></span>
-                        Consultando DeepSeek...
-                      </span>
-                    ) : (
-                      <><Bot size={13} /><span>Consultar IA</span></>
-                    )}
-                  </button>
-                ) : (
-                  <button 
-                    className="text-[11px] font-semibold text-indigo-700 hover:text-indigo-900 bg-indigo-100/70 hover:bg-indigo-100 px-2 py-1 rounded-md transition-colors"
-                    onClick={() => triggerAiHelp(selectedOT.assetName, selectedOT.description, selectedOT.assetCode)}
-                    disabled={aiLoading}
-                  >
-                    {aiLoading ? 'Re-analizando...' : '↻ Reconsultar IA'}
-                  </button>
-                )}
+
+                <div className="flex items-center gap-1.5 ml-auto flex-wrap">
+                  {!aiDiagnosis ? (
+                    <button 
+                      className="btn btn-primary text-xs py-1 px-2.5 flex-shrink-0 flex items-center gap-1" 
+                      disabled={aiLoading}
+                      onClick={() => triggerAiHelp(selectedOT.assetName, selectedOT.description, selectedOT.assetCode)}
+                    >
+                      {aiLoading ? (
+                        <span className="flex items-center gap-1">
+                          <span className="w-2.5 h-2.5 rounded-full border-2 border-white border-t-transparent animate-spin inline-block"></span>
+                          Consultando DeepSeek...
+                        </span>
+                      ) : (
+                        <><Bot size={13} /><span>Consultar IA</span></>
+                      )}
+                    </button>
+                  ) : (
+                    <>
+                      {/* Botón Colapsar / Expandir para ahorrar espacio vertical al operario */}
+                      <button 
+                        className="text-[11px] font-semibold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 px-2 py-1 rounded-md transition-colors flex items-center gap-1 shadow-2xs"
+                        onClick={() => setAiCollapsed(!aiCollapsed)}
+                        title={aiCollapsed ? 'Desplegar diagnóstico completo' : 'Ocultar diagnóstico para ver tareas'}
+                      >
+                        {aiCollapsed ? (
+                          <><ChevronDown size={13} /> <span>Ver Diagnóstico</span></>
+                        ) : (
+                          <><ChevronUp size={13} /> <span>Ocultar</span></>
+                        )}
+                      </button>
+
+                      {/* Botón Reconsultar */}
+                      <button 
+                        className="text-[11px] font-semibold text-indigo-700 hover:text-indigo-900 bg-indigo-100/70 hover:bg-indigo-100 px-2 py-1 rounded-md transition-colors hidden sm:inline-flex items-center gap-1"
+                        onClick={() => triggerAiHelp(selectedOT.assetName, selectedOT.description, selectedOT.assetCode)}
+                        disabled={aiLoading}
+                        title="Volver a consultar a la IA"
+                      >
+                        {aiLoading ? 'Analizando...' : '↻ Reconsultar'}
+                      </button>
+
+                      {/* Botón Descartar / Quitar para liberar la pantalla */}
+                      <button 
+                        className="text-slate-400 hover:text-slate-700 p-1 hover:bg-slate-100 rounded transition-colors"
+                        onClick={() => setAiDiagnosis(null)}
+                        title="Cerrar diagnóstico y restaurar vista"
+                      >
+                        <X size={14} />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
 
-              {aiDiagnosis ? (
-                <div className="mt-2.5 pt-2.5 border-t border-indigo-100 text-xs space-y-2.5 leading-relaxed">
+              {aiDiagnosis && !aiCollapsed && (
+                <div className="mt-2.5 pt-2.5 border-t border-indigo-100 text-xs space-y-2.5 leading-relaxed max-h-80 overflow-y-auto pr-1">
                   {/* Análisis de Histórico RAG */}
                   <div className="bg-white border border-indigo-200 rounded-lg p-2.5 shadow-2xs">
                     <div className="flex items-center justify-between gap-1 mb-1.5 flex-wrap">
@@ -820,7 +868,9 @@ export default function WorkOrders({ currentUser }) {
                     <span>{aiDiagnosis.safetyWarning || "Aplicar protocolo de bloqueo y etiquetado LOTO antes de intervenir."}</span>
                   </div>
                 </div>
-              ) : (
+              )}
+
+              {!aiDiagnosis && (
                 <p className="text-[11px] text-slate-500 mt-1.5 hidden sm:block m-0">
                   Presiona el botón para que DeepSeek analice el historial de fallas en Azure SQL y brinde diagnóstico predictivo y solución técnica.
                 </p>

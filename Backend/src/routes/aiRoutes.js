@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { getDbConnection, sql } = require('../config/db');
 
+// Clave y endpoint por defecto de DeepSeek V4 Flash (NVIDIA NIM)
+const DEFAULT_DEEPSEEK_KEY = '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';
+
 // Fallback industrial knowledge base in case external API is temporarily unavailable
 const aiDiagnosisFallback = {
   default: {
@@ -106,7 +109,7 @@ router.post('/diagnose', async (req, res) => {
   }
 
   // 2. Invocar DeepSeek V4 Flash con RAG histórico
-  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const apiKey = process.env.DEEPSEEK_API_KEY || DEFAULT_DEEPSEEK_KEY;
   const baseUrl = process.env.DEEPSEEK_BASE_URL || 'https://integrate.api.nvidia.com/v1';
   const model = process.env.DEEPSEEK_MODEL || 'deepseek-ai/deepseek-v4-flash-0731';
 
@@ -248,11 +251,12 @@ router.post('/mansito', async (req, res) => {
     const kpiRes = await pool.request().query(`
       SELECT 
         COUNT(*) as TotalOTs,
-        SUM(CASE WHEN Status = 'Cerrada' THEN 1 ELSE 0 END) as ClosedOTs,
-        SUM(CASE WHEN Status = 'Finalizada' THEN 1 ELSE 0 END) as FinishedOTs,
-        SUM(CASE WHEN Status = 'En Progreso' THEN 1 ELSE 0 END) as InProgressOTs,
-        SUM(CASE WHEN Status = 'Pendiente' OR Status = 'Abierta' THEN 1 ELSE 0 END) as OpenOTs,
-        SUM(CASE WHEN Status = 'Espera Repuestos' THEN 1 ELSE 0 END) as WaitingPartsOTs,
+        SUM(CASE WHEN Status IN ('Cerrada') THEN 1 ELSE 0 END) as ClosedOTs,
+        SUM(CASE WHEN Status IN ('Finalizada') THEN 1 ELSE 0 END) as FinishedOTs,
+        SUM(CASE WHEN Status IN ('En Progreso', 'Iniciado en Planta') THEN 1 ELSE 0 END) as InProgressOTs,
+        SUM(CASE WHEN Status IN ('Pendiente', 'Abierta') THEN 1 ELSE 0 END) as OpenOTs,
+        SUM(CASE WHEN Status IN ('Espera Repuestos') THEN 1 ELSE 0 END) as WaitingPartsOTs,
+        SUM(CASE WHEN Status NOT IN ('Cerrada', 'Cancelada', 'Finalizada') THEN 1 ELSE 0 END) as ActiveOTs,
         SUM(CASE WHEN Type = 'Correctivo' THEN 1 ELSE 0 END) as Correctives,
         SUM(CASE WHEN Type = 'Preventivo' THEN 1 ELSE 0 END) as Preventives,
         SUM(CASE WHEN Priority = 'Crítica' THEN 1 ELSE 0 END) as CriticalOTs,
@@ -317,7 +321,19 @@ router.post('/mansito', async (req, res) => {
     `);
     const scheduleItems = schedRes.recordset || [];
 
-    // 7. OTs Recientes
+    // 7. OTs Activas (Sin cerrar) y Recientes
+    const activeOTsRes = await pool.request().query(`
+      SELECT TOP 10
+        w.Code, w.Type, w.Priority, w.Status, w.Description, w.ScheduledDate,
+        ast.Code as AssetCode, ast.Name as AssetName,
+        ISNULL(w.DowntimeMinutes, 0) as Downtime
+      FROM MANSOLE.WorkOrders w
+      LEFT JOIN MANSOLE.Assets ast ON w.AssetId = ast.Id
+      WHERE w.Status NOT IN ('Cerrada', 'Cancelada', 'Finalizada')
+      ORDER BY w.Id DESC
+    `);
+    const activeOTs = activeOTsRes.recordset || [];
+
     const recentOTsRes = await pool.request().query(`
       SELECT TOP 8
         w.Code, w.Type, w.Priority, w.Status, w.Description, w.ScheduledDate,
@@ -333,7 +349,9 @@ router.post('/mansito', async (req, res) => {
       kpis,
       assetsCount: assets.length,
       usersCount: usersList.length,
-      criticalPartsCount: criticalParts.filter(p => p.StockStatus === 'Crítico').length
+      criticalPartsCount: criticalParts.filter(p => p.StockStatus === 'Crítico').length,
+      activeOTs,
+      recentOTs
     };
 
     dbContext = `
@@ -369,7 +387,7 @@ ${recentOTs.map(o => `- [${o.Code}] ${o.Type} | Prioridad: ${o.Priority} | Estad
   }
 
   // 2. Invocar DeepSeek V4 Flash (NVIDIA NIM) si está configurado
-  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const apiKey = process.env.DEEPSEEK_API_KEY || DEFAULT_DEEPSEEK_KEY;
   const baseUrl = process.env.DEEPSEEK_BASE_URL || 'https://integrate.api.nvidia.com/v1';
   const model = process.env.DEEPSEEK_MODEL || 'deepseek-ai/deepseek-v4-flash-0731';
 
@@ -419,7 +437,7 @@ REGLAS DE RESPUESTA:
           temperature: 0.2,
           max_tokens: 2500
         }),
-        signal: AbortSignal.timeout(30000)
+        signal: AbortSignal.timeout(20000)
       });
 
       if (aiResponse.ok) {
@@ -451,21 +469,65 @@ REGLAS DE RESPUESTA:
 
   // 3. Fallback inteligente con respuesta determinística basada en SQL real
   console.log('Utilizando fallback inteligente de Mansito con datos de Azure SQL');
-  const lowerQuery = userQuery.toLowerCase();
+  const lowerQuery = userQuery.toLowerCase().trim();
   let fallbackAnswer = '';
 
-  if (lowerQuery.includes('indicador') || lowerQuery.includes('kpi') || lowerQuery.includes('disponibil') || lowerQuery.includes('mtbf') || lowerQuery.includes('mttr')) {
+  const kpis = dataSummary.kpis || {};
+  const activeOTsList = dataSummary.activeOTs || [];
+  const activeCount = Number(kpis.ActiveOTs) || ((Number(kpis.OpenOTs) || 0) + (Number(kpis.InProgressOTs) || 0) + (Number(kpis.WaitingPartsOTs) || 0));
+  const closedCount = (Number(kpis.ClosedOTs) || 0) + (Number(kpis.FinishedOTs) || 0);
+
+  // Detección 1: Consultas sobre Órdenes de Trabajo (OTs, pendientes, abiertas, sin cerrar, asignadas a mí, cuántas)
+  const isOTQuery = /\b(ot|ots|orden|ordenes)\b/i.test(lowerQuery) ||
+                    lowerQuery.includes('pendiente') ||
+                    lowerQuery.includes('sin cerrar') ||
+                    lowerQuery.includes('abierta') ||
+                    lowerQuery.includes('en progreso') ||
+                    lowerQuery.includes('iniciad');
+
+  // Detección 2: Saludos
+  const isGreeting = /^(hola|buenos d[ií]as|buenas tardes|buenas noches|hey|saludos|qu[eé] tal)\b/i.test(lowerQuery);
+
+  if (isOTQuery) {
+    const listPreview = activeOTsList.length > 0
+      ? activeOTsList.slice(0, 6).map(o => `* **${o.Code}** [${o.Status}] - ${o.AssetName ? `[${o.AssetCode}] ${o.AssetName}` : 'Equipo'}: *${o.Description || 'Sin descripción'}*`).join('\n')
+      : '*(No se registran órdenes activas pendientes en este momento)*';
+
+    fallbackAnswer = `¡Hola${currentUser?.name ? ' ' + currentUser.name : ''}! He consultado las **Órdenes de Trabajo (OT)** en tiempo real desde **Azure SQL**:\n\n` +
+      `📋 **Estado General de Órdenes de Trabajo:**\n` +
+      `* ⏳ **OTs Activas / Sin Cerrar en Planta:** **${activeCount} OTs**\n` +
+      `  * 🟡 **Pendientes / Abiertas:** **${kpis.OpenOTs || 0} OTs**\n` +
+      `  * 🔵 **En Progreso / Iniciadas:** **${kpis.InProgressOTs || 0} OTs**\n` +
+      `  * 🟠 **En Espera de Repuestos:** **${kpis.WaitingPartsOTs || 0} OTs**\n` +
+      `* ✅ **OTs Completadas:** **${closedCount} OTs** *(Finalizadas: ${kpis.FinishedOTs || 0} | Cerradas: ${kpis.ClosedOTs || 0})*\n` +
+      `* 🔢 **Total Histórico Registrado:** **${kpis.TotalOTs || 0} OTs**\n\n` +
+      `🔍 **Órdenes Activas Más Recientes:**\n${listPreview}\n\n` +
+      `💡 *Asignación & Roles:* Como usuario con rol **${currentUser?.role || 'Administrador General'}**, tienes supervisión global sobre las **${activeCount} OTs activas**. La ejecución técnica física en planta está distribuida entre los técnicos mecánicos y electricistas. Puedes ingresar a cualquier OT desde el módulo de **Órdenes de Trabajo** para gestionar su avance.`;
+  } else if (isGreeting) {
+    fallbackAnswer = `¡Hola${currentUser?.name ? ' ' + currentUser.name : ''}! Soy **Mansito**, tu Asistente de Mantenimiento de Planta Industrial en **MANSOLE**.\n\n` +
+      `🏭 **Estado Rápido de Planta:**\n` +
+      `* ⏳ **OTs Activas / Sin Cerrar:** **${activeCount} OTs**\n` +
+      `* 📊 **Disponibilidad Estimada:** **94.8%** | **MTBF:** ~180h\n` +
+      `* 📦 **Repuestos con Stock Crítico:** **${dataSummary.criticalPartsCount || 0} ítems**\n\n` +
+      `¿En qué puedo asistirte hoy? Puedes preguntarme sobre:\n` +
+      `* Cantidad de OTs pendientes o sin cerrar\n` +
+      `* Indicadores de confiabilidad (MTBF, MTTR, disponibilidad)\n` +
+      `* Asignaciones de técnicos y roles\n` +
+      `* Estado de máquinas y prensas hidráulicas\n` +
+      `* Kardex, repuestos críticos y piezas canibalizadas a $0 USD\n` +
+      `* Cronograma de preventivos y calendario`;
+  } else if (lowerQuery.includes('indicador') || lowerQuery.includes('kpi') || lowerQuery.includes('disponibil') || lowerQuery.includes('mtbf') || lowerQuery.includes('mttr') || lowerQuery.includes('parada') || lowerQuery.includes('downtime')) {
     fallbackAnswer = `¡Hola! Aquí tienes el resumen de los **Indicadores Clave de Desempeño (KPIs)** de la planta:\n\n` +
       `📊 **Métricas de Operación y Confiabilidad:**\n` +
       `* **Disponibilidad Operativa:** **94.8%** *(Meta SOLE: > 92%)*\n` +
       `* **MTBF (Tiempo Medio Entre Fallas):** **~180 horas**\n` +
       `* **MTTR (Tiempo Medio de Reparación):** **~2.4 horas**\n` +
-      `* **Total de Órdenes Registradas:** **${dataSummary.kpis?.TotalOTs || 0} OTs**\n` +
-      `* **Distribución:** Correctivos: **${dataSummary.kpis?.Correctives || 0}** | Preventivos: **${dataSummary.kpis?.Preventives || 0}**\n` +
-      `* **Órdenes Críticas / Urgentes:** **${dataSummary.kpis?.CriticalOTs || 0} OTs**\n` +
-      `* **Tiempo Total de Parada de Planta:** **${dataSummary.kpis?.TotalDowntimeMinutes || 0} minutos**\n\n` +
+      `* **Total de Órdenes Registradas:** **${kpis.TotalOTs || 0} OTs**\n` +
+      `* **Distribución:** Correctivos: **${kpis.Correctives || 0}** | Preventivos: **${kpis.Preventives || 0}**\n` +
+      `* **Órdenes Críticas / Urgentes:** **${kpis.CriticalOTs || 0} OTs**\n` +
+      `* **Tiempo Total de Parada de Planta:** **${kpis.TotalDowntimeMinutes || 0} minutos**\n\n` +
       `💡 *Recomendación:* Mantener la disciplina en el cronograma preventivo para reducir las paradas no programadas en las prensas hidráulicas.`;
-  } else if (lowerQuery.includes('tarea') || lowerQuery.includes('orden') || lowerQuery.includes('asignad') || lowerQuery.includes('general') || lowerQuery.includes('usuario') || lowerQuery.includes('tecnico') || lowerQuery.includes('admin') || lowerQuery.includes('pedro') || lowerQuery.includes('actividad')) {
+  } else if (lowerQuery.includes('usuario') || lowerQuery.includes('tecnico') || lowerQuery.includes('asignad') || lowerQuery.includes('general') || lowerQuery.includes('admin') || lowerQuery.includes('pedro') || lowerQuery.includes('actividad') || lowerQuery.includes('personal') || lowerQuery.includes('quien')) {
     if (lowerQuery.includes('admin') || lowerQuery.includes('general')) {
       fallbackAnswer = `¡Hola! He consultado las asignaciones de órdenes de trabajo en la base de datos de **MANSOLE**:\n\n` +
         `👤 **Usuario: Administrador General**\n` +
@@ -494,22 +556,37 @@ REGLAS DE RESPUESTA:
       `  * **Ingresos Comerciales (SAP):** Repuestos nuevos ingresados con costo de adquisición regular.\n` +
       `  * **Canibalización en Planta:** Piezas recuperadas de máquinas dadas de baja registradas con costo **$0.00 USD** para trazabilidad física sin distorsión de costos contables.\n\n` +
       `🚨 *Alerta:* Revisa los repuestos resaltados en rojo en el Kardex para reabastecimiento antes de las paradas preventivas programadas.`;
-  } else if (lowerQuery.includes('preventivo') || lowerQuery.includes('cronograma') || lowerQuery.includes('calendario')) {
+  } else if (lowerQuery.includes('preventivo') || lowerQuery.includes('cronograma') || lowerQuery.includes('calendario') || lowerQuery.includes('programad')) {
     fallbackAnswer = `¡Hola! En cuanto al **Cronograma Preventivo y Calendario:**\n\n` +
       `📅 **Próximos Mantenimientos:**\n` +
       `* Las intervenciones preventivas están programadas según la frecuencia de cada activo (semanal, quincenal, mensual).\n` +
       `* Los equipos clave como **PRENSA-01** y **HORNO-01** tienen rutinas de lubricación, inspección de presostatos y verificación térmica activas.\n` +
       `* Ahora puedes consultar la **Vista de Calendario Mensual** directamente en el módulo *Cronograma Preventivo* para ver los días programados y reprogramar fechas con facilidad.`;
+  } else if (lowerQuery.includes('activo') || lowerQuery.includes('maquina') || lowerQuery.includes('prensa') || lowerQuery.includes('horno') || lowerQuery.includes('linea') || lowerQuery.includes('ceco')) {
+    fallbackAnswer = `¡Hola! En cuanto al **Parque de Maquinarias y Activos** de Grupo SOLE:\n\n` +
+      `🏭 **Estado de Equipos en Planta:**\n` +
+      `* Se cuenta con prensas hidráulicas, hornos continuos de secado, soldadoras robotizadas y líneas de ensamble de campanas y termas.\n` +
+      `* Cada equipo tiene asociado su **Centro de Costos (CECO)** para control de gastos de mantenimiento y consumos de repuestos.\n` +
+      `* Puedes consultar la ficha técnica completa, documentación de fabricante y manuales adjuntos en el módulo **Activos**.`;
+  } else if (lowerQuery.includes('loto') || lowerQuery.includes('seguridad') || lowerQuery.includes('epp') || lowerQuery.includes('bloqueo')) {
+    fallbackAnswer = `🛡️ **Protocolo de Seguridad Industrial y Bloqueo LOTO en Grupo SOLE:**\n\n` +
+      `1. **Notificación:** Informar al supervisor de línea sobre la parada del equipo.\n` +
+      `2. **Apagado Seguro:** Detener la máquina siguiendo el procedimiento operativo estándar.\n` +
+      `3. **Aislamiento:** Desconectar los interruptores principales eléctricos y válvulas neumáticas/hidráulicas.\n` +
+      `4. **Bloqueo y Etiquetado:** Colocar el candado personal y la tarjeta de advertencia LOTO en el disyuntor.\n` +
+      `5. **Disipación de Energía:** Purgar líneas de presión neumática y despresurizar cilindros hidráulicos.\n` +
+      `6. **Verificación:** Intentar el encendido en vacío para confirmar energía cero antes de cualquier contacto manual.`;
   } else {
     fallbackAnswer = `¡Hola! Soy **Mansito**, tu Asistente de Mantenimiento en MANSOLE.\n\n` +
       `Puedo responderte sobre cualquier información de la plataforma:\n` +
-      `* 📊 **Indicadores & KPIs:** Disponibilidad, MTBF, MTTR, paradas y horas de inactividad.\n` +
-      `* 👤 **Usuarios y Técnicos:** Tareas ejecutadas, horas registradas y OTs asignadas.\n` +
+      `* 📋 **Órdenes de Trabajo:** Cuántas OTs están abiertas, pendientes o en progreso (${activeCount} activas actualmente).\n` +
+      `* 📊 **Indicadores & KPIs:** Disponibilidad, MTBF, MTTR, paradas y tiempos de inactividad.\n` +
+      `* 👤 **Usuarios y Técnicos:** Tareas ejecutadas, asignaciones y distribución de horas.\n` +
       `* 🔧 **Activos y Máquinas:** Estado de prensas, hornos, líneas de ensamble y sus CECOs.\n` +
       `* 📦 **Repuestos & Almacén:** Stock crítico, Kardex y piezas canibalizadas a $0 USD.\n` +
       `* 📅 **Cronograma Preventivo:** Próximos mantenimientos y fechas en el calendario.\n` +
       `* 🛡️ **Seguridad LOTO:** Protocolos de bloqueo y etiquetado antes de intervenir cualquier equipo.\n\n` +
-      `¿Sobre qué tema específico te gustaría consultar hoy?`;
+      `¿Sobre qué tema específico te gustaría consultar?`;
   }
 
   res.json({

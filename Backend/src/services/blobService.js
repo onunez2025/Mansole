@@ -3,10 +3,12 @@ const path = require('path');
 
 let containerClientInstance = null;
 
+const DEFAULT_SAS_URL = 'https://soleblob1.blob.core.windows.net/produccion?sp=racwl&st=2026-09-08T17:14:02Z&se=2036-09-09T01:29:02Z&spr=https&sv=2026-02-06&sr=c&sig=UvdU1jEL3BAPZ3PoN4sGeT4QvbeyO%2FFvwxTk8vZbp2A%3D';
+
 function getContainerClient() {
   if (containerClientInstance) return containerClientInstance;
 
-  const sasUrl = process.env.AZURE_STORAGE_SAS_URL;
+  const sasUrl = process.env.AZURE_STORAGE_SAS_URL || DEFAULT_SAS_URL;
   if (!sasUrl) {
     throw new Error('AZURE_STORAGE_SAS_URL no está configurada en las variables de entorno (.env)');
   }
@@ -20,7 +22,7 @@ function getContainerClient() {
  * permitiendo descargar o visualizar el archivo directamente con permisos 'r'.
  */
 function getSasQuery() {
-  const sasUrl = process.env.AZURE_STORAGE_SAS_URL || '';
+  const sasUrl = process.env.AZURE_STORAGE_SAS_URL || DEFAULT_SAS_URL;
   const queryIndex = sasUrl.indexOf('?');
   return queryIndex !== -1 ? sasUrl.substring(queryIndex) : '';
 }

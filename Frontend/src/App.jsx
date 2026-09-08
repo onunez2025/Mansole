@@ -10,6 +10,7 @@ import Schedule from './pages/Schedule';
 import WorkOrders from './pages/WorkOrders';
 import Users from './pages/Users';
 import Catalogs from './pages/Catalogs';
+import Reports from './pages/Reports';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import AccessDeniedPage from './pages/AccessDeniedPage';
@@ -24,6 +25,7 @@ import './index.css';
 const TAB_MODULES = {
   dashboard: null, // visible para cualquier usuario autenticado
   workOrders: 'workorders',
+  reports: 'workorders',
   schedule: 'schedule',
   assets: 'assets',
   inventory: 'inventory',
@@ -54,6 +56,7 @@ export default function App() {
     switch (activeTab) {
       case 'dashboard': return 'Dashboard & KPIs';
       case 'workOrders': return 'Órdenes de Trabajo';
+      case 'reports': return 'Reportes & Historial (ConsuMan)';
       case 'schedule': return 'Cronograma Preventivo';
       case 'assets': return 'Gestión de Activos';
       case 'inventory': return 'Almacén & Kardex';
@@ -98,7 +101,7 @@ export default function App() {
               transition={{ duration: 0.25 }}
             >
               <Landing 
-                onNavigateToLogin={() => setPublicView('login')} 
+                onGoToLogin={() => setPublicView('login')} 
                 onOpenChangelog={() => setShowChangelog(true)}
               />
             </motion.div>
@@ -110,7 +113,7 @@ export default function App() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
             >
-              <Login onNavigateToLanding={() => setPublicView('landing')} />
+              <Login onBackToLanding={() => setPublicView('landing')} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -131,7 +134,8 @@ export default function App() {
 
     switch (activeTab) {
       case 'dashboard': return <Dashboard currentUser={user} />;
-      case 'workOrders': return <WorkOrders currentUser={user} />;
+      case 'workOrders': return <WorkOrders currentUser={user} onNavigateToReports={() => setActiveTab('reports')} />;
+      case 'reports': return <Reports currentUser={user} />;
       case 'schedule': return <Schedule currentUser={user} />;
       case 'assets': return <Assets currentUser={user} />;
       case 'inventory': return <Inventory currentUser={user} />;

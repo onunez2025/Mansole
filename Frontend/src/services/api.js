@@ -225,5 +225,9 @@ export const api = {
     onUploadProgress: onProgress
   }),
   deleteAttachment: async (id) => await client.delete(`/attachments/${id}`),
+
+  // === Reportes Corporativos (Historial ConsuMan y Ficha Técnica de OT) ===
+  getMaintenanceHistoryReport: async (params) => await client.get('/reports/maintenance-history', { params }),
+  getWorkOrderReport:          async (id) => await client.get(`/reports/work-order/${id}`),
 };
 

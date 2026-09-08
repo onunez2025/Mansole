@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../services/api';
-import { CalendarClock, Edit3, RefreshCw, Search, CalendarDays, Table as TableIcon, ChevronLeft, ChevronRight, Clock, AlertTriangle, CheckCircle2, X } from 'lucide-react';
+import { CalendarClock, Edit3, RefreshCw, Search, CalendarDays, Table as TableIcon, ChevronLeft, ChevronRight, Clock, AlertTriangle, CheckCircle2, X, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { TableSkeleton } from '../components/UI';
 import ModalPortal from '../components/UI/ModalPortal';
@@ -47,6 +47,19 @@ export default function Schedule({ currentUser }) {
 
   // Modal para ver todas las actividades de un día específico
   const [activeDayModal, setActiveDayModal] = useState(null);
+
+  // Estados para Programar Nuevo Mantenimiento Preventivo
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [availableAssets, setAvailableAssets] = useState([]);
+  const [availableActivities, setAvailableActivities] = useState([]);
+  const [createFormData, setCreateFormData] = useState({
+    assetId: '',
+    activityId: '',
+    frequencyType: 'Mensual',
+    frequencyValue: 1,
+    nextDueDate: ''
+  });
+  const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
 
   const loadSchedule = (silent = false) => {
     if (!silent && !cachedScheduleList) setLoading(true);
@@ -101,6 +114,92 @@ export default function Schedule({ currentUser }) {
       loadSchedule(true);
     } catch (err) {
       toast.error(`Error al reprogramar actividad: ${err.message}`);
+    }
+  };
+
+  const openCreateModal = async () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const defaultDate = tomorrow.toISOString().split('T')[0];
+
+    try {
+      let loadedAssets = availableAssets;
+      if (loadedAssets.length === 0) {
+        const assetsData = await api.getAssets();
+        if (Array.isArray(assetsData)) {
+          loadedAssets = assetsData;
+          setAvailableAssets(assetsData);
+        }
+      }
+
+      let loadedActs = availableActivities;
+      if (loadedActs.length === 0) {
+        const actsData = await api.getActivities();
+        if (Array.isArray(actsData)) {
+          loadedActs = actsData;
+          setAvailableActivities(actsData);
+        }
+      }
+
+      setCreateFormData({
+        assetId: loadedAssets.length > 0 ? (loadedAssets[0].id || loadedAssets[0].Id) : '',
+        activityId: loadedActs.length > 0 ? (loadedActs[0].id || loadedActs[0].Id) : '',
+        frequencyType: 'Mensual',
+        frequencyValue: 1,
+        nextDueDate: defaultDate
+      });
+      setShowCreateModal(true);
+    } catch (err) {
+      toast.error('Error al cargar activos o actividades: ' + (err.message || err));
+      setShowCreateModal(true);
+    }
+  };
+
+  const handleCreateSchedule = async (e) => {
+    if (e) e.preventDefault();
+    if (!createFormData.assetId || !createFormData.activityId || !createFormData.nextDueDate) {
+      toast.error('Por favor selecciona el activo, la actividad y la fecha programada.');
+      return;
+    }
+
+    try {
+      setIsSubmittingCreate(true);
+      const selAsset = availableAssets.find(a => String(a.id || a.Id) === String(createFormData.assetId));
+      await api.createScheduleEntry({
+        assetId: parseInt(createFormData.assetId, 10),
+        areaId: selAsset?.areaId || selAsset?.AreaId || null,
+        activityId: parseInt(createFormData.activityId, 10),
+        frequencyType: createFormData.frequencyType,
+        frequencyValue: parseInt(createFormData.frequencyValue, 10) || 1,
+        nextDueDate: createFormData.nextDueDate
+      });
+
+      toast.success('Mantenimiento preventivo programado exitosamente');
+      setShowCreateModal(false);
+      loadSchedule(false);
+    } catch (err) {
+      toast.error(`Error al programar mantenimiento: ${err.message || err}`);
+    } finally {
+      setIsSubmittingCreate(false);
+    }
+  };
+
+  const handleDeleteScheduleEntry = async (id, title) => {
+    if (!window.confirm(`¿Estás seguro de eliminar la programación "${title}" del cronograma?`)) return;
+    try {
+      await api.deleteScheduleEntry(id);
+      toast.success('Programación preventiva eliminada de Azure SQL');
+      const updated = schedule.filter(s => s.id !== id);
+      cachedScheduleList = updated;
+      setSchedule(updated);
+      if (activeDayModal) {
+        setActiveDayModal(prev => prev ? ({
+          ...prev,
+          events: prev.events.filter(e => e.id !== id)
+        }) : null);
+      }
+    } catch (err) {
+      toast.error(`Error al eliminar: ${err.message || err}`);
     }
   };
 
@@ -259,6 +358,16 @@ export default function Schedule({ currentUser }) {
           >
             <RefreshCw size={14} /> <span className="hidden sm:inline">Sincronizar</span>
           </button>
+
+          {canReprogram && (
+            <button 
+              className="btn btn-primary text-xs py-1.5 px-3 shadow-xs cursor-pointer flex items-center gap-1.5" 
+              onClick={openCreateModal} 
+              title="Programar Nuevo Mantenimiento Preventivo"
+            >
+              <Plus size={14} /> <span>Programar Mantenimiento</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -505,12 +614,23 @@ export default function Schedule({ currentUser }) {
                         <td><span className={`badge ${badgeClass} text-[11px]`}>{s.status}</span></td>
                         <td>
                           {canReprogram ? (
-                            <button 
-                              className="btn btn-secondary text-xs py-1 px-2.5 cursor-pointer"
-                              onClick={() => openReprogramModal(s)}
-                            >
-                              <Edit3 size={12} /> Reprogramar
-                            </button>
+                            <div className="flex items-center gap-1.5">
+                              <button 
+                                className="btn btn-secondary text-xs py-1 px-2.5 cursor-pointer"
+                                onClick={() => openReprogramModal(s)}
+                                title="Reprogramar fecha"
+                              >
+                                <Edit3 size={12} /> Reprogramar
+                              </button>
+                              <button
+                                type="button"
+                                className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                onClick={() => handleDeleteScheduleEntry(s.id, s.activityName)}
+                                title="Eliminar del cronograma"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
                           ) : (
                             <span className="text-[11px] text-slate-400 font-medium">
                               Solo Supervisores
@@ -567,13 +687,23 @@ export default function Schedule({ currentUser }) {
                     </div>
 
                     {canReprogram && (
-                      <button
-                        type="button"
-                        onClick={() => openReprogramModal(evt)}
-                        className="btn btn-secondary text-xs py-1 px-2.5 flex-shrink-0 cursor-pointer"
-                      >
-                        <Edit3 size={12} /> Reprogramar
-                      </button>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => openReprogramModal(evt)}
+                          className="btn btn-secondary text-xs py-1 px-2.5 cursor-pointer"
+                        >
+                          <Edit3 size={12} /> Reprogramar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteScheduleEntry(evt.id, evt.activityName)}
+                          className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          title="Eliminar actividad"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -636,6 +766,157 @@ export default function Schedule({ currentUser }) {
           </div>
         </div>
       </ModalPortal>
+      )}
+
+      {/* Modal de Programar Nuevo Mantenimiento Preventivo */}
+      {showCreateModal && (
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+            <div className="modal-content max-w-xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                    <Plus size={18} />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
+                      Programar Mantenimiento Preventivo
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Asigna una rutina periódica a un equipo o activo de planta
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowCreateModal(false)} 
+                  className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateSchedule} className="space-y-4">
+                {/* Selector de Activo */}
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Activo / Maquinaria *
+                  </label>
+                  <select
+                    className="form-select text-xs font-mono"
+                    required
+                    value={createFormData.assetId}
+                    onChange={e => setCreateFormData({ ...createFormData, assetId: e.target.value })}
+                  >
+                    <option value="">-- Seleccione un Activo --</option>
+                    {availableAssets.map(a => (
+                      <option key={a.id || a.Id} value={a.id || a.Id}>
+                        [{a.code || a.Code}] {a.name || a.Name} — {a.areaName || a.AreaName || 'Planta Callao'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Selector de Actividad Maestro */}
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Actividad / Rutina Preventiva *
+                  </label>
+                  <select
+                    className="form-select text-xs"
+                    required
+                    value={createFormData.activityId}
+                    onChange={e => setCreateFormData({ ...createFormData, activityId: e.target.value })}
+                  >
+                    <option value="">-- Seleccione una Actividad del Catálogo --</option>
+                    {availableActivities.map(act => (
+                      <option key={act.id || act.Id} value={act.id || act.Id}>
+                        {act.name || act.Name} ({act.type || act.Type || 'Mecánico'} - {act.estimatedMinutes || act.EstimatedMinutes || 60} min)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Frecuencia: Tipo y Valor */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="form-group mb-0">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Frecuencia / Intervalo *
+                    </label>
+                    <select
+                      className="form-select text-xs"
+                      value={createFormData.frequencyType}
+                      onChange={e => setCreateFormData({ ...createFormData, frequencyType: e.target.value })}
+                    >
+                      <option value="Semanal">Semanal</option>
+                      <option value="Quincenal">Quincenal</option>
+                      <option value="Mensual">Mensual</option>
+                      <option value="Bimestral">Bimestral</option>
+                      <option value="Trimestral">Trimestral</option>
+                      <option value="Semestral">Semestral</option>
+                      <option value="Anual">Anual</option>
+                      <option value="Por Horómetro">Por Horómetro / Hs</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group mb-0">
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Intervalo (Cada N ciclos)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      className="form-input text-xs"
+                      value={createFormData.frequencyValue}
+                      onChange={e => setCreateFormData({ ...createFormData, frequencyValue: Math.max(1, parseInt(e.target.value, 10) || 1) })}
+                    />
+                  </div>
+                </div>
+
+                {/* Próxima Fecha de Ejecución */}
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Próxima Fecha de Ejecución Programada *
+                  </label>
+                  <input
+                    type="date"
+                    className="form-input text-xs font-mono"
+                    required
+                    value={createFormData.nextDueDate}
+                    onChange={e => setCreateFormData({ ...createFormData, nextDueDate: e.target.value })}
+                  />
+                  <span className="text-[11px] text-slate-400 mt-1 block">
+                    Fecha en la que el sistema marcará la tarea para emisión o ejecución automática en planta.
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary text-xs py-1.5 px-3 cursor-pointer" 
+                    onClick={() => setShowCreateModal(false)}
+                    disabled={isSubmittingCreate}
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary text-xs py-1.5 px-4 cursor-pointer flex items-center gap-1.5"
+                    disabled={isSubmittingCreate}
+                  >
+                    {isSubmittingCreate ? (
+                      <span>Guardando en Azure SQL...</span>
+                    ) : (
+                      <>
+                        <Plus size={14} />
+                        <span>Guardar Programación</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </ModalPortal>
       )}
     </div>
   );

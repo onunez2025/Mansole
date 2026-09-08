@@ -1,18 +1,20 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { api, API_BASE } from '../services/api';
-import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle2, AlertTriangle, Filter, CheckCircle, Clock, HelpCircle, Timer, Trash2, PlusCircle, Check, X, Package, Boxes, Lock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle2, AlertTriangle, Filter, CheckCircle, Clock, HelpCircle, Timer, Trash2, PlusCircle, Check, X, Package, Boxes, Lock, ChevronDown, ChevronUp, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { OrderCardSkeleton } from '../components/UI';
 import HelpModal from '../components/HelpModal';
 import ModalPortal from '../components/UI/ModalPortal';
+import WorkOrderReportModal from '../components/WorkOrderReportModal';
 
 // Caché en cliente para que al volver a OTs cargue de inmediato (0ms)
 let cachedWorkOrdersList = null;
 
-export default function WorkOrders({ currentUser }) {
+export default function WorkOrders({ currentUser, onNavigateToReports }) {
   const [workOrders, setWorkOrders] = useState(cachedWorkOrdersList || []);
   const [loading, setLoading] = useState(!cachedWorkOrdersList);
   const [selectedOT, setSelectedOT] = useState(null);
+  const [reportModalOT, setReportModalOT] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiDiagnosis, setAiDiagnosis] = useState(null);
   const [openSections, setOpenSections] = useState({
@@ -433,6 +435,17 @@ export default function WorkOrders({ currentUser }) {
           </p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
+          {onNavigateToReports && (
+            <button
+              onClick={onNavigateToReports}
+              className="px-3 py-1.5 sm:py-2 rounded-xl border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-900 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs flex-shrink-0 cursor-pointer"
+              title="Ver Historial de Mantenimiento por rango de fechas (ConsuMan)"
+            >
+              <FileText size={15} className="text-indigo-600 flex-shrink-0" />
+              <span className="hidden sm:inline">Historial ConsuMan</span>
+              <span className="sm:hidden">Reportes</span>
+            </button>
+          )}
           <button
             onClick={() => setShowHelpModal(true)}
             className="px-3 py-1.5 sm:py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs flex-shrink-0"
@@ -625,6 +638,15 @@ export default function WorkOrders({ currentUser }) {
                 <p className="text-[11px] text-slate-500 truncate">Área: {selectedOT.areaName} • CECO: {selectedOT.costCenterCode}</p>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setReportModalOT(selectedOT)}
+                  className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 hover:text-blue-900 text-[11px] font-bold flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                  title="Ver Ficha Técnica con reporte de técnicos, repuestos consumidos y firmas"
+                >
+                  <Printer size={13} />
+                  <span>Ficha Técnica (Firmas)</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -1347,9 +1369,19 @@ export default function WorkOrders({ currentUser }) {
             </div>
 
             <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-200 flex-wrap">
-              <button className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1" onClick={() => downloadPDF(selectedOT.id)} title="Descargar Acta PDF">
-                <Download size={14} /> <span>Acta PDF</span>
-              </button>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button 
+                  type="button"
+                  className="btn btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5 font-bold shadow-xs bg-blue-600 hover:bg-blue-700 text-white cursor-pointer" 
+                  onClick={() => setReportModalOT(selectedOT)} 
+                  title="Ver Ficha Técnica con labores de técnicos, repuestos y firmas"
+                >
+                  <Printer size={14} /> <span>Ficha Técnica (Firmas)</span>
+                </button>
+                <button className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1" onClick={() => downloadPDF(selectedOT.id)} title="Descargar Acta PDF rápida">
+                  <Download size={14} /> <span>Acta Rápida</span>
+                </button>
+              </div>
 
               <div className="flex items-center gap-2 flex-wrap ml-auto">
                 {selectedOT.status !== 'Cerrada' && (
@@ -1502,6 +1534,14 @@ export default function WorkOrders({ currentUser }) {
 
       {/* Modal de Ayuda Contextual y Procedimiento LOTO */}
       <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} initialModule="workOrders" />
+
+      {/* Modal de Reporte / Ficha Técnica de OT Individual con Firmas y Labores */}
+      <WorkOrderReportModal
+        isOpen={!!reportModalOT}
+        onClose={() => setReportModalOT(null)}
+        orderId={reportModalOT?.id || reportModalOT?.Id}
+        orderCode={reportModalOT?.code || reportModalOT?.Code}
+      />
     </div>
   );
 }

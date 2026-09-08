@@ -76,6 +76,9 @@ app.use('/api/users', require('./routes/usersRoutes'));
 // Los KPIs del dashboard son el reporte base de la plataforma.
 app.use('/api/kpi', requireModule('reports'), require('./routes/kpiRoutes'));
 
+// Módulo de Reportes: Historial ConsuMan y Fichas Técnicas de OT
+app.use('/api/reports', require('./routes/reportsRoutes'));
+
 // Catálogos Maestros de Configuración (Áreas, CECOs, Categorías)
 app.use('/api/catalogs', requireModule('assets'), require('./routes/catalogRoutes'));
 

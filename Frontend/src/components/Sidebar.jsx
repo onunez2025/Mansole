@@ -12,7 +12,8 @@ import {
   X,
   Sparkles,
   Settings,
-  GitPullRequest
+  GitPullRequest,
+  FileText
 } from 'lucide-react';
 import { CURRENT_VERSION } from '../data/changelogData';
 
@@ -20,6 +21,7 @@ export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout
   const allMenuItems = [
     { id: 'dashboard', label: 'Dashboard & KPIs', icon: <LayoutDashboard size={18} /> },
     { id: 'workOrders', label: 'Órdenes de Trabajo (OT)', icon: <Hammer size={18} />, badge: 'Principal', module: 'workorders' },
+    { id: 'reports', label: 'Reportes & Historial', icon: <FileText size={18} />, module: 'workorders', badge: 'Nuevo' },
     { id: 'schedule', label: 'Cronograma Preventivo', icon: <CalendarClock size={18} />, module: 'schedule' },
     { id: 'assets', label: 'Activos y CECOs', icon: <Wrench size={18} />, module: 'assets' },
     { id: 'inventory', label: 'Repuestos / Almacén', icon: <Boxes size={18} />, module: 'inventory' },

@@ -47,8 +47,7 @@ app.use('/api/assets',
 app.use('/api/inventory',
   requireModule('inventory', [
     { method: 'GET', pattern: /^\/transactions$/, action: 'view' },
-    // Registrar consumo o canibalización mueve stock: no es "crear repuesto".
-    { method: 'POST', pattern: /^\/transaction$/, action: 'cannibalize' }
+    { method: 'POST', pattern: /^\/transaction$/, action: 'create' }
   ]),
   require('./routes/inventoryRoutes'));
 

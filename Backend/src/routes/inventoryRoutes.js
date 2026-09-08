@@ -32,16 +32,26 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/inventory/transactions (Historial en MANSOLE)
+// GET /api/inventory/transactions (Historial en MANSOLE con filtros de tipo y detalles completos)
 router.get('/transactions', async (req, res) => {
   try {
+    const { type } = req.query; // 'IN' o 'OUT'
     const pool = await getDbConnection();
-    const query = `
-      SELECT t.*, s.Name as SparePartName, s.Code as SparePartCode
+    let query = `
+      SELECT t.Id, t.SparePartId, t.TransactionType, t.Reason, t.Quantity, t.UnitCost, t.Date, t.UserId, t.Reference,
+             s.Name as SparePartName, s.Code as SparePartCode, s.UnitOfMeasure, s.Location, s.Condition as PartCondition,
+             CONCAT(u.FirstName, ' ', u.LastName) as UserName
       FROM MANSOLE.InventoryTransactions t
       JOIN MANSOLE.SpareParts s ON t.SparePartId = s.Id
-      ORDER BY t.Date DESC
+      LEFT JOIN MANSOLE.Users u ON t.UserId = u.Id
     `;
+    
+    if (type && (type === 'IN' || type === 'OUT')) {
+      query += ` WHERE t.TransactionType = '${type}' `;
+    }
+
+    query += ` ORDER BY t.Date DESC, t.Id DESC `;
+
     const result = await pool.request().query(query);
     res.json(result.recordset.map((r, idx) => normalizeItem(r, idx)));
   } catch (e) {
@@ -49,53 +59,119 @@ router.get('/transactions', async (req, res) => {
   }
 });
 
-// POST /api/inventory/transaction
+// GET /api/inventory/entries (Alias directo para Entradas de Almacén)
+router.get('/entries', async (req, res) => {
+  try {
+    const pool = await getDbConnection();
+    const query = `
+      SELECT t.Id, t.SparePartId, t.TransactionType, t.Reason, t.Quantity, t.UnitCost, t.Date, t.UserId, t.Reference,
+             s.Name as SparePartName, s.Code as SparePartCode, s.UnitOfMeasure, s.Location, s.Condition as PartCondition,
+             CONCAT(u.FirstName, ' ', u.LastName) as UserName
+      FROM MANSOLE.InventoryTransactions t
+      JOIN MANSOLE.SpareParts s ON t.SparePartId = s.Id
+      LEFT JOIN MANSOLE.Users u ON t.UserId = u.Id
+      WHERE t.TransactionType = 'IN'
+      ORDER BY t.Date DESC, t.Id DESC
+    `;
+    const result = await pool.request().query(query);
+    res.json(result.recordset.map((r, idx) => normalizeItem(r, idx)));
+  } catch (e) {
+    res.status(500).json({ error: 'Error cargando entradas desde SQL', details: e.message });
+  }
+});
+
+// GET /api/inventory/exits (Alias directo para Salidas por Mantenimiento)
+router.get('/exits', async (req, res) => {
+  try {
+    const pool = await getDbConnection();
+    const query = `
+      SELECT t.Id, t.SparePartId, t.TransactionType, t.Reason, t.Quantity, t.UnitCost, t.Date, t.UserId, t.Reference,
+             s.Name as SparePartName, s.Code as SparePartCode, s.UnitOfMeasure, s.Location, s.Condition as PartCondition,
+             CONCAT(u.FirstName, ' ', u.LastName) as UserName
+      FROM MANSOLE.InventoryTransactions t
+      JOIN MANSOLE.SpareParts s ON t.SparePartId = s.Id
+      LEFT JOIN MANSOLE.Users u ON t.UserId = u.Id
+      WHERE t.TransactionType = 'OUT'
+      ORDER BY t.Date DESC, t.Id DESC
+    `;
+    const result = await pool.request().query(query);
+    res.json(result.recordset.map((r, idx) => normalizeItem(r, idx)));
+  } catch (e) {
+    res.status(500).json({ error: 'Error cargando salidas desde SQL', details: e.message });
+  }
+});
+
+// POST /api/inventory/transaction (Registrar Entrada o Salida con impacto directo en Stock)
 router.post('/transaction', async (req, res) => {
   const sparePartId = req.body.sparePartId || req.body.partId || req.body.spId;
-  const transactionType = req.body.transactionType || req.body.type || req.body.txType;
+  const transactionType = (req.body.transactionType || req.body.type || req.body.txType || 'IN').toUpperCase();
   const { reason, quantity, unitCost, reference, newPart } = req.body;
+  const userId = req.user?.userId || req.body.userId || null;
+
   try {
     let partId = sparePartId;
     const pool = await getDbConnection();
+
+    // Si es una nueva referencia de catálogo ingresada en la misma entrada
     if (!partId && newPart) {
+      const isCannibal = reason === 'Canibalización' || reason === 'Hallazgo';
       const insertPartQuery = `
         INSERT INTO MANSOLE.SpareParts (Code, Name, Description, UnitOfMeasure, CurrentStock, MinStock, Location, UnitCost, Condition)
         VALUES (@code, @name, @desc, @uom, 0, @minStock, @location, @cost, @condition);
         SELECT SCOPE_IDENTITY() AS Id;
       `;
       const pRes = await pool.request()
-        .input('code', sql.NVarChar, newPart.code || `CANIB-${Date.now()}`)
+        .input('code', sql.NVarChar, newPart.code || `REP-${Date.now().toString().slice(-6)}`)
         .input('name', sql.NVarChar, newPart.name)
         .input('desc', sql.NVarChar, newPart.description || '')
         .input('uom', sql.NVarChar, newPart.unitOfMeasure || 'Pieza')
-        .input('minStock', sql.Decimal(10,2), newPart.minStock || 0)
-        .input('location', sql.NVarChar, newPart.location || 'Almacén Canibalización')
-        .input('cost', sql.Decimal(12,2), unitCost || 0)
-        .input('condition', sql.NVarChar, reason === 'Canibalización' ? 'Reusado' : 'Nuevo')
+        .input('minStock', sql.Decimal(10,2), parseFloat(newPart.minStock || 0))
+        .input('location', sql.NVarChar, newPart.location || 'Almacén Central')
+        .input('cost', sql.Decimal(12,2), isCannibal ? 0.00 : parseFloat(unitCost || 0))
+        .input('condition', sql.NVarChar, isCannibal ? 'Reusado' : 'Nuevo')
         .query(insertPartQuery);
       partId = pRes.recordset[0].Id;
     }
 
+    if (!partId) {
+      return res.status(400).json({ error: 'Debes seleccionar un repuesto existente o definir los datos del nuevo repuesto.' });
+    }
+
     const qty = parseFloat(quantity || 0);
-    const cost = parseFloat(unitCost || 0);
+    if (qty <= 0) {
+      return res.status(400).json({ error: 'La cantidad del movimiento debe ser mayor a 0.' });
+    }
+
+    const cost = parseFloat(unitCost !== undefined ? unitCost : 0);
     const stockChange = transactionType === 'IN' ? qty : -qty;
 
     const txQuery = `
-      INSERT INTO MANSOLE.InventoryTransactions (SparePartId, TransactionType, Reason, Quantity, UnitCost, Reference)
-      VALUES (@partId, @type, @reason, @qty, @cost, @ref);
-      UPDATE MANSOLE.SpareParts SET CurrentStock = CurrentStock + @stockChange WHERE Id = @partId;
+      INSERT INTO MANSOLE.InventoryTransactions (SparePartId, TransactionType, Reason, Quantity, UnitCost, Reference, UserId, Date)
+      VALUES (@partId, @type, @reason, @qty, @cost, @ref, @userId, GETDATE());
+
+      UPDATE MANSOLE.SpareParts 
+      SET CurrentStock = ISNULL(CurrentStock, 0) + @stockChange,
+          UnitCost = CASE WHEN @type = 'IN' AND @cost > 0 THEN @cost ELSE UnitCost END,
+          Condition = CASE WHEN @reason LIKE '%Canibal%' THEN 'Reusado' ELSE Condition END
+      WHERE Id = @partId;
     `;
     await pool.request()
       .input('partId', sql.Int, partId)
       .input('type', sql.NVarChar, transactionType)
-      .input('reason', sql.NVarChar, reason)
+      .input('reason', sql.NVarChar, reason || (transactionType === 'IN' ? 'Compra SAP' : 'Consumo Mantenimiento'))
       .input('qty', sql.Decimal(10,2), qty)
       .input('cost', sql.Decimal(12,2), cost)
-      .input('ref', sql.NVarChar, reference || '')
+      .input('ref', sql.NVarChar, reference || (transactionType === 'IN' ? 'Guía/Factura' : 'Salida Taller'))
+      .input('userId', sql.Int, userId)
       .input('stockChange', sql.Decimal(10,2), stockChange)
       .query(txQuery);
 
-    res.status(201).json({ message: 'Transacción e impacto de stock registrados en Azure SQL (MANSOLE)' });
+    res.status(201).json({ 
+      message: `Movimiento de ${transactionType === 'IN' ? 'Entrada' : 'Salida'} (${qty} unidades) registrado con éxito en Azure SQL.`,
+      partId,
+      transactionType,
+      quantity: qty
+    });
   } catch (e) {
     console.error('Error insertando inventario:', e.message);
     res.status(500).json({ error: 'Error registrando transacción de inventario', details: e.message });

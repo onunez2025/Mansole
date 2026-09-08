@@ -154,14 +154,18 @@ export const api = {
   getAreas:      async () => await client.get('/assets/areas'),
   getCategories: async () => await client.get('/assets/categories'),
   getInventory:  async () => await client.get('/inventory'),
+  getInventoryTransactions: async (params) => await client.get('/inventory/transactions', { params }),
+  getInventoryEntries: async () => await client.get('/inventory/entries'),
+  getInventoryExits:   async () => await client.get('/inventory/exits'),
   getActivities: async () => await client.get('/activities'),
   getSchedule:   async () => await client.get('/schedule'),
   getWorkOrders: async () => await client.get('/workorders'),
 
   // === POST (Crear) ===
-  createAsset:          async (data) => await client.post('/assets', data),
-  createInventoryItem:  async (data) => await client.post('/inventory', data),
-  createActivity:       async (data) => await client.post('/activities', data),
+  createAsset:                async (data) => await client.post('/assets', data),
+  createInventoryItem:        async (data) => await client.post('/inventory', data),
+  createInventoryTransaction: async (data) => await client.post('/inventory/transaction', data),
+  createActivity:             async (data) => await client.post('/activities', data),
   createWorkOrder:      async (data) => await client.post('/workorders', data),
   createScheduleEntry:  async (data) => await client.post('/schedule', data),
 

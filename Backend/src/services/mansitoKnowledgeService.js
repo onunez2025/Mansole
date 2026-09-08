@@ -81,72 +81,35 @@ const SCHEMA_TABLES = {
   }
 };
 
+// Cache en memoria para respuestas ultra-rápidas en preguntas sucesivas (TTL 20 segundos)
+let cachedSnapshot = null;
+let lastCacheTime = 0;
+const CACHE_TTL_MS = 20000;
+
 /**
- * Analiza la consulta en lenguaje natural e identifica las tablas pertinentes y ejecuta consultas específicas
+ * Obtiene una instantánea unificada y completa de todas las tablas principales de MANSOLE
  */
-async function queryDatabaseForMansito(userQuery, currentUser = null) {
-  const lower = (userQuery || '').toLowerCase().trim();
+async function getUnifiedDatabaseSnapshot(forceRefresh = false) {
+  const now = Date.now();
+  if (!forceRefresh && cachedSnapshot && (now - lastCacheTime < CACHE_TTL_MS)) {
+    return cachedSnapshot;
+  }
+
   const pool = await getDbConnection();
-
-  const result = {
-    tablesConsulted: [],
-    contextText: '',
-    dataSummary: {},
-    primaryDomain: 'general'
-  };
-
-  // Fecha actual de referencia de planta (2026-09-08)
   const todayStr = new Date().toISOString().split('T')[0];
-  result.contextText += `=== FECHA ACTUAL DE CONSULTA EN MANSOLE: ${todayStr} ===\n`;
 
-  // Helper para buscar palabras clave o códigos
-  const extractSearchTerm = (text) => {
-    const codeMatch = text.match(/[a-zA-Z]{2,10}-[\w\d.-]+/);
-    if (codeMatch) return codeMatch[0];
-    return null;
-  };
-
-  const specificCode = extractSearchTerm(userQuery);
-
-  // 1. DOMINIO: ÓRDENES DE TRABAJO (OTs, pendientes, correctivos, paradas, averías, próxima semana)
-  const isWorkOrder = /\b(ot|ots|orden|ordenes|correctivo|falla|averia|parada|downtime)\b/i.test(lower) ||
-                      lower.includes('pendiente') || lower.includes('sin cerrar') || lower.includes('abierta') ||
-                      lower.includes('en progreso') || lower.includes('iniciad') || lower.includes('semana') || lower.includes('proxim');
-
-  // 2. DOMINIO: REPUESTOS / STOCK / ALMACÉN / KARDEX / CANIBALIZACIÓN
-  const isSparePart = /\b(repuesto|repuestos|stock|inventario|almacen|kardex|canibal|pieza|piezas)\b/i.test(lower);
-
-  // 3. DOMINIO: ACTIVOS / MÁQUINAS / EQUIPOS / CECO / PRENSAS / HORNOS
-  const isAsset = /\b(activo|activos|maquina|maquinas|maquita|maquitas|maquinita|maquinitas|maquinaria|maquinarias|equipo|equipos|prensa|prensas|horno|hornos|linea|lineas|ceco|marca|modelo|serie|motores?|bombas?|torno|tornos)\b/i.test(lower) ||
-                  /cu[aá]nt[oa]s?.*(maqui|activ|equip)/i.test(lower);
-
-
-  // 4. DOMINIO: USUARIOS / TÉCNICOS / HORAS / ASIGNACIONES / TAREAS
-  const isUser = /\b(usuario|usuarios|tecnico|tecnicos|mecanico|electricista|quien|personal|horas|tarea|tareas)\b/i.test(lower) ||
-                 lower.includes('asignad') || lower.includes('pedro') || lower.includes('admin') || lower.includes('carlos') ||
-                 lower.includes('mis tareas') || lower.includes('tengo asignad');
-
-
-  // 5. DOMINIO: CRONOGRAMA PREVENTIVO / CALENDARIO / PLANIFICACIÓN / PRÓXIMA SEMANA
-  const isPreventive = /\b(preventivo|preventivos|cronograma|calendario|programad|rutina|frecuencia|semana|mes|proxim)\b/i.test(lower);
-
-
-  // 6. DOMINIO: INDICADORES / KPIS / DISPONIBILIDAD / MTBF / MTTR
-  const isKPI = /\b(indicador|indicadores|kpi|kpis|disponibil|mtbf|mttr|eficiencia|rendimiento)\b/i.test(lower);
-
-  // 7. DOMINIO: ARCHIVOS / FOTOS / MANUALES / ADJUNTOS
-  const isAttachment = /\b(foto|fotos|imagen|adjunto|adjuntos|manual|manuales|documento|archivo|blob)\b/i.test(lower);
-
-  // 8. DOMINIO: AUDITORÍA / TRAZABILIDAD
-  const isAudit = /\b(auditoria|log|logs|cambio|cambios|modifico|elimino|borro|trazabilidad)\b/i.test(lower);
-
-  // --- EJECUCIÓN DINÁMICA SEGÚN DOMINIO ---
-
-  if (isWorkOrder || isKPI || specificCode?.startsWith('OT-')) {
-    result.tablesConsulted.push('MANSOLE.WorkOrders', 'MANSOLE.Assets');
-    result.primaryDomain = 'workorders';
-
-    const statusRes = await pool.request().query(`
+  const [
+    kpisRes,
+    assetsRes,
+    otRes,
+    partsRes,
+    usersRes,
+    scheduleRes,
+    transRes,
+    attRes
+  ] = await Promise.all([
+    // 1. KPIs globales de OTs
+    pool.request().query(`
       SELECT 
         COUNT(*) as TotalOTs,
         SUM(CASE WHEN Status IN ('Cerrada') THEN 1 ELSE 0 END) as ClosedOTs,
@@ -162,108 +125,45 @@ async function queryDatabaseForMansito(userQuery, currentUser = null) {
         SUM(CASE WHEN Priority = 'Alta' THEN 1 ELSE 0 END) as HighPriorityOTs,
         ISNULL(SUM(DowntimeMinutes), 0) as TotalDowntimeMinutes
       FROM MANSOLE.WorkOrders
-    `);
-    const kpis = statusRes.recordset[0] || {};
-    result.dataSummary.kpis = kpis;
+    `),
 
-    let otQuery = `
-      SELECT TOP 12
-        w.Code, w.Type, w.Priority, w.Status, w.ScheduledDate, w.ExecutionDate,
-        ISNULL(w.DowntimeMinutes, 0) as Downtime, w.Description,
-        ast.Code as AssetCode, ast.Name as AssetName, ar.Name as AreaName
-      FROM MANSOLE.WorkOrders w
-      LEFT JOIN MANSOLE.Assets ast ON w.AssetId = ast.Id
-      LEFT JOIN MANSOLE.Areas ar ON w.AreaId = ar.Id
-    `;
-
-    if (specificCode) {
-      otQuery += ` WHERE w.Code LIKE '%${specificCode}%' ORDER BY w.Id DESC`;
-    } else if (lower.includes('falla') || lower.includes('parada') || lower.includes('downtime')) {
-      otQuery += ` WHERE w.DowntimeMinutes > 0 ORDER BY w.DowntimeMinutes DESC`;
-    } else if (lower.includes('critica') || lower.includes('urgente') || lower.includes('alta')) {
-      otQuery += ` WHERE w.Priority IN ('Crítica', 'Alta') ORDER BY w.Id DESC`;
-    } else {
-      otQuery += ` WHERE w.Status NOT IN ('Cerrada', 'Cancelada', 'Finalizada') ORDER BY w.Id DESC`;
-    }
-
-    const otRes = await pool.request().query(otQuery);
-    result.dataSummary.workOrders = otRes.recordset || [];
-
-    result.contextText += `
-=== TABLA CONSULTADA: MANSOLE.WorkOrders (con JOIN a MANSOLE.Assets y MANSOLE.Areas) ===
-- Total OTs: ${kpis.TotalOTs || 0}
-- OTs Activas / Sin Cerrar: ${kpis.ActiveOTs || 0} (Pendientes: ${kpis.OpenOTs || 0}, En Progreso: ${kpis.InProgressOTs || 0}, Iniciadas en Planta: ${kpis.StartedPlantOTs || 0}, Espera Repuestos: ${kpis.WaitingPartsOTs || 0})
-- OTs Completadas: ${(Number(kpis.ClosedOTs) || 0) + (Number(kpis.FinishedOTs) || 0)} (Finalizadas: ${kpis.FinishedOTs || 0}, Cerradas: ${kpis.ClosedOTs || 0})
-- Correctivos: ${kpis.Correctives || 0} | Preventivos: ${kpis.Preventives || 0} | Críticas: ${kpis.CriticalOTs || 0}
-- Tiempo de Parada Total: ${kpis.TotalDowntimeMinutes || 0} minutos
-- Muestra de Órdenes Relevantes (${result.dataSummary.workOrders.length}):
-${result.dataSummary.workOrders.map(o => `  * [${o.Code}] ${o.Type} | Estado: ${o.Status} | Prioridad: ${o.Priority} | Activo: [${o.AssetCode}] ${o.AssetName} | Parada: ${o.Downtime} min | Desc: "${o.Description || 'Sin detalle'}"`).join('\n')}
-`;
-  }
-
-  if (isSparePart) {
-    result.tablesConsulted.push('MANSOLE.SpareParts', 'MANSOLE.InventoryTransactions');
-    result.primaryDomain = 'spareparts';
-
-    const partsRes = await pool.request().query(`
-      SELECT TOP 15
-        sp.Code, sp.Name, sp.Description, sp.UnitOfMeasure, sp.CurrentStock, sp.MinStock,
-        sp.Location, sp.UnitCost, sp.Condition,
-        CASE WHEN sp.CurrentStock <= sp.MinStock THEN 'Crítico' ELSE 'Normal' END as StockStatus
-      FROM MANSOLE.SpareParts sp
-      ORDER BY (sp.CurrentStock - sp.MinStock) ASC, sp.Name ASC
-    `);
-    result.dataSummary.spareParts = partsRes.recordset || [];
-
-    const canibRes = await pool.request().query(`
-      SELECT TOP 8
-        sp.Code, sp.Name, t.Quantity, t.UnitCost, t.Reference, t.Reason, t.Date
-      FROM MANSOLE.InventoryTransactions t
-      JOIN MANSOLE.SpareParts sp ON t.SparePartId = sp.Id
-      WHERE t.Reason LIKE '%Canibal%' OR t.UnitCost = 0
-      ORDER BY t.Id DESC
-    `);
-    result.dataSummary.cannibalized = canibRes.recordset || [];
-
-    result.contextText += `
-=== TABLA CONSULTADA: MANSOLE.SpareParts y MANSOLE.InventoryTransactions ===
-- Repuestos Críticos o de Bajo Stock (${result.dataSummary.spareParts.length} listados):
-${result.dataSummary.spareParts.map(p => `  * [${p.Code}] ${p.Name} | Stock: ${p.CurrentStock} ${p.UnitOfMeasure} (Mín: ${p.MinStock}) | Ubicación: ${p.Location || 'Almacén'} | Costo: $${Number(p.UnitCost || 0).toFixed(2)} USD | Alerta: ${p.StockStatus}`).join('\n')}
-
-- Repuestos Canibalizados Registrados a $0.00 USD (${result.dataSummary.cannibalized.length} recientes):
-${result.dataSummary.cannibalized.length > 0 ? result.dataSummary.cannibalized.map(c => `  * [${c.Code}] ${c.Name} x${c.Quantity} a $0 USD | Motivo: ${c.Reason} | Fecha: ${c.Date}`).join('\n') : '  *(Sin canibalizaciones recientes)*'}
-`;
-  }
-
-  if (isAsset) {
-    result.tablesConsulted.push('MANSOLE.Assets', 'MANSOLE.Areas', 'MANSOLE.CeCoste');
-    result.primaryDomain = 'assets';
-
-    const assetsRes = await pool.request().query(`
-      SELECT TOP 15
-        a.Code, a.Name, a.Brand, a.Model, a.SerialNumber, a.Status, a.AcquisitionDate,
+    // 2. Activos de Planta con Área y CECO
+    pool.request().query(`
+      SELECT 
+        a.Id, a.Code, a.Name, a.Brand, a.Model, a.SerialNumber, a.Status,
         ar.Name as AreaName, ar.CostCenterCode,
-        ce.CeCosteDescripcion, ce.Gerencia,
         (SELECT COUNT(*) FROM MANSOLE.WorkOrders w WHERE w.AssetId = a.Id AND w.Status NOT IN ('Cerrada', 'Cancelada', 'Finalizada')) as ActiveOTs
       FROM MANSOLE.Assets a
       LEFT JOIN MANSOLE.Areas ar ON a.AreaId = ar.Id
-      LEFT JOIN MANSOLE.CeCoste ce ON ar.CostCenterCode = ce.CeCoste
-      ORDER BY ActiveOTs DESC, a.Name ASC
-    `);
-    result.dataSummary.assets = assetsRes.recordset || [];
+      ORDER BY a.Id ASC
+    `),
 
-    result.contextText += `
-=== TABLA CONSULTADA: MANSOLE.Assets, MANSOLE.Areas y MANSOLE.CeCoste ===
-- Parque de Activos y Maquinarias de Planta (${result.dataSummary.assets.length} listados):
-${result.dataSummary.assets.map(a => `  * [${a.Code}] ${a.Name} | Marca: ${a.Brand || 'N/A'} Mod: ${a.Model || 'N/A'} | Serie: ${a.SerialNumber || 'S/N'} | Estado: ${a.Status || 'Operativo'} | Área: ${a.AreaName || 'General'} (CECO: ${a.CostCenterCode || 'N/A'} - ${a.CeCosteDescripcion || 'Planta'}) | OTs Activas: ${a.ActiveOTs}`).join('\n')}
-`;
-  }
+    // 3. Órdenes de Trabajo (histórico reciente y activas)
+    pool.request().query(`
+      SELECT 
+        w.Id, w.Code, w.Type, w.Priority, w.Status, w.ScheduledDate, w.ExecutionDate,
+        ISNULL(w.DowntimeMinutes, 0) as DowntimeMinutes, w.Description,
+        ast.Code as AssetCode, ast.Name as AssetName, ar.Name as AreaName,
+        CONCAT(u.FirstName, ' ', u.LastName) as CreatedByName
+      FROM MANSOLE.WorkOrders w
+      LEFT JOIN MANSOLE.Assets ast ON w.AssetId = ast.Id
+      LEFT JOIN MANSOLE.Areas ar ON w.AreaId = ar.Id
+      LEFT JOIN MANSOLE.Users u ON w.CreatedByUserId = u.Id
+      ORDER BY w.Id DESC
+    `),
 
-  if (isUser) {
-    result.tablesConsulted.push('MANSOLE.Users', 'MANSOLE.Roles', 'MANSOLE.WorkOrderTasks', 'MANSOLE.WorkOrderTechnicians');
-    result.primaryDomain = 'users';
+    // 4. Catálogo de Repuestos y Stock
+    pool.request().query(`
+      SELECT 
+        sp.Id, sp.Code, sp.Name, sp.Description, sp.UnitOfMeasure, sp.CurrentStock, sp.MinStock,
+        sp.Location, sp.UnitCost, sp.Condition,
+        CASE WHEN sp.CurrentStock <= sp.MinStock THEN 'CRITICO' ELSE 'OK' END as AlertStatus
+      FROM MANSOLE.SpareParts sp
+      ORDER BY sp.Id ASC
+    `),
 
-    const usersRes = await pool.request().query(`
+    // 5. Usuarios, Técnicos y Desempeño
+    pool.request().query(`
       SELECT 
         u.Id, CONCAT(u.FirstName, ' ', u.LastName) as FullName, u.Email, u.IsActive,
         r.Name as RoleName,
@@ -273,22 +173,11 @@ ${result.dataSummary.assets.map(a => `  * [${a.Code}] ${a.Name} | Marca: ${a.Bra
       FROM MANSOLE.Users u
       LEFT JOIN MANSOLE.Roles r ON u.RoleId = r.Id
       ORDER BY u.Id ASC
-    `);
-    result.dataSummary.users = usersRes.recordset || [];
+    `),
 
-    result.contextText += `
-=== TABLA CONSULTADA: MANSOLE.Users, MANSOLE.Roles, MANSOLE.WorkOrderTasks ===
-- Personal, Técnicos y Roles Registrados:
-${result.dataSummary.users.map(u => `  * [ID ${u.Id}] ${u.FullName} | Rol: ${u.RoleName || 'Personal'} | Email: ${u.Email} | Estado: ${u.IsActive ? 'Activo' : 'Inactivo'} | OTs Creadas: ${u.CreatedOTs} | Tareas Registradas: ${u.CompletedTasks} | Horas Registradas: ${(u.TotalWorkMinutes / 60).toFixed(1)}h`).join('\n')}
-`;
-  }
-
-  if (isPreventive) {
-    result.tablesConsulted.push('MANSOLE.AssetActivities', 'MANSOLE.Assets', 'MANSOLE.Activities');
-    result.primaryDomain = 'preventive';
-
-    const prevRes = await pool.request().query(`
-      SELECT TOP 15
+    // 6. Cronograma Preventivo Planificado
+    pool.request().query(`
+      SELECT 
         ast.Code as AssetCode, ast.Name as AssetName,
         act.Name as ActivityName, act.EstimatedMinutes,
         sc.FrequencyType, sc.FrequencyValue, sc.NextDueDate, sc.LastExecutionDate
@@ -296,78 +185,134 @@ ${result.dataSummary.users.map(u => `  * [ID ${u.Id}] ${u.FullName} | Rol: ${u.R
       JOIN MANSOLE.Assets ast ON sc.AssetId = ast.Id
       JOIN MANSOLE.Activities act ON sc.ActivityId = act.Id
       ORDER BY sc.NextDueDate ASC
-    `);
-    result.dataSummary.schedule = prevRes.recordset || [];
+    `),
 
-    result.contextText += `
-=== TABLA CONSULTADA: MANSOLE.AssetActivities, MANSOLE.Assets, MANSOLE.Activities ===
-- Cronograma Preventivo y Próximos Mantenimientos Programados:
-${result.dataSummary.schedule.map(s => `  * [${s.AssetCode}] ${s.AssetName} -> Rutina: "${s.ActivityName}" (${s.EstimatedMinutes || 30}m) | Frecuencia: Cada ${s.FrequencyValue} ${s.FrequencyType} | Próximo Vencimiento: ${s.NextDueDate ? new Date(s.NextDueDate).toLocaleDateString('es-PE') : 'Programado'} | Última: ${s.LastExecutionDate ? new Date(s.LastExecutionDate).toLocaleDateString('es-PE') : 'Nunca'}`).join('\n')}
-`;
-  }
+    // 7. Movimientos de Kardex e Inventario
+    pool.request().query(`
+      SELECT TOP 20
+        t.Id, sp.Code as SpareCode, sp.Name as SpareName,
+        t.TransactionType, t.Reason, t.Quantity, t.UnitCost, t.Date, t.Reference
+      FROM MANSOLE.InventoryTransactions t
+      JOIN MANSOLE.SpareParts sp ON t.SparePartId = sp.Id
+      ORDER BY t.Id DESC
+    `),
 
-  if (isAttachment) {
-    result.tablesConsulted.push('MANSOLE.Attachments');
-    result.primaryDomain = 'attachments';
-
-    const attRes = await pool.request().query(`
+    // 8. Archivos y Evidencias
+    pool.request().query(`
       SELECT TOP 10
         Id, EntityType, EntityId, FileName, BlobUrl, UploadedAt
       FROM MANSOLE.Attachments
       ORDER BY Id DESC
-    `);
-    result.dataSummary.attachments = attRes.recordset || [];
+    `)
+  ]);
 
-    result.contextText += `
-=== TABLA CONSULTADA: MANSOLE.Attachments ===
-- Archivos y Evidencias en Azure Blob Storage (${result.dataSummary.attachments.length}):
-${result.dataSummary.attachments.map(att => `  * [${att.EntityType} #${att.EntityId}] ${att.FileName} | Subido: ${att.UploadedAt ? new Date(att.UploadedAt).toLocaleDateString('es-PE') : 'N/A'}`).join('\n')}
-`;
+  const kpis = kpisRes.recordset[0] || {};
+  const assets = assetsRes.recordset || [];
+  const ots = otRes.recordset || [];
+  const parts = partsRes.recordset || [];
+  const users = usersRes.recordset || [];
+  const schedule = scheduleRes.recordset || [];
+  const trans = transRes.recordset || [];
+  const attachments = attRes.recordset || [];
+
+  // Construir snapshot estructurado y compacto
+  let text = `=== BASE DE DATOS COMPLETA EN VIVO: MANSOLE CMMS (GRUPO SOLE) ===\n`;
+  text += `FECHA DE CONSULTA: ${todayStr}\n\n`;
+
+  text += `--- 1. INDICADORES GLOBALES DE PLANTA (MANSOLE.WorkOrders) ---\n`;
+  text += `* Total OTs: ${kpis.TotalOTs || 0}\n`;
+  text += `* OTs Activas / Sin Cerrar: ${kpis.ActiveOTs || 0} (Pendientes: ${kpis.OpenOTs || 0}, En Progreso: ${kpis.InProgressOTs || 0}, Iniciadas en Planta: ${kpis.StartedPlantOTs || 0}, Espera Repuestos: ${kpis.WaitingPartsOTs || 0})\n`;
+  text += `* OTs Completadas: ${(Number(kpis.ClosedOTs) || 0) + (Number(kpis.FinishedOTs) || 0)} (Cerradas: ${kpis.ClosedOTs || 0}, Finalizadas: ${kpis.FinishedOTs || 0})\n`;
+  text += `* Correctivos: ${kpis.Correctives || 0} | Preventivos: ${kpis.Preventives || 0} | Prioridad Crítica: ${kpis.CriticalOTs || 0} | Prioridad Alta: ${kpis.HighPriorityOTs || 0}\n`;
+  text += `* Tiempo Total de Parada Acumulado: ${kpis.TotalDowntimeMinutes || 0} minutos\n\n`;
+
+  text += `--- 2. PARQUE COMPLETO DE ACTIVOS (${assets.length} equipos en MANSOLE.Assets) ---\n`;
+  assets.forEach(a => {
+    text += `* [${a.Code}] ${a.Name} | Área: ${a.AreaName || 'General'} (CECO: ${a.CostCenterCode || 'N/A'}) | Marca: ${a.Brand || 'N/A'} | Modelo: ${a.Model || 'N/A'} | Serie: ${a.SerialNumber || 'N/A'} | Estado: ${a.Status || 'Operativo'} | OTs Activas: ${a.ActiveOTs}\n`;
+  });
+  text += `\n`;
+
+  text += `--- 3. ÓRDENES DE TRABAJO REGISTRADAS (${ots.length} órdenes en MANSOLE.WorkOrders) ---\n`;
+  ots.forEach(o => {
+    const progDate = o.ScheduledDate ? new Date(o.ScheduledDate).toISOString().split('T')[0] : 'N/A';
+    text += `* [${o.Code}] ${o.Type} (${o.Priority}) | Estado: ${o.Status} | Activo: [${o.AssetCode}] ${o.AssetName} | Área: ${o.AreaName} | Creado por: ${o.CreatedByName || 'N/A'} | Parada: ${o.DowntimeMinutes}m | Prog: ${progDate} | Detalle: "${o.Description || 'Sin detalle'}"\n`;
+  });
+  text += `\n`;
+
+  text += `--- 4. CATÁLOGO DE REPUESTOS Y STOCK (${parts.length} repuestos en MANSOLE.SpareParts) ---\n`;
+  parts.forEach(p => {
+    text += `* [${p.Code}] ${p.Name} | Stock: ${p.CurrentStock} ${p.UnitOfMeasure} (Mín: ${p.MinStock}) [${p.AlertStatus}] | Ubic: ${p.Location || 'Almacén'} | Costo Unitario: $${Number(p.UnitCost || 0).toFixed(2)} USD | Condición: ${p.Condition}\n`;
+  });
+  text += `\n`;
+
+  text += `--- 5. EQUIPO Y PERSONAL (${users.length} usuarios en MANSOLE.Users y MANSOLE.Roles) ---\n`;
+  users.forEach(u => {
+    text += `* [ID ${u.Id}] ${u.FullName} | Rol: ${u.RoleName || 'Personal'} | Email: ${u.Email} | Estado: ${u.IsActive ? 'Activo' : 'Inactivo'} | OTs Creadas: ${u.CreatedOTs} | Tareas Registradas: ${u.CompletedTasks} | Horas Registradas: ${(u.TotalWorkMinutes / 60).toFixed(1)}h\n`;
+  });
+  text += `\n`;
+
+  text += `--- 6. CRONOGRAMA DE MANTENIMIENTO PREVENTIVO (${schedule.length} rutinas en MANSOLE.AssetActivities) ---\n`;
+  schedule.forEach(s => {
+    const nextDate = s.NextDueDate ? new Date(s.NextDueDate).toISOString().split('T')[0] : 'Programado';
+    const lastDate = s.LastExecutionDate ? new Date(s.LastExecutionDate).toISOString().split('T')[0] : 'Nunca';
+    text += `* [${s.AssetCode}] ${s.AssetName} -> Rutina: "${s.ActivityName}" (${s.EstimatedMinutes || 30}m) | Frecuencia: Cada ${s.FrequencyValue} ${s.FrequencyType} | Próximo Vencimiento: ${nextDate} | Última: ${lastDate}\n`;
+  });
+  text += `\n`;
+
+  text += `--- 7. MOVIMIENTOS RECIENTES DE KARDEX (${trans.length} en MANSOLE.InventoryTransactions) ---\n`;
+  trans.forEach(t => {
+    const tDate = t.Date ? new Date(t.Date).toISOString().split('T')[0] : 'N/A';
+    text += `* [${tDate}] [${t.SpareCode}] ${t.SpareName} | Tipo: ${t.TransactionType} | Cant: ${t.Quantity} | Costo: $${Number(t.UnitCost || 0).toFixed(2)} USD | Motivo: ${t.Reason} | Ref: ${t.Reference || 'N/A'}\n`;
+  });
+  text += `\n`;
+
+  if (attachments.length > 0) {
+    text += `--- 8. ARCHIVOS ADJUNTOS Y MANUALES (${attachments.length} en MANSOLE.Attachments) ---\n`;
+    attachments.forEach(att => {
+      text += `* [${att.EntityType} #${att.EntityId}] ${att.FileName} (Blob: ${att.BlobUrl})\n`;
+    });
   }
 
-  if (isAudit) {
-    result.tablesConsulted.push('MANSOLE.AuditLogs', 'MANSOLE.Users');
-    result.primaryDomain = 'audit';
+  const allTables = [
+    'MANSOLE.WorkOrders',
+    'MANSOLE.Assets',
+    'MANSOLE.SpareParts',
+    'MANSOLE.Users',
+    'MANSOLE.AssetActivities',
+    'MANSOLE.InventoryTransactions',
+    'MANSOLE.Areas',
+    'MANSOLE.CeCoste'
+  ];
 
-    const auditRes = await pool.request().query(`
-      SELECT TOP 10
-        al.Action, al.Entity, al.Timestamp, al.Details,
-        CONCAT(u.FirstName, ' ', u.LastName) as UserName
-      FROM MANSOLE.AuditLogs al
-      LEFT JOIN MANSOLE.Users u ON al.UserId = u.Id
-      ORDER BY al.Id DESC
-    `);
-    result.dataSummary.auditLogs = auditRes.recordset || [];
+  cachedSnapshot = {
+    tablesConsulted: allTables,
+    contextText: text,
+    dataSummary: {
+      kpis,
+      assets,
+      workOrders: ots,
+      spareParts: parts,
+      users,
+      schedule,
+      transactions: trans,
+      attachments
+    },
+    primaryDomain: 'unified'
+  };
 
-    result.contextText += `
-=== TABLA CONSULTADA: MANSOLE.AuditLogs ===
-- Trazabilidad y Acciones Recientes en el Sistema:
-${result.dataSummary.auditLogs.map(a => `  * [${a.Timestamp ? new Date(a.Timestamp).toLocaleString('es-PE') : 'N/A'}] Usuario ${a.UserName || 'Sistema'}: Acción "${a.Action}" sobre ${a.Entity} (${a.Details || 'Sin detalles'})`).join('\n')}
-`;
-  }
+  lastCacheTime = now;
+  return cachedSnapshot;
+}
 
-  // Fallback si no hubo coincidencia temática
-  if (result.tablesConsulted.length === 0) {
-    result.tablesConsulted.push('MANSOLE.WorkOrders', 'MANSOLE.Assets', 'MANSOLE.SpareParts');
-    const genKpis = await pool.request().query(`
-      SELECT 
-        COUNT(*) as TotalOTs,
-        SUM(CASE WHEN Status NOT IN ('Cerrada', 'Cancelada', 'Finalizada') THEN 1 ELSE 0 END) as ActiveOTs
-      FROM MANSOLE.WorkOrders
-    `);
-    result.dataSummary.kpis = genKpis.recordset[0] || {};
-    result.contextText += `
-=== RESUMEN GENERAL DE PLANTAS Y TABLAS DE MANSOLE ===
-- OTs Registradas: ${result.dataSummary.kpis.TotalOTs || 0} (Activas: ${result.dataSummary.kpis.ActiveOTs || 0})
-- Módulos y tablas disponibles para consultar: MANSOLE.WorkOrders, MANSOLE.Assets, MANSOLE.SpareParts, MANSOLE.AssetActivities, MANSOLE.Users, MANSOLE.Areas, MANSOLE.CeCoste.
-`;
-  }
-
-  result.tablesConsulted = [...new Set(result.tablesConsulted)];
-  return result;
+/**
+ * Función wrapper compatible con la interfaz anterior
+ */
+async function queryDatabaseForMansito(userQuery, currentUser = null) {
+  return await getUnifiedDatabaseSnapshot(false);
 }
 
 module.exports = {
   SCHEMA_TABLES,
+  getUnifiedDatabaseSnapshot,
   queryDatabaseForMansito
 };

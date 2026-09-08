@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
     const query = `
       SELECT
         w.Id, w.Code, w.AssetId, w.Type, w.Priority, w.ScheduledDate,
-        w.ExecutionDate, w.DowntimeMinutes, w.Description, w.Status,
+        w.ExecutionDate, w.DowntimeMinutes, w.PreDowntimeMinutes, w.Description, w.Status,
         w.LaborCost, w.TotalCost,
         a.Code as AssetCode, a.Name as AssetName,
         ar.Name as AreaName, ar.CostCenterCode
@@ -36,7 +36,7 @@ router.get('/:id', async (req, res) => {
     const query = `
       SELECT
         w.Id, w.Code, w.AssetId, w.Type, w.Priority, w.ScheduledDate,
-        w.ExecutionDate, w.DowntimeMinutes, w.Description, w.Status,
+        w.ExecutionDate, w.DowntimeMinutes, w.PreDowntimeMinutes, w.Description, w.Status,
         w.LaborCost, w.TotalCost,
         a.Code as AssetCode, a.Name as AssetName,
         ar.Name as AreaName, ar.CostCenterCode
@@ -199,7 +199,16 @@ router.put('/tasks/:taskId/finish', async (req, res) => {
           IsCompleted = 1,
           DurationMinutes = DATEDIFF(MINUTE, ISNULL(StartedAt, GETDATE()), GETDATE()),
           Comments = ISNULL(@comments, Comments)
-      WHERE Id = @taskId
+      WHERE Id = @taskId;
+
+      -- Recalcular automáticamente el tiempo total de parada de la OT
+      UPDATE MANSOLE.WorkOrders
+      SET DowntimeMinutes = ISNULL(PreDowntimeMinutes, 0) + (
+        SELECT ISNULL(SUM(DurationMinutes), 0)
+        FROM MANSOLE.WorkOrderTasks
+        WHERE WorkOrderId = (SELECT WorkOrderId FROM MANSOLE.WorkOrderTasks WHERE Id = @taskId)
+      )
+      WHERE Id = (SELECT WorkOrderId FROM MANSOLE.WorkOrderTasks WHERE Id = @taskId);
     `;
     await pool.request()
       .input('taskId', sql.Int, parseInt(req.params.taskId))
@@ -216,9 +225,24 @@ router.put('/tasks/:taskId/finish', async (req, res) => {
 router.delete('/tasks/:taskId', async (req, res) => {
   try {
     const pool = await getDbConnection();
+    const query = `
+      DECLARE @woId INT;
+      SELECT @woId = WorkOrderId FROM MANSOLE.WorkOrderTasks WHERE Id = @taskId;
+      DELETE FROM MANSOLE.WorkOrderTasks WHERE Id = @taskId;
+      IF @woId IS NOT NULL
+      BEGIN
+        UPDATE MANSOLE.WorkOrders
+        SET DowntimeMinutes = ISNULL(PreDowntimeMinutes, 0) + (
+          SELECT ISNULL(SUM(DurationMinutes), 0)
+          FROM MANSOLE.WorkOrderTasks
+          WHERE WorkOrderId = @woId
+        )
+        WHERE Id = @woId;
+      END
+    `;
     await pool.request()
       .input('taskId', sql.Int, parseInt(req.params.taskId))
-      .query('DELETE FROM MANSOLE.WorkOrderTasks WHERE Id = @taskId');
+      .query(query);
     res.json({ message: 'Tarea eliminada de la OT' });
   } catch (err) {
     res.status(500).json({ error: 'Error al eliminar tarea', details: err.message });
@@ -538,19 +562,27 @@ router.post('/', async (req, res) => {
 
 // PUT /api/workorders/:id/status (Actualizar estado o cerrar OT)
 router.put('/:id/status', async (req, res) => {
-  const { status, downtimeMinutes } = req.body;
+  const { status, downtimeMinutes, preDowntimeMinutes } = req.body;
   try {
     const pool = await getDbConnection();
     const query = `
       UPDATE MANSOLE.WorkOrders 
-      SET Status = @Status, 
-          DowntimeMinutes = ISNULL(@DowntimeMinutes, DowntimeMinutes),
+      SET Status = ISNULL(@Status, Status), 
+          PreDowntimeMinutes = CASE WHEN @PreDowntimeMinutes IS NOT NULL THEN @PreDowntimeMinutes ELSE PreDowntimeMinutes END,
+          DowntimeMinutes = CASE 
+            WHEN @DowntimeMinutes IS NOT NULL THEN @DowntimeMinutes 
+            ELSE (
+              ISNULL(CASE WHEN @PreDowntimeMinutes IS NOT NULL THEN @PreDowntimeMinutes ELSE PreDowntimeMinutes END, 0) + 
+              ISNULL((SELECT SUM(DurationMinutes) FROM MANSOLE.WorkOrderTasks WHERE WorkOrderId = @Id), 0)
+            ) 
+          END,
           ExecutionDate = CASE WHEN @Status = 'Finalizada' THEN GETDATE() ELSE ExecutionDate END
       WHERE Id = @Id
     `;
     const request = pool.request();
-    request.input('Status', sql.VarChar, status);
-    request.input('DowntimeMinutes', sql.Int, downtimeMinutes ? parseInt(downtimeMinutes) : null);
+    request.input('Status', sql.VarChar, status || null);
+    request.input('PreDowntimeMinutes', sql.Int, preDowntimeMinutes !== undefined && preDowntimeMinutes !== null ? parseInt(preDowntimeMinutes) : null);
+    request.input('DowntimeMinutes', sql.Int, downtimeMinutes !== undefined && downtimeMinutes !== null ? parseInt(downtimeMinutes) : null);
     request.input('Id', sql.Int, parseInt(req.params.id));
     
     await request.query(query);
@@ -569,7 +601,7 @@ router.get('/:id/pdf', async (req, res) => {
     const query = `
       SELECT
         w.Id, w.Code, w.AssetId, w.Type, w.Priority, w.ScheduledDate,
-        w.ExecutionDate, w.DowntimeMinutes, w.Description, w.Status,
+        w.ExecutionDate, w.DowntimeMinutes, w.PreDowntimeMinutes, w.Description, w.Status,
         w.LaborCost, w.TotalCost,
         a.Code as AssetCode, a.Name as AssetName,
         ar.Name as AreaName, ar.CostCenterCode
@@ -613,7 +645,7 @@ router.get('/:id/pdf', async (req, res) => {
        .text(`Activo / Máquina: [${ot.AssetCode || 'GEN'}] ${ot.AssetName || 'Equipamiento General'}`, 60, doc.y + 5)
        .text(`Área de Producción: ${ot.AreaName || 'General'}`, 60, doc.y + 4)
        .text(`Imputación de Gasto (CECO): ${ot.CostCenterCode || 'CECO-GEN'}`, 60, doc.y + 4)
-       .text(`Downtime: ${ot.DowntimeMinutes || 0} minutos`, 380, doc.y - 12);
+       .text(`Downtime: ${ot.DowntimeMinutes || 0} min (Previo: ${ot.PreDowntimeMinutes || 0}m + Intervención)`, 330, doc.y - 12);
     
     doc.moveDown(3);
 

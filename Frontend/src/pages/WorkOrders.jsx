@@ -70,6 +70,7 @@ export default function WorkOrders({ currentUser }) {
             description: o.description || o.Description || 'Labor programada de mantenimiento',
             totalCost: isNaN(cost) ? 0 : cost,
             downtimeMinutes: o.downtimeMinutes || o.DowntimeMinutes || 0,
+            preDowntimeMinutes: o.preDowntimeMinutes !== undefined ? o.preDowntimeMinutes : (o.PreDowntimeMinutes || 0),
             technicians: o.technicians || o.Technicians || [{ name: 'Juan Pérez (Técnico 1)', hours: 2 }],
             aiDiagnosis: o.aiDiagnosis || null
           };
@@ -567,18 +568,99 @@ export default function WorkOrders({ currentUser }) {
                 </div>
               </div>
               <p className="text-xs text-slate-800 leading-relaxed m-0">{selectedOT.description}</p>
-              <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
-                <span className="text-slate-600 font-medium">⏱️ Tiempo de parada:</span>
-                <div className="inline-flex items-center gap-1">
-                  <input 
-                    type="number" 
-                    className="form-input w-16 py-0.5 px-2 text-xs font-bold text-right"
-                    value={selectedOT.downtimeMinutes || 0} 
-                    onChange={e => setSelectedOT({ ...selectedOT, downtimeMinutes: parseInt(e.target.value) || 0 })}
-                  />
-                  <span className="text-slate-500 font-semibold text-[11px]">min</span>
-                </div>
-              </div>
+              {/* Control y Desglose Automático del Tiempo de Parada */}
+              {(() => {
+                const preDowntime = parseInt(selectedOT.preDowntimeMinutes !== undefined ? selectedOT.preDowntimeMinutes : (selectedOT.PreDowntimeMinutes || 0)) || 0;
+                const taskInterventionMinutes = otTasks.reduce((sum, t) => sum + (Number(t.DurationMinutes) || 0), 0);
+                const totalCalculatedDowntime = preDowntime + taskInterventionMinutes;
+                const isClosed = selectedOT.status === 'Finalizada' || selectedOT.status === 'Cerrada';
+
+                return (
+                  <div className="pt-2.5 border-t border-slate-200/80 space-y-2">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <Clock size={13} className="text-blue-600" />
+                        Tiempo de Parada de Máquina
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        ⚡ Calculado Automáticamente
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                      {/* 1. Espera previa a la intervención */}
+                      <div className="bg-white p-2.5 rounded-lg border border-slate-200 flex flex-col justify-between">
+                        <div>
+                          <span className="text-[11px] font-bold text-slate-800 block mb-0.5">
+                            1. Espera Previa
+                          </span>
+                          <span className="text-[10px] text-slate-400 block leading-tight mb-2">
+                            Tiempo detenida antes de iniciar atención
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-auto">
+                          {isClosed ? (
+                            <span className="font-mono font-bold text-xs text-slate-800">{preDowntime} min</span>
+                          ) : (
+                            <>
+                              <input 
+                                type="number" 
+                                min="0"
+                                className="form-input w-20 py-1 px-2 text-xs font-bold text-right bg-slate-50 border border-slate-300 rounded"
+                                value={preDowntime} 
+                                onChange={e => {
+                                  const val = Math.max(0, parseInt(e.target.value) || 0);
+                                  setSelectedOT({ 
+                                    ...selectedOT, 
+                                    preDowntimeMinutes: val,
+                                    downtimeMinutes: val + taskInterventionMinutes 
+                                  });
+                                }}
+                              />
+                              <span className="text-slate-500 font-semibold text-[11px]">min</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 2. Tiempo de intervención técnica cronometrada */}
+                      <div className="bg-white p-2.5 rounded-lg border border-slate-200 flex flex-col justify-between">
+                        <div>
+                          <span className="text-[11px] font-bold text-slate-800 block mb-0.5">
+                            2. Intervención Técnica
+                          </span>
+                          <span className="text-[10px] text-slate-400 block leading-tight mb-2">
+                            Sumatoria de tareas finalizadas
+                          </span>
+                        </div>
+                        <div className="mt-auto">
+                          <span className="font-mono font-bold text-xs text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded inline-block">
+                            ⏱️ {taskInterventionMinutes} min
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 3. Tiempo Total de Parada de Máquina (Calculado & Bloqueado) */}
+                      <div className="bg-slate-900 text-white p-2.5 rounded-lg flex flex-col justify-between shadow-xs">
+                        <div>
+                          <span className="text-[11px] font-bold text-slate-200 block mb-0.5">
+                            Total Parada Real (KPI)
+                          </span>
+                          <span className="text-[10px] text-slate-400 block leading-tight mb-2">
+                            {preDowntime}m espera + {taskInterventionMinutes}m tareas
+                          </span>
+                        </div>
+                        <div className="mt-auto flex items-baseline gap-1">
+                          <span className="font-mono font-extrabold text-base text-amber-400">
+                            {totalCalculatedDowntime}
+                          </span>
+                          <span className="text-slate-300 font-semibold text-[11px]">minutos</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* ASISTENTE DE INTELIGENCIA ARTIFICIAL (Módulo 8) */}
@@ -971,12 +1053,17 @@ export default function WorkOrders({ currentUser }) {
               </button>
               <button className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center" onClick={async () => {
                 try {
+                  const taskInterventionMinutes = otTasks.reduce((sum, t) => sum + (Number(t.DurationMinutes) || 0), 0);
+                  const preDowntime = parseInt(selectedOT.preDowntimeMinutes !== undefined ? selectedOT.preDowntimeMinutes : (selectedOT.PreDowntimeMinutes || 0)) || 0;
+                  const calculatedDowntime = preDowntime + taskInterventionMinutes;
+
                   await api.updateWorkOrderStatus(selectedOT.id || selectedOT.Id, { 
                     status: selectedOT.status || 'En Progreso', 
-                    downtimeMinutes: selectedOT.downtimeMinutes 
+                    preDowntimeMinutes: preDowntime,
+                    downtimeMinutes: calculatedDowntime 
                   });
                   setSelectedOT(null);
-                  toast.success("OT actualizada exitosamente");
+                  toast.success("OT actualizada exitosamente con cálculo de tiempo de parada.");
                   loadOrders();
                 } catch(e) {
                   toast.error("Error al actualizar OT: " + (e.response?.data?.error || e.message));

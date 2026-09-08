@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { api, API_BASE } from '../services/api';
-import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle2, AlertTriangle, Filter, CheckCircle, Clock, HelpCircle, Timer, Trash2, PlusCircle, Check, X } from 'lucide-react';
+import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle2, AlertTriangle, Filter, CheckCircle, Clock, HelpCircle, Timer, Trash2, PlusCircle, Check, X, Package, Boxes } from 'lucide-react';
 import { toast } from 'sonner';
 import { OrderCardSkeleton } from '../components/UI';
 import HelpModal from '../components/HelpModal';
@@ -22,6 +22,13 @@ export default function WorkOrders({ currentUser }) {
   const [taskComments, setTaskComments] = useState('');
   const [otTasks, setOtTasks] = useState([]);
   const [tasksLoading, setTasksLoading] = useState(false);
+
+  // Repuestos consumidos por tarea & Inventario
+  const [catalogSpareParts, setCatalogSpareParts] = useState([]);
+  const [otSpareParts, setOtSpareParts] = useState([]);
+  const [sparePartsLoading, setSparePartsLoading] = useState(false);
+  const [activeTaskPartForm, setActiveTaskPartForm] = useState(null);
+  const [partFormState, setPartFormState] = useState({ sparePartId: '', quantity: 1 });
 
   // Filtros de Proceso y Búsqueda
   const [activeStage, setActiveStage] = useState('Todas');
@@ -143,15 +150,87 @@ export default function WorkOrders({ currentUser }) {
     try {
       await api.deleteOrderTask(taskId);
       toast.success('Tarea removida de la OT');
-      if (selectedOT) loadOtTasks(selectedOT.id || selectedOT.Id);
+      if (selectedOT) {
+        loadOtTasks(selectedOT.id || selectedOT.Id);
+        loadOtSpareParts(selectedOT.id || selectedOT.Id);
+      }
     } catch (err) {
       toast.error('Error al eliminar tarea');
+    }
+  };
+
+  const loadCatalogSpareParts = () => {
+    api.getInventory().then(data => {
+      if (Array.isArray(data)) {
+        setCatalogSpareParts(data);
+        if (data.length > 0 && !partFormState.sparePartId) {
+          setPartFormState(prev => ({ ...prev, sparePartId: data[0].Id || data[0].id }));
+        }
+      }
+    }).catch(() => {});
+  };
+
+  const loadOtSpareParts = async (orderId) => {
+    setSparePartsLoading(true);
+    try {
+      const parts = await api.getWorkOrderSpareParts(orderId);
+      setOtSpareParts(Array.isArray(parts) ? parts : []);
+    } catch (e) {
+      setOtSpareParts([]);
+    } finally {
+      setSparePartsLoading(false);
+    }
+  };
+
+  const handleAddSparePartToTask = async (taskId) => {
+    if (!partFormState.sparePartId) {
+      toast.error('Selecciona un repuesto del catálogo.');
+      return;
+    }
+    const qty = parseFloat(partFormState.quantity);
+    if (isNaN(qty) || qty <= 0) {
+      toast.error('Especifica una cantidad válida mayor a cero.');
+      return;
+    }
+    try {
+      const res = await api.addTaskSparePart(taskId, {
+        sparePartId: partFormState.sparePartId,
+        quantity: qty
+      });
+      toast.success(res.message || 'Repuesto consumido y asignado a la tarea');
+      setActiveTaskPartForm(null);
+      setPartFormState(prev => ({ ...prev, quantity: 1 }));
+      if (selectedOT) {
+        const currentOrderId = selectedOT.id || selectedOT.Id;
+        loadOtSpareParts(currentOrderId);
+        loadOrders(true);
+      }
+      loadCatalogSpareParts(); // refrescar stock actualizado
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al asignar repuesto');
+    }
+  };
+
+  const handleDeleteSparePart = async (sparePartRecordId) => {
+    if (!window.confirm('¿Deseas devolver este repuesto al inventario del almacén?')) return;
+    try {
+      const res = await api.deleteWorkOrderSparePart(sparePartRecordId);
+      toast.success(res.message || 'Repuesto reintegrado al almacén');
+      if (selectedOT) {
+        const currentOrderId = selectedOT.id || selectedOT.Id;
+        loadOtSpareParts(currentOrderId);
+        loadOrders(true);
+      }
+      loadCatalogSpareParts(); // refrescar stock actualizado
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al devolver repuesto');
     }
   };
 
   useEffect(() => {
     loadOrders();
     loadCatalogActivities();
+    loadCatalogSpareParts();
     // Cargar activos disponibles para el formulario de nueva OT
     api.getAssets().then(data => {
       if (Array.isArray(data)) setAvailableAssets(data);
@@ -430,6 +509,7 @@ export default function WorkOrders({ currentUser }) {
                       setSelectedOT(ot);
                       setAiDiagnosis(ot.aiDiagnosis || null);
                       loadOtTasks(ot.id);
+                      loadOtSpareParts(ot.id);
                     }}
                   >
                     <FileText size={14} /> <span>Detalle</span>
@@ -599,97 +679,221 @@ export default function WorkOrders({ currentUser }) {
                   <span className="text-[11px] text-slate-400 mt-0.5 hidden sm:block">Selecciona una actividad del catálogo superior y pulsa "Asignar".</span>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {otTasks.map(task => {
                     const isPending = !task.StartedAt && !task.IsCompleted;
                     const isRunning = task.StartedAt && !task.IsCompleted;
                     const isDone = task.IsCompleted;
+                    const taskParts = otSpareParts.filter(p => p.taskId === task.Id);
+                    const isAddingPart = activeTaskPartForm === task.Id;
 
                     return (
                       <div 
                         key={task.Id}
-                        className={`p-2.5 sm:p-3 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 ${
+                        className={`p-2.5 sm:p-3 rounded-xl border transition-all flex flex-col gap-2 ${
                           isRunning 
-                            ? 'bg-blue-50/50 border-blue-200 ring-1 ring-blue-100' 
+                            ? 'bg-blue-50/40 border-blue-200 ring-1 ring-blue-100' 
                             : (isDone ? 'bg-slate-50/40 border-slate-200' : 'bg-white border-slate-200')
                         }`}
                       >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                            <span className="font-bold text-slate-900 text-xs">
-                              {task.ActivityName || 'Actividad Industrial'}
-                            </span>
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                              isRunning 
-                                ? 'bg-blue-100 text-blue-800 border-blue-300 animate-pulse'
-                                : (isDone 
-                                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                    : 'bg-slate-100 text-slate-700 border-slate-200')
-                            }`}>
-                              {isRunning ? '⏳ En Ejecución' : (isDone ? '✅ Lista' : '🟡 Pendiente')}
-                            </span>
+                        {/* Cabecera de la Tarea y Acciones */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                              <span className="font-bold text-slate-900 text-xs">
+                                {task.ActivityName || 'Actividad Industrial'}
+                              </span>
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                                isRunning 
+                                  ? 'bg-blue-100 text-blue-800 border-blue-300 animate-pulse'
+                                  : (isDone 
+                                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
+                                      : 'bg-slate-100 text-slate-700 border-slate-200')
+                              }`}>
+                                {isRunning ? '⏳ En Ejecución' : (isDone ? '✅ Lista' : '🟡 Pendiente')}
+                              </span>
+                              {taskParts.length > 0 && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
+                                  <Package size={11} className="text-amber-600" /> {taskParts.length} repuesto{taskParts.length > 1 ? 's' : ''}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Tiempos de Inicio y Fin */}
+                            <div className="flex items-center gap-2 sm:gap-3 text-[11px] text-slate-500 flex-wrap">
+                              <span>
+                                <strong>Inic:</strong> {task.StartedAt ? new Date(task.StartedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                              </span>
+                              <span>
+                                <strong>Fin:</strong> {task.CompletedAt ? new Date(task.CompletedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                              </span>
+                              {task.DurationMinutes !== null && task.DurationMinutes !== undefined && (
+                                <span className="font-bold text-slate-800 font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
+                                  ⏱️ {task.DurationMinutes}m
+                                </span>
+                              )}
+                              {task.TechnicianName && (
+                                <span className="text-slate-600 truncate text-[10px]">
+                                  👤 {task.TechnicianName}
+                                </span>
+                              )}
+                            </div>
                           </div>
 
-                          {/* Tiempos de Inicio y Fin */}
-                          <div className="flex items-center gap-2 sm:gap-3 text-[11px] text-slate-500 flex-wrap">
-                            <span>
-                              <strong>Inic:</strong> {task.StartedAt ? new Date(task.StartedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
-                            </span>
-                            <span>
-                              <strong>Fin:</strong> {task.CompletedAt ? new Date(task.CompletedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
-                            </span>
-                            {task.DurationMinutes !== null && task.DurationMinutes !== undefined && (
-                              <span className="font-bold text-slate-800 font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[10px]">
-                                ⏱️ {task.DurationMinutes}m
+                          {/* Botones de Acción para el Técnico */}
+                          <div className="flex items-center gap-1.5 flex-shrink-0 w-full sm:w-auto justify-end pt-1.5 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                            {/* Botón para asignar repuesto a esta tarea */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (isAddingPart) {
+                                  setActiveTaskPartForm(null);
+                                } else {
+                                  setActiveTaskPartForm(task.Id);
+                                  if (catalogSpareParts.length > 0 && !partFormState.sparePartId) {
+                                    setPartFormState(prev => ({ ...prev, sparePartId: catalogSpareParts[0].Id || catalogSpareParts[0].id }));
+                                  }
+                                }
+                              }}
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all border ${
+                                isAddingPart 
+                                  ? 'bg-slate-800 text-white border-slate-800' 
+                                  : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                              }`}
+                              title="Consumir repuesto para esta tarea específica"
+                            >
+                              <Package size={12} className={isAddingPart ? 'text-amber-400' : 'text-slate-500'} />
+                              <span className="text-[11px]">{isAddingPart ? 'Cerrar' : '+ Repuesto'}</span>
+                            </button>
+
+                            {isPending && (
+                              <button
+                                type="button"
+                                onClick={() => handleStartTask(task.Id)}
+                                className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-1 transition-all shadow-xs"
+                              >
+                                <Play size={12} />
+                                <span>INICIAR</span>
+                              </button>
+                            )}
+
+                            {isRunning && (
+                              <button
+                                type="button"
+                                onClick={() => handleFinishTask(task.Id)}
+                                className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-1 transition-all shadow-xs"
+                              >
+                                <Check size={12} />
+                                <span>FINALIZAR</span>
+                              </button>
+                            )}
+
+                            {isDone && (
+                              <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
+                                <CheckCircle2 size={14} /> Hecho
                               </span>
                             )}
-                            {task.TechnicianName && (
-                              <span className="text-slate-600 truncate text-[10px]">
-                                👤 {task.TechnicianName}
-                              </span>
-                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTask(task.Id)}
+                              className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-auto sm:ml-0"
+                              title="Eliminar tarea"
+                            >
+                              <Trash2 size={13} />
+                            </button>
                           </div>
                         </div>
 
-                        {/* Botones de Acción para el Técnico */}
-                        <div className="flex items-center gap-1.5 flex-shrink-0 w-full sm:w-auto justify-end pt-1.5 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                          {isPending && (
-                            <button
-                              type="button"
-                              onClick={() => handleStartTask(task.Id)}
-                              className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-1 transition-all shadow-xs"
-                            >
-                              <Play size={12} />
-                              <span>INICIAR</span>
-                            </button>
-                          )}
+                        {/* Formulario Inline para Asignar Repuesto a esta Tarea */}
+                        {isAddingPart && (
+                          <div className="bg-slate-100/90 border border-slate-300/80 rounded-lg p-2.5 text-xs">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-bold text-slate-800 text-[11px] flex items-center gap-1">
+                                <Package size={13} className="text-amber-600" /> Consumir Repuesto en "{task.ActivityName}"
+                              </span>
+                              <span className="text-[10px] text-slate-500">Se descuenta del stock en Almacén</span>
+                            </div>
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                              <select
+                                className="form-select text-xs py-1.5 px-2 bg-white border border-slate-300 rounded-md flex-1 min-w-0"
+                                value={partFormState.sparePartId}
+                                onChange={e => setPartFormState({ ...partFormState, sparePartId: e.target.value })}
+                              >
+                                {catalogSpareParts.map(sp => {
+                                  const spId = sp.Id || sp.id;
+                                  const spCode = sp.Code || sp.code;
+                                  const spName = sp.Name || sp.name;
+                                  const spStock = sp.CurrentStock !== undefined ? sp.CurrentStock : (sp.currentStock || 0);
+                                  const spCost = sp.Condition === 'Canibalizada' ? 0 : (Number(sp.UnitCost || sp.unitCost || 0));
+                                  return (
+                                    <option key={spId} value={spId} disabled={spStock <= 0}>
+                                      [{spCode}] {spName} — Disp: {spStock} ({spCost === 0 ? 'Canibalizada $0' : `$${spCost.toFixed(2)}`})
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[11px] text-slate-600 font-semibold">Cant:</span>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    className="form-input text-xs py-1.5 px-2 w-16 bg-white border border-slate-300 rounded-md text-center font-bold"
+                                    value={partFormState.quantity}
+                                    onChange={e => setPartFormState({ ...partFormState, quantity: e.target.value })}
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddSparePartToTask(task.Id)}
+                                  className="btn btn-primary text-xs py-1.5 px-3 whitespace-nowrap"
+                                >
+                                  <Plus size={13} /> Consumir
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
-                          {isRunning && (
-                            <button
-                              type="button"
-                              onClick={() => handleFinishTask(task.Id)}
-                              className="flex-1 sm:flex-initial px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-1 transition-all shadow-xs"
-                            >
-                              <Check size={12} />
-                              <span>FINALIZAR</span>
-                            </button>
-                          )}
-
-                          {isDone && (
-                            <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
-                              <CheckCircle2 size={14} /> Hecho
+                        {/* Repuestos ya consumidos en ESTA tarea */}
+                        {taskParts.length > 0 && (
+                          <div className="pt-2 border-t border-slate-200/80 space-y-1.5">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                              Repuestos utilizados en esta tarea:
                             </span>
-                          )}
-
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteTask(task.Id)}
-                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-auto sm:ml-0"
-                            title="Eliminar tarea"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                              {taskParts.map(p => (
+                                <div 
+                                  key={p.id}
+                                  className="bg-white border border-slate-200 rounded-md p-2 flex items-center justify-between gap-2 shadow-2xs"
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    <div className="font-semibold text-slate-800 text-[11px] truncate" title={p.name}>
+                                      [{p.code}] {p.name}
+                                    </div>
+                                    <div className="text-[10px] text-slate-500 flex items-center gap-2">
+                                      <span>Cant: <strong>{p.quantity} {p.unitOfMeasure || 'und'}</strong></span>
+                                      <span>•</span>
+                                      <span className="font-mono font-semibold text-emerald-700">
+                                        ${p.totalCost ? p.totalCost.toFixed(2) : '0.00'} USD
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteSparePart(p.id)}
+                                    className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                    title="Devolver repuesto al almacén"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -697,26 +901,60 @@ export default function WorkOrders({ currentUser }) {
               )}
             </div>
 
-            {/* Repuestos Consumidos del Almacén */}
+            {/* Repuestos Consumidos del Almacén (Consolidado de la OT por Tarea) */}
             <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-xs mb-3">
-              <strong className="text-slate-900 block mb-2 font-bold uppercase tracking-wider text-[11px]">
-                Repuestos Consumidos del Almacén
-              </strong>
-              <div className="space-y-1.5">
-                {(selectedOT.spareParts && selectedOT.spareParts.length > 0 ? selectedOT.spareParts : [
-                  { name: 'REP-VLM-001 Válvula Proporcional Hidráulica', quantity: 1, cost: 350.00 }
-                ]).map((p, idx) => (
-                  <div key={idx} className="pb-1.5 border-b border-slate-100 last:border-0 flex justify-between items-center text-xs">
-                    <div>
-                      <div className="font-semibold text-slate-900 text-[11px] sm:text-xs">{p.name}</div>
-                      <div className="text-[10px] text-slate-500">Cantidad: {p.quantity}</div>
-                    </div>
-                    <div className={`font-mono font-bold text-xs ${p.cost === 0 ? 'text-emerald-600' : 'text-slate-800'}`}>
-                      ${p.cost ? p.cost.toFixed(2) : '0.00'} USD
-                    </div>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-100">
+                <strong className="text-slate-900 font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <Boxes size={14} className="text-slate-600" />
+                  Repuestos Consumidos del Almacén (Total OT)
+                </strong>
+                <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                  ${otSpareParts.reduce((acc, p) => acc + (Number(p.totalCost) || 0), 0).toFixed(2)} USD
+                </span>
               </div>
+
+              {sparePartsLoading ? (
+                <div className="text-center py-3 text-xs text-slate-400">Cargando repuestos...</div>
+              ) : otSpareParts.length === 0 ? (
+                <div className="py-3 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200 text-xs text-slate-400">
+                  No se han asignado repuestos a las tareas de esta OT. Pulsa "+ Repuesto" en cada tarea para consumir repuestos del almacén.
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {otSpareParts.map((p) => (
+                    <div key={p.id} className="p-2 rounded-lg bg-slate-50/70 border border-slate-200/80 flex justify-between items-center text-xs gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-slate-900 text-[11px] sm:text-xs truncate">
+                          [{p.code}] {p.name}
+                        </div>
+                        <div className="text-[10px] text-slate-500 flex items-center gap-2 flex-wrap mt-0.5">
+                          <span>Cant: <strong>{p.quantity} {p.unitOfMeasure || 'und'}</strong></span>
+                          <span>•</span>
+                          <span className="bg-slate-200/70 px-1.5 py-0.5 rounded text-slate-700 font-medium">
+                            📌 {p.activityName ? `Tarea: ${p.activityName}` : 'Tarea general'}
+                          </span>
+                          {p.technicianName && (
+                            <span className="text-slate-600">👤 {p.technicianName}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className={`font-mono font-bold text-xs ${p.cost === 0 ? 'text-emerald-600' : 'text-slate-800'}`}>
+                          ${p.totalCost ? p.totalCost.toFixed(2) : '0.00'} USD
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSparePart(p.id)}
+                          className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          title="Devolver al almacén"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">

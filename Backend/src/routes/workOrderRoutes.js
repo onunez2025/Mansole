@@ -71,7 +71,41 @@ router.get('/:id', async (req, res) => {
 
     ot.tasks = tasksResult.recordset;
     ot.technicians = [{ name: 'Juan Perez (Técnico Asignado)', hours: 3.5 }];
-    ot.spareParts = [{ code: 'REP-GEN-01', name: 'Kit de Repuestos Genérico', quantity: 1, cost: (ot.TotalCost - ot.LaborCost) }];
+
+    // Consultar repuestos consumidos reales por tarea desde MANSOLE.WorkOrderSpareParts
+    const sparePartsQuery = `
+      SELECT 
+        wsp.Id, wsp.WorkOrderId, wsp.TaskId, wsp.SparePartId, wsp.Quantity, wsp.UnitCost,
+        (wsp.Quantity * wsp.UnitCost) as TotalCost,
+        sp.Code as SparePartCode, sp.Name as SparePartName, sp.UnitOfMeasure, sp.Condition,
+        wt.TechnicianName,
+        act.Name as ActivityName
+      FROM MANSOLE.WorkOrderSpareParts wsp
+      LEFT JOIN MANSOLE.SpareParts sp ON wsp.SparePartId = sp.Id
+      LEFT JOIN MANSOLE.WorkOrderTasks wt ON wsp.TaskId = wt.Id
+      LEFT JOIN MANSOLE.Activities act ON wt.ActivityId = act.Id
+      WHERE wsp.WorkOrderId = @WorkOrderId
+      ORDER BY wsp.Id DESC
+    `;
+    const sparePartsResult = await pool.request()
+      .input('WorkOrderId', sql.Int, ot.Id)
+      .query(sparePartsQuery);
+
+    ot.spareParts = sparePartsResult.recordset.map(p => ({
+      id: p.Id,
+      taskId: p.TaskId,
+      sparePartId: p.SparePartId,
+      code: p.SparePartCode,
+      name: p.SparePartName,
+      quantity: Number(p.Quantity),
+      unitCost: Number(p.UnitCost),
+      totalCost: Number(p.TotalCost),
+      cost: Number(p.TotalCost),
+      unitOfMeasure: p.UnitOfMeasure,
+      condition: p.Condition,
+      technicianName: p.TechnicianName,
+      activityName: p.ActivityName
+    }));
     
     res.json(ot);
   } catch (e) {
@@ -188,6 +222,241 @@ router.delete('/tasks/:taskId', async (req, res) => {
     res.json({ message: 'Tarea eliminada de la OT' });
   } catch (err) {
     res.status(500).json({ error: 'Error al eliminar tarea', details: err.message });
+  }
+});
+
+// GET /api/workorders/:id/spareparts (Obtener lista de repuestos consumidos en la OT con detalle de tarea)
+router.get('/:id/spareparts', async (req, res) => {
+  try {
+    const pool = await getDbConnection();
+    const query = `
+      SELECT 
+        wsp.Id, wsp.WorkOrderId, wsp.TaskId, wsp.SparePartId, wsp.Quantity, wsp.UnitCost,
+        (wsp.Quantity * wsp.UnitCost) as TotalCost,
+        sp.Code as SparePartCode, sp.Name as SparePartName, sp.UnitOfMeasure, sp.Condition,
+        wt.TechnicianName,
+        act.Name as ActivityName
+      FROM MANSOLE.WorkOrderSpareParts wsp
+      LEFT JOIN MANSOLE.SpareParts sp ON wsp.SparePartId = sp.Id
+      LEFT JOIN MANSOLE.WorkOrderTasks wt ON wsp.TaskId = wt.Id
+      LEFT JOIN MANSOLE.Activities act ON wt.ActivityId = act.Id
+      WHERE wsp.WorkOrderId = @WorkOrderId
+      ORDER BY wsp.Id DESC
+    `;
+    const result = await pool.request()
+      .input('WorkOrderId', sql.Int, parseInt(req.params.id))
+      .query(query);
+
+    const parts = result.recordset.map(p => ({
+      id: p.Id,
+      taskId: p.TaskId,
+      sparePartId: p.SparePartId,
+      code: p.SparePartCode,
+      name: p.SparePartName,
+      quantity: Number(p.Quantity),
+      unitCost: Number(p.UnitCost),
+      totalCost: Number(p.TotalCost),
+      cost: Number(p.TotalCost),
+      unitOfMeasure: p.UnitOfMeasure,
+      condition: p.Condition,
+      technicianName: p.TechnicianName,
+      activityName: p.ActivityName
+    }));
+
+    res.json(parts);
+  } catch (err) {
+    console.error('Error obteniendo repuestos de la OT:', err);
+    res.status(500).json({ error: 'Error obteniendo repuestos de la OT', details: err.message });
+  }
+});
+
+// POST /api/workorders/tasks/:taskId/spareparts (Asignar consumo de repuesto a una tarea de la OT)
+router.post('/tasks/:taskId/spareparts', async (req, res) => {
+  const { sparePartId, quantity } = req.body;
+  const taskId = parseInt(req.params.taskId);
+  const qty = parseFloat(quantity);
+
+  if (!sparePartId || isNaN(qty) || qty <= 0) {
+    return res.status(400).json({ error: 'Debe especificar un repuesto válido y una cantidad mayor a cero.' });
+  }
+
+  try {
+    const pool = await getDbConnection();
+
+    // 1. Validar que la tarea exista y obtener su OT
+    const taskRes = await pool.request()
+      .input('taskId', sql.Int, taskId)
+      .query(`
+        SELECT wt.Id, wt.WorkOrderId, wt.TechnicianName, wo.Code as OrderCode, act.Name as ActivityName
+        FROM MANSOLE.WorkOrderTasks wt
+        INNER JOIN MANSOLE.WorkOrders wo ON wt.WorkOrderId = wo.Id
+        LEFT JOIN MANSOLE.Activities act ON wt.ActivityId = act.Id
+        WHERE wt.Id = @taskId
+      `);
+
+    if (taskRes.recordset.length === 0) {
+      return res.status(404).json({ error: 'Tarea no encontrada o no pertenece a una OT válida.' });
+    }
+
+    const task = taskRes.recordset[0];
+    const workOrderId = task.WorkOrderId;
+
+    // 2. Obtener datos del repuesto en catálogo
+    const partRes = await pool.request()
+      .input('sparePartId', sql.Int, parseInt(sparePartId))
+      .query('SELECT Id, Code, Name, CurrentStock, UnitCost, Condition, UnitOfMeasure FROM MANSOLE.SpareParts WHERE Id = @sparePartId');
+
+    if (partRes.recordset.length === 0) {
+      return res.status(404).json({ error: 'Repuesto no encontrado en el inventario.' });
+    }
+
+    const part = partRes.recordset[0];
+
+    // Validar stock disponible
+    if (part.CurrentStock < qty) {
+      return res.status(400).json({ 
+        error: `Stock insuficiente en almacén. Disponible: ${part.CurrentStock} ${part.UnitOfMeasure || 'und'}, solicitado: ${qty}` 
+      });
+    }
+
+    const unitCost = part.Condition === 'Canibalizada' ? 0 : Number(part.UnitCost || 0);
+
+    // 3. Registrar consumo en MANSOLE.WorkOrderSpareParts
+    const insertRes = await pool.request()
+      .input('workOrderId', sql.Int, workOrderId)
+      .input('taskId', sql.Int, taskId)
+      .input('sparePartId', sql.Int, part.Id)
+      .input('quantity', sql.Decimal(18, 2), qty)
+      .input('unitCost', sql.Decimal(18, 2), unitCost)
+      .query(`
+        INSERT INTO MANSOLE.WorkOrderSpareParts (WorkOrderId, TaskId, SparePartId, Quantity, UnitCost)
+        OUTPUT INSERTED.Id
+        VALUES (@workOrderId, @taskId, @sparePartId, @quantity, @unitCost)
+      `);
+
+    const insertedSparePartId = insertRes.recordset[0].Id;
+
+    // 4. Deducir stock del inventario
+    await pool.request()
+      .input('sparePartId', sql.Int, part.Id)
+      .input('qty', sql.Decimal(18, 2), qty)
+      .query(`
+        UPDATE MANSOLE.SpareParts 
+        SET CurrentStock = CurrentStock - @qty 
+        WHERE Id = @sparePartId
+      `);
+
+    // 5. Registrar movimiento de auditoría en Kardex (InventoryTransactions)
+    const reference = `${task.OrderCode || ('OT #' + workOrderId)} / Tarea: ${task.ActivityName || ('#' + taskId)}`;
+    await pool.request()
+      .input('sparePartId', sql.Int, part.Id)
+      .input('qty', sql.Decimal(18, 2), qty)
+      .input('unitCost', sql.Decimal(18, 2), unitCost)
+      .input('reference', sql.NVarChar, reference)
+      .query(`
+        INSERT INTO MANSOLE.InventoryTransactions (SparePartId, TransactionType, Reason, Quantity, UnitCost, Date, Reference)
+        VALUES (@sparePartId, 'OUT', 'Consumo OT por Tarea', @qty, @unitCost, GETDATE(), @reference)
+      `);
+
+    // 6. Recalcular costo total de la OT (Mano de obra + Total de repuestos de la OT)
+    await pool.request()
+      .input('workOrderId', sql.Int, workOrderId)
+      .query(`
+        UPDATE MANSOLE.WorkOrders
+        SET TotalCost = ISNULL(LaborCost, 0) + (
+          SELECT ISNULL(SUM(Quantity * UnitCost), 0)
+          FROM MANSOLE.WorkOrderSpareParts
+          WHERE WorkOrderId = @workOrderId
+        )
+        WHERE Id = @workOrderId
+      `);
+
+    res.status(201).json({
+      id: insertedSparePartId,
+      workOrderId,
+      taskId,
+      sparePartId: part.Id,
+      code: part.Code,
+      name: part.Name,
+      quantity: qty,
+      unitCost,
+      totalCost: qty * unitCost,
+      message: `Repuesto ${part.Code} asignado exitosamente a la tarea.`
+    });
+  } catch (err) {
+    console.error('Error asignando repuesto a la tarea:', err);
+    res.status(500).json({ error: 'Error al asignar repuesto a la tarea', details: err.message });
+  }
+});
+
+// DELETE /api/workorders/spareparts/:id (Eliminar consumo de repuesto y reintegrar stock al almacén)
+router.delete('/spareparts/:id', async (req, res) => {
+  const recordId = parseInt(req.params.id);
+  try {
+    const pool = await getDbConnection();
+
+    // 1. Obtener datos del registro a eliminar
+    const itemRes = await pool.request()
+      .input('id', sql.Int, recordId)
+      .query(`
+        SELECT wsp.Id, wsp.WorkOrderId, wsp.SparePartId, wsp.Quantity, wsp.UnitCost, wo.Code as OrderCode, sp.Code as SparePartCode
+        FROM MANSOLE.WorkOrderSpareParts wsp
+        LEFT JOIN MANSOLE.WorkOrders wo ON wsp.WorkOrderId = wo.Id
+        LEFT JOIN MANSOLE.SpareParts sp ON wsp.SparePartId = sp.Id
+        WHERE wsp.Id = @id
+      `);
+
+    if (itemRes.recordset.length === 0) {
+      return res.status(404).json({ error: 'Registro de repuesto consumido no encontrado.' });
+    }
+
+    const item = itemRes.recordset[0];
+    const { WorkOrderId, SparePartId, Quantity, UnitCost, OrderCode, SparePartCode } = item;
+
+    // 2. Restituir stock en SpareParts
+    await pool.request()
+      .input('sparePartId', sql.Int, SparePartId)
+      .input('qty', sql.Decimal(18, 2), Quantity)
+      .query(`
+        UPDATE MANSOLE.SpareParts
+        SET CurrentStock = CurrentStock + @qty
+        WHERE Id = @sparePartId
+      `);
+
+    // 3. Registrar transacción inversa de auditoría en Kardex
+    const reference = `Anulación de consumo en ${OrderCode || ('OT #' + WorkOrderId)} (Reg. #${recordId})`;
+    await pool.request()
+      .input('sparePartId', sql.Int, SparePartId)
+      .input('qty', sql.Decimal(18, 2), Quantity)
+      .input('unitCost', sql.Decimal(18, 2), UnitCost)
+      .input('reference', sql.NVarChar, reference)
+      .query(`
+        INSERT INTO MANSOLE.InventoryTransactions (SparePartId, TransactionType, Reason, Quantity, UnitCost, Date, Reference)
+        VALUES (@sparePartId, 'IN', 'Devolución Consumo OT', @qty, @unitCost, GETDATE(), @reference)
+      `);
+
+    // 4. Eliminar el registro
+    await pool.request()
+      .input('id', sql.Int, recordId)
+      .query('DELETE FROM MANSOLE.WorkOrderSpareParts WHERE Id = @id');
+
+    // 5. Recalcular costo total de la OT
+    await pool.request()
+      .input('workOrderId', sql.Int, WorkOrderId)
+      .query(`
+        UPDATE MANSOLE.WorkOrders
+        SET TotalCost = ISNULL(LaborCost, 0) + (
+          SELECT ISNULL(SUM(Quantity * UnitCost), 0)
+          FROM MANSOLE.WorkOrderSpareParts
+          WHERE WorkOrderId = @workOrderId
+        )
+        WHERE Id = @workOrderId
+      `);
+
+    res.json({ message: `Repuesto ${SparePartCode || ''} devuelto al stock del almacén con éxito.` });
+  } catch (err) {
+    console.error('Error eliminando repuesto consumido:', err);
+    res.status(500).json({ error: 'Error al eliminar repuesto de la OT', details: err.message });
   }
 });
 

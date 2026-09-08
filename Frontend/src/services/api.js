@@ -141,6 +141,11 @@ export const api = {
   finishOrderTask:     async (taskId, comments) => await client.put(`/workorders/tasks/${taskId}/finish`, { comments }),
   deleteOrderTask:     async (taskId) => await client.delete(`/workorders/tasks/${taskId}`),
 
+  // === Repuestos Consumidos por Tarea (Almacén & Control de Costos) ===
+  getWorkOrderSpareParts:   async (orderId) => await client.get(`/workorders/${orderId}/spareparts`),
+  addTaskSparePart:         async (taskId, data) => await client.post(`/workorders/tasks/${taskId}/spareparts`, data),
+  deleteWorkOrderSparePart: async (id) => await client.delete(`/workorders/spareparts/${id}`),
+
   // === IA ===
   diagnoseWithAI: async (assetName, symptom, assetCode) =>
     await client.post('/ai/diagnose', { assetName, symptom, assetCode }),

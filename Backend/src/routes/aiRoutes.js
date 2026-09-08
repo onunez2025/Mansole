@@ -3,7 +3,7 @@ const router = express.Router();
 const https = require('https');
 const dns = require('dns');
 
-// Forzar resolución IPv4 primero en Node.js para evitar cuelgues/timeouts DNS en Windows
+// Forzar resolución IPv4 primero en Node.js para evitar cuelgues DNS en Windows
 if (dns.setDefaultResultOrder) {
   dns.setDefaultResultOrder('ipv4first');
 }
@@ -11,15 +11,16 @@ if (dns.setDefaultResultOrder) {
 const { getDbConnection, sql } = require('../config/db');
 const { SCHEMA_TABLES, queryDatabaseForMansito } = require('../services/mansitoKnowledgeService');
 
-// Clave y endpoint por defecto de NVIDIA NIM
-const DEFAULT_DEEPSEEK_KEY = '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';
+// Credenciales de IA gestionadas de forma segura desde variables de entorno (.env)
+const getDeepSeekApiKey = () => (process.env.DEEPSEEK_API_KEY || '').trim();
+const getNvidiaApiKey = () => (process.env.NVIDIA_API_KEY || '').trim();
+
 
 /**
- * Cliente HTTPS nativo forzando IPv4 y control estricto de timeout
+ * Cliente HTTPS nativo con forzado de IPv4 estricto y timeout controlado
  */
-function sendNvidiaAiRequest(model, messages, { maxTokens = 2000, temperature = 0.2, timeoutMs = 12000, apiKey = null }) {
+function sendAiRequest({ hostname, path, apiKey, model, messages, maxTokens = 1200, temperature = 0.2, timeoutMs = 15000 }) {
   return new Promise((resolve, reject) => {
-    const key = apiKey || process.env.DEEPSEEK_API_KEY || DEFAULT_DEEPSEEK_KEY;
     const payload = JSON.stringify({
       model,
       messages,
@@ -28,14 +29,14 @@ function sendNvidiaAiRequest(model, messages, { maxTokens = 2000, temperature = 
     });
 
     const req = https.request({
-      hostname: 'integrate.api.nvidia.com',
+      hostname,
       port: 443,
-      path: '/v1/chat/completions',
+      path,
       method: 'POST',
-      family: 4, // Estricto IPv4 para evitar cuelgues DNS/IPv6 en Windows
+      family: 4, // Estricto IPv4 para evitar cuelgues de IPv6 en Windows
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + key,
+        'Authorization': 'Bearer ' + apiKey,
         'Content-Length': Buffer.byteLength(payload)
       },
       timeout: timeoutMs
@@ -49,7 +50,7 @@ function sendNvidiaAiRequest(model, messages, { maxTokens = 2000, temperature = 
             const content = parsed.choices?.[0]?.message?.content || parsed.choices?.[0]?.message?.reasoning_content || '';
             resolve({ content: content.trim(), model, raw: parsed });
           } catch (err) {
-            reject(new Error(`Error parseando JSON de respuesta: ${err.message}`));
+            reject(new Error(`Error parseando respuesta JSON: ${err.message}`));
           }
         } else {
           reject(new Error(`HTTP ${res.statusCode}: ${data.slice(0, 150)}`));
@@ -58,7 +59,7 @@ function sendNvidiaAiRequest(model, messages, { maxTokens = 2000, temperature = 
     });
 
     req.on('timeout', () => {
-      req.destroy(new Error(`Timeout de ${timeoutMs}ms excedido en modelo ${model}`));
+      req.destroy(new Error(`Timeout de ${timeoutMs}ms excedido en ${model}`));
     });
 
     req.on('error', (err) => {
@@ -71,35 +72,66 @@ function sendNvidiaAiRequest(model, messages, { maxTokens = 2000, temperature = 
 }
 
 /**
- * Cascada de modelos para asegurar disponibilidad 100%:
- * 1. DeepSeek V4 Pro (Razonamiento profundo)
- * 2. Llama 3.2 11B (Ultra veloz, latencia ~600ms)
- * 3. GPT-OSS 20B (Respaldo adicional)
+ * Cascada de proveedores para garantizar 100% de disponibilidad:
+ * 1. DeepSeek Oficial (deepseek-chat / V3) -> Ultra rápido (~1-2s) y máxima calidad
+ * 2. NVIDIA NIM (DeepSeek V4 Pro) -> Respaldo de alta capacidad
+ * 3. NVIDIA NIM (Llama 3.2 11B) -> Respaldo rápido
  */
-async function callNvidiaAiWithCascade(messages, options = {}) {
-  const primaryModel = process.env.DEEPSEEK_MODEL || 'deepseek-ai/deepseek-v4-pro-0813';
-  const models = [
-    primaryModel,
-    'meta/llama-3.2-11b-vision-instruct',
-    'openai/gpt-oss-20b'
-  ];
+async function callAiWithCascade(messages, options = {}) {
+  const providers = [
+    {
+      label: 'DeepSeek Oficial (V3)',
+      hostname: 'api.deepseek.com',
+      path: '/chat/completions',
+      apiKey: getDeepSeekApiKey(),
+      model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
+      timeoutMs: 15000
+    },
+    {
+      label: 'DeepSeek V4 Pro (NVIDIA NIM)',
+      hostname: 'integrate.api.nvidia.com',
+      path: '/v1/chat/completions',
+      apiKey: getNvidiaApiKey(),
+      model: 'deepseek-ai/deepseek-v4-pro-0813',
+      timeoutMs: 15000
+    },
+    {
+      label: 'Llama 3.2 11B (NVIDIA NIM)',
+      hostname: 'integrate.api.nvidia.com',
+      path: '/v1/chat/completions',
+      apiKey: getNvidiaApiKey(),
+      model: 'meta/llama-3.2-11b-vision-instruct',
+      timeoutMs: 12000
+    }
+  ].filter(p => !!p.apiKey);
 
-  const uniqueModels = [...new Set(models)];
 
-  for (const model of uniqueModels) {
+  for (const prov of providers) {
     try {
-      const timeoutMs = model.includes('pro') ? 18000 : 15000;
-      const res = await sendNvidiaAiRequest(model, messages, { ...options, timeoutMs });
+      const res = await sendAiRequest({
+        hostname: prov.hostname,
+        path: prov.path,
+        apiKey: prov.apiKey,
+        model: prov.model,
+        messages,
+        maxTokens: options.maxTokens || 1200,
+        temperature: options.temperature || 0.2,
+        timeoutMs: prov.timeoutMs
+      });
+
       if (res.content) {
-        return res;
+        return {
+          content: res.content,
+          model: prov.label,
+          raw: res.raw
+        };
       }
     } catch (err) {
-      console.warn(`⚠️ Modelo ${model} no disponible (${err.message}). Probando alternativa...`);
+      console.warn(`⚠️ Proveedor ${prov.label} no disponible (${err.message}). Intentando siguiente opción...`);
     }
   }
 
-
-  throw new Error('Todos los modelos de IA de respaldo fallaron o excedieron el tiempo límite.');
+  throw new Error('Todos los proveedores de IA externos fallaron o excedieron el tiempo límite.');
 }
 
 // Fallback industrial knowledge base in case external API is temporarily unavailable
@@ -208,7 +240,7 @@ router.post('/diagnose', async (req, res) => {
     console.warn('⚠️ Advertencia: No se pudo consultar histórico de Azure SQL:', dbErr.message);
   }
 
-  // 2. Invocar Cascada de Modelos NVIDIA con RAG histórico
+  // 2. Invocar Cascada de Modelos de IA con RAG histórico
   const systemPrompt = `Eres el Ingeniero Experto de Mantenimiento y Confiabilidad Industrial de Planta para GRUPO SOLE (fabricación industrial de electrodomésticos, termas y campanas).
 Tu tarea es diagnosticar averías mecánicas, eléctricas, hidráulicas y neumáticas reportadas en las Órdenes de Trabajo (OT).
 
@@ -239,7 +271,7 @@ ${historyContext}
 Genera el diagnóstico en formato JSON.`;
 
   try {
-    const aiResult = await callNvidiaAiWithCascade([
+    const aiResult = await callAiWithCascade([
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt }
     ], { maxTokens: 2500, temperature: 0.2 });
@@ -257,7 +289,7 @@ Genera el diagnóstico en formato JSON.`;
         asset: cleanName,
         symptomReported: cleanSymptom,
         generatedAt: new Date().toISOString(),
-        aiModel: `${aiResult.model} (NVIDIA NIM)`,
+        aiModel: aiResult.model,
         historicalAnalysis: parsed.historicalAnalysis || (historyRecords.length > 0 ? `Analizadas ${historyRecords.length} órdenes históricas previas.` : 'Sin antecedentes previos en el sistema.'),
         confidenceScore: parsed.confidenceScore || '90%',
         possibleCauses: parsed.possibleCauses,
@@ -364,13 +396,13 @@ REGLAS DE RESPUESTA:
       content: `Usuario actual: ${currentUser?.name || currentUser?.username || 'Usuario'} (Rol: ${currentUser?.role || 'Personal de Planta'}).\nPregunta: ${userQuery}`
     });
 
-    const aiRes = await callNvidiaAiWithCascade(messages, { maxTokens: 1000, temperature: 0.2 });
+    const aiRes = await callAiWithCascade(messages, { maxTokens: 1000, temperature: 0.2 });
 
     if (aiRes && aiRes.content) {
       return res.json({
         answer: aiRes.content,
         sender: 'Mansito',
-        model: `${aiRes.model} (NVIDIA NIM)`,
+        model: aiRes.model,
         generatedAt: new Date().toISOString(),
         sources: knowledge.tablesConsulted.length > 0 ? knowledge.tablesConsulted : ['Azure SQL Database', 'MANSOLE Schema']
       });

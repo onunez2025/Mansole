@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { TrendingUp, Clock, Cpu, CheckCircle2, AlertTriangle, DollarSign, Boxes, ArrowUpRight } from 'lucide-react';
+import { 
+  TrendingUp, Clock, Cpu, CheckCircle2, AlertTriangle, 
+  DollarSign, Boxes, ArrowUpRight, Calendar, RotateCcw, Loader2 
+} from 'lucide-react';
 import { CardSkeleton, TableSkeleton } from '../components/UI';
 
 // Caché en cliente para que al volver a la pestaña Dashboard cargue en 0ms
@@ -9,9 +12,28 @@ let cachedKpiData = null;
 export default function Dashboard({ currentUser }) {
   const [kpi, setKpi] = useState(cachedKpiData);
   const [loading, setLoading] = useState(!cachedKpiData);
+  const [isFiltering, setIsFiltering] = useState(false);
+
+  // Filtros de fecha de período inicial y final
+  const [startDate, setStartDate] = useState('2026-07-01');
+  const [endDate, setEndDate] = useState('2026-08-31');
+  const [activePreset, setActivePreset] = useState('bimestre');
+
+  const fetchData = (start, end) => {
+    setIsFiltering(true);
+    api.getKPIs({ startDate: start, endDate: end })
+      .then(data => {
+        cachedKpiData = data;
+        setKpi(data);
+        setIsFiltering(false);
+      })
+      .catch(() => {
+        setIsFiltering(false);
+      });
+  };
 
   useEffect(() => {
-    api.getKPIs().then(data => {
+    api.getKPIs({ startDate, endDate }).then(data => {
       cachedKpiData = data;
       setKpi(data);
       setLoading(false);
@@ -19,6 +41,45 @@ export default function Dashboard({ currentUser }) {
       setLoading(false);
     });
   }, []);
+
+  const applyPreset = (preset) => {
+    setActivePreset(preset);
+    let start = '';
+    let end = '';
+    switch(preset) {
+      case 'este_mes':
+        start = '2026-08-01';
+        end = '2026-08-31';
+        break;
+      case 'bimestre':
+        start = '2026-07-01';
+        end = '2026-08-31';
+        break;
+      case 'ultimos_30':
+        start = '2026-08-09';
+        end = '2026-09-08';
+        break;
+      case 'anio':
+        start = '2026-01-01';
+        end = '2026-12-31';
+        break;
+      default:
+        break;
+    }
+    if (start && end) {
+      setStartDate(start);
+      setEndDate(end);
+      fetchData(start, end);
+    }
+  };
+
+  const formatDisplayDate = (dStr) => {
+    if (!dStr) return '';
+    const parts = dStr.split('-');
+    if (parts.length < 3) return dStr;
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    return `${parts[2]} ${months[parseInt(parts[1], 10) - 1]} ${parts[0]}`;
+  };
 
   if (loading && !kpi) {
     return (
@@ -68,17 +129,125 @@ export default function Dashboard({ currentUser }) {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Encabezado */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+    <div className="space-y-5">
+      {/* Encabezado y Selector Interactivo de Rango de Fechas */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 sm:gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs">
         <div>
-          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Indicadores de Desempeño (KPIs)</h3>
-          <p className="text-sm text-slate-500 mt-0.5 hidden sm:block">Monitoreo en tiempo real de disponibilidad, confiabilidad y costos en planta</p>
+          <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <span>Indicadores de Desempeño (KPIs)</span>
+            {isFiltering && <Loader2 size={16} className="animate-spin text-blue-600" />}
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            Monitoreo en tiempo real de disponibilidad, confiabilidad y costos en planta
+          </p>
         </div>
-        <div className="inline-flex items-center self-start sm:self-auto gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-600 shadow-xs">
-          <span>Período:</span>
-          <strong className="text-slate-900 font-semibold">Julio - Agosto 2026</strong>
+
+        {/* Filtros de Período Inicial y Final */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-wrap">
+          {/* Presets Rápidos */}
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => applyPreset('este_mes')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                activePreset === 'este_mes' 
+                  ? 'bg-white text-slate-900 shadow-xs' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Agosto 2026
+            </button>
+            <button
+              type="button"
+              onClick={() => applyPreset('bimestre')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                activePreset === 'bimestre' 
+                  ? 'bg-white text-slate-900 shadow-xs' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Julio - Agosto
+            </button>
+            <button
+              type="button"
+              onClick={() => applyPreset('ultimos_30')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                activePreset === 'ultimos_30' 
+                  ? 'bg-white text-slate-900 shadow-xs' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Últimos 30d
+            </button>
+            <button
+              type="button"
+              onClick={() => applyPreset('anio')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                activePreset === 'anio' 
+                  ? 'bg-white text-slate-900 shadow-xs' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Año 2026
+            </button>
+          </div>
+
+          {/* Selector Manual de Fecha Inicio y Fin */}
+          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200/90 rounded-xl p-1.5 px-2.5 text-xs">
+            <Calendar size={14} className="text-blue-600 shrink-0" />
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center gap-1">
+                <span className="text-slate-400 font-medium">Desde:</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setStartDate(val);
+                    setActivePreset('custom');
+                    if (val && endDate) fetchData(val, endDate);
+                  }}
+                  className="bg-white border border-slate-200 rounded px-1.5 py-0.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-900 cursor-pointer"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-slate-400 font-medium">Hasta:</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setEndDate(val);
+                    setActivePreset('custom');
+                    if (startDate && val) fetchData(startDate, val);
+                  }}
+                  className="bg-white border border-slate-200 rounded px-1.5 py-0.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-900 cursor-pointer"
+                />
+              </div>
+            </div>
+            {(startDate !== '2026-07-01' || endDate !== '2026-08-31') && (
+              <button
+                type="button"
+                onClick={() => applyPreset('bimestre')}
+                className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors cursor-pointer"
+                title="Restablecer período por defecto"
+              >
+                <RotateCcw size={13} />
+              </button>
+            )}
+          </div>
         </div>
+      </div>
+
+      {/* Resumen del Período Evaluado */}
+      <div className="flex items-center justify-between text-xs text-slate-500 px-1 flex-wrap gap-2">
+        <div className="flex items-center gap-1.5">
+          <Calendar size={13} className="text-blue-600 shrink-0" />
+          <span>Período evaluado: <strong className="text-slate-800">{formatDisplayDate(startDate)}</strong> al <strong className="text-slate-800">{formatDisplayDate(endDate)}</strong></span>
+        </div>
+        <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600">
+          {kpi?.period?.days ? `${kpi.period.days} días analizados` : 'Filtro activo'}
+        </span>
       </div>
 
       {/* Grid de Métricas Principales */}

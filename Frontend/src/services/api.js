@@ -149,7 +149,7 @@ export const api = {
   deleteRole:        async (id) => await client.delete(`/auth/roles/${id}`),
 
   // === GET (Lecturas) ===
-  getKPIs:       async () => await client.get('/kpi'),
+  getKPIs:       async (params) => await client.get('/kpi', { params }),
   getAssets:     async () => await client.get('/assets'),
   getAreas:      async () => await client.get('/assets/areas'),
   getCategories: async () => await client.get('/assets/categories'),

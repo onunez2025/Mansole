@@ -95,6 +95,10 @@ async function queryDatabaseForMansito(userQuery, currentUser = null) {
     primaryDomain: 'general'
   };
 
+  // Fecha actual de referencia de planta (2026-09-08)
+  const todayStr = new Date().toISOString().split('T')[0];
+  result.contextText += `=== FECHA ACTUAL DE CONSULTA EN MANSOLE: ${todayStr} ===\n`;
+
   // Helper para buscar palabras clave o códigos
   const extractSearchTerm = (text) => {
     const codeMatch = text.match(/[a-zA-Z]{2,10}-[\w\d.-]+/);
@@ -104,10 +108,10 @@ async function queryDatabaseForMansito(userQuery, currentUser = null) {
 
   const specificCode = extractSearchTerm(userQuery);
 
-  // 1. DOMINIO: ÓRDENES DE TRABAJO (OTs, pendientes, correctivos, paradas, averías)
+  // 1. DOMINIO: ÓRDENES DE TRABAJO (OTs, pendientes, correctivos, paradas, averías, próxima semana)
   const isWorkOrder = /\b(ot|ots|orden|ordenes|correctivo|falla|averia|parada|downtime)\b/i.test(lower) ||
                       lower.includes('pendiente') || lower.includes('sin cerrar') || lower.includes('abierta') ||
-                      lower.includes('en progreso') || lower.includes('iniciad');
+                      lower.includes('en progreso') || lower.includes('iniciad') || lower.includes('semana') || lower.includes('proxim');
 
   // 2. DOMINIO: REPUESTOS / STOCK / ALMACÉN / KARDEX / CANIBALIZACIÓN
   const isSparePart = /\b(repuesto|repuestos|stock|inventario|almacen|kardex|canibal|pieza|piezas)\b/i.test(lower);
@@ -115,12 +119,15 @@ async function queryDatabaseForMansito(userQuery, currentUser = null) {
   // 3. DOMINIO: ACTIVOS / MÁQUINAS / EQUIPOS / CECO / PRENSAS / HORNOS
   const isAsset = /\b(activo|activos|maquina|maquinas|equipo|equipos|prensa|horno|linea|ceco|marca|modelo|serie)\b/i.test(lower);
 
-  // 4. DOMINIO: USUARIOS / TÉCNICOS / HORAS / ASIGNACIONES
-  const isUser = /\b(usuario|usuarios|tecnico|tecnicos|mecanico|electricista|quien|personal|horas)\b/i.test(lower) ||
-                 lower.includes('asignad') || lower.includes('pedro') || lower.includes('admin') || lower.includes('carlos');
+  // 4. DOMINIO: USUARIOS / TÉCNICOS / HORAS / ASIGNACIONES / TAREAS
+  const isUser = /\b(usuario|usuarios|tecnico|tecnicos|mecanico|electricista|quien|personal|horas|tarea|tareas)\b/i.test(lower) ||
+                 lower.includes('asignad') || lower.includes('pedro') || lower.includes('admin') || lower.includes('carlos') ||
+                 lower.includes('mis tareas') || lower.includes('tengo asignad');
 
-  // 5. DOMINIO: CRONOGRAMA PREVENTIVO / CALENDARIO / PLANIFICACIÓN
-  const isPreventive = /\b(preventivo|preventivos|cronograma|calendario|programad|rutina|frecuencia)\b/i.test(lower);
+
+  // 5. DOMINIO: CRONOGRAMA PREVENTIVO / CALENDARIO / PLANIFICACIÓN / PRÓXIMA SEMANA
+  const isPreventive = /\b(preventivo|preventivos|cronograma|calendario|programad|rutina|frecuencia|semana|mes|proxim)\b/i.test(lower);
+
 
   // 6. DOMINIO: INDICADORES / KPIS / DISPONIBILIDAD / MTBF / MTTR
   const isKPI = /\b(indicador|indicadores|kpi|kpis|disponibil|mtbf|mttr|eficiencia|rendimiento)\b/i.test(lower);

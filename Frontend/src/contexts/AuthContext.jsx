@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { api, getTokens, setTokens } from '../services/api';
+import { api, getTokens, setTokens, isTokenExpired } from '../services/api';
 
 export const AuthContext = createContext();
 
@@ -17,7 +17,16 @@ export function AuthProvider({ children }) {
     let cancelled = false;
 
     async function restoreSession() {
-      if (!getTokens()?.accessToken) {
+      const tokens = getTokens();
+      if (!tokens?.accessToken && !tokens?.refreshToken) {
+        setIsInitializing(false);
+        return;
+      }
+
+      // Si ambos tokens ya expiraron por tiempo, limpiar de inmediato sin disparar peticiones fallidas
+      if (isTokenExpired(tokens.accessToken) && isTokenExpired(tokens.refreshToken, 0)) {
+        setTokens(null);
+        if (!cancelled) setUser(null);
         setIsInitializing(false);
         return;
       }

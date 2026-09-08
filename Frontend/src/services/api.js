@@ -9,8 +9,21 @@ const client = axios.create({
 });
 
 /* ------------------------------------------------------------------ *
- * Sesión: tokens en localStorage + refresh automático ante un 401.
+ * Sesión: tokens en localStorage + refresco proactivo antes de expirar
+ * para evitar llamadas con token vencido (401 en consola DevTools).
  * ------------------------------------------------------------------ */
+
+export function isTokenExpired(token, bufferSeconds = 30) {
+  if (!token) return true;
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(base64));
+    if (!payload.exp) return false;
+    return Date.now() >= (payload.exp * 1000 - bufferSeconds * 1000);
+  } catch {
+    return true;
+  }
+}
 
 export function getTokens() {
   try {
@@ -34,11 +47,60 @@ function notifySessionExpired() {
   window.dispatchEvent(new CustomEvent('auth:session-expired'));
 }
 
-// Adjuntar el access token a cada petición
-client.interceptors.request.use((config) => {
+let refreshPromise = null;
+
+async function getValidAccessToken() {
   const tokens = getTokens();
-  if (tokens?.accessToken) {
-    config.headers.Authorization = `Bearer ${tokens.accessToken}`;
+  if (!tokens) return null;
+
+  // Si el access token aún es vigente (con 30s de margen), usarlo directamente
+  if (tokens.accessToken && !isTokenExpired(tokens.accessToken)) {
+    return tokens.accessToken;
+  }
+
+  // Si no hay refresh token o el refresh token también expiró, limpiar sesión
+  if (!tokens.refreshToken || isTokenExpired(tokens.refreshToken, 0)) {
+    setTokens(null);
+    return null;
+  }
+
+  // Evitar múltiples llamadas concurrentes a /auth/refresh
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = (async () => {
+    try {
+      const { data } = await axios.post(`${API_BASE}/auth/refresh`, {
+        refreshToken: tokens.refreshToken
+      });
+      setTokens({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        expiresIn: data.expiresIn
+      });
+      return data.accessToken;
+    } catch {
+      notifySessionExpired();
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
+// Adjuntar el access token válido a cada petición (refrescando proactivamente si expiró)
+client.interceptors.request.use(async (config) => {
+  const isAuthCall = ['/auth/login', '/auth/refresh'].some(p => String(config.url || '').includes(p));
+  if (isAuthCall) {
+    return config;
+  }
+
+  const validToken = await getValidAccessToken();
+  if (validToken) {
+    config.headers.Authorization = `Bearer ${validToken}`;
   }
   return config;
 });
@@ -50,36 +112,19 @@ client.interceptors.response.use(
     const status = error.response?.status;
     const isNoRefreshCall = ['/auth/login', '/auth/refresh'].some(p => String(original.url || '').includes(p));
 
-    // El access token dura 15 min: ante un 401 se intenta refrescar una sola vez.
+    // Fallback reactivo por si el token fue invalidado en backend
     if (status === 401 && !original._retried && !isNoRefreshCall) {
-      const tokens = getTokens();
-
-      if (tokens?.refreshToken) {
-        original._retried = true;
-        try {
-          const { data } = await axios.post(`${API_BASE}/auth/refresh`, {
-            refreshToken: tokens.refreshToken
-          });
-          setTokens({
-            accessToken: data.accessToken,
-            refreshToken: data.refreshToken,
-            expiresIn: data.expiresIn
-          });
-          original.headers = { ...original.headers, Authorization: `Bearer ${data.accessToken}` };
-          return client(original);
-        } catch {
-          notifySessionExpired();
-          return Promise.reject(error);
-        }
+      original._retried = true;
+      const validToken = await getValidAccessToken();
+      if (validToken) {
+        original.headers = { ...original.headers, Authorization: `Bearer ${validToken}` };
+        return client(original);
       }
-
       notifySessionExpired();
     }
 
     if (status !== 401) {
       console.error('❌ API Error:', error.message, error.response?.data);
-    } else {
-      console.warn('⚠️ Auth 401:', error.message);
     }
     return Promise.reject(error);
   }

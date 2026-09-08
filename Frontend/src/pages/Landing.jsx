@@ -25,6 +25,7 @@ import {
   Zap,
   Users
 } from 'lucide-react';
+import LandingBackground from '../components/LandingBackground';
 
 export default function Landing({ onNavigateToLogin }) {
   const [showArchModal, setShowArchModal] = useState(false);
@@ -55,14 +56,10 @@ export default function Landing({ onNavigateToLogin }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans relative overflow-x-hidden selection:bg-blue-100 selection:text-blue-900">
+    <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans relative overflow-x-hidden selection:bg-blue-100 selection:text-blue-900">
       
-      {/* Fondos y Luces Aurora Animadas */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[550px] bg-gradient-to-tr from-sky-200/40 via-blue-200/30 to-indigo-200/40 blur-[100px] pointer-events-none -z-10 rounded-full animate-pulse-glow" />
-      <div className="absolute top-96 right-[-100px] w-[500px] h-[500px] bg-gradient-to-br from-emerald-100/40 to-teal-200/30 blur-[90px] pointer-events-none -z-10 rounded-full" />
-      
-      {/* Trama de cuadrícula de ingeniería (Dot Grid) */}
-      <div className="absolute inset-0 bg-dot-grid bg-dot-grid-mask pointer-events-none -z-10" />
+      {/* Fondo Animado de Telemetría y Auroras */}
+      <LandingBackground />
 
       {/* Navbar Superior Sticky */}
       <header className="h-16 px-6 md:px-12 bg-white/70 backdrop-blur-xl border-b border-slate-200/80 sticky top-0 z-50 flex items-center justify-between transition-all">
@@ -196,6 +193,66 @@ export default function Landing({ onNavigateToLogin }) {
               <div className="text-slate-500 text-[11px]">Trazabilidad Canibalización $0</div>
             </div>
           </div>
+
+          {/* Tarjeta Flotante Izquierda: Maquinaria Prensa Rexroth */}
+          <motion.div
+            animate={{ y: [0, -12, 0] }}
+            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+            className="hidden 2xl:flex flex-col w-64 rounded-2xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-2xl overflow-hidden absolute -left-72 top-10 z-20 text-left"
+          >
+            <div className="relative h-32 w-full overflow-hidden bg-slate-900">
+              <img 
+                src="/images/prensa.jpg" 
+                alt="Prensa Hidráulica" 
+                className="w-full h-full object-cover opacity-95 hover:scale-105 transition-transform duration-500" 
+              />
+              <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-md text-[10px] font-bold text-white border border-white/20 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                PRENSA-01
+              </div>
+              <div className="absolute bottom-1.5 right-2 px-1.5 py-0.5 rounded bg-emerald-500/90 text-white font-bold text-[9px] shadow-xs">
+                Operativa
+              </div>
+            </div>
+            <div className="p-3">
+              <div className="font-extrabold text-slate-900 text-xs truncate">Prensa Hidráulica 100T Rexroth</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">Línea de Estampado Sole</div>
+              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                <span className="text-slate-400 font-medium">Presión:</span>
+                <span className="font-mono font-bold text-blue-700">210 bar • OK</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Tarjeta Flotante Derecha: Maquinaria Horno Sole */}
+          <motion.div
+            animate={{ y: [0, 12, 0] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            className="hidden 2xl:flex flex-col w-64 rounded-2xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-2xl overflow-hidden absolute -right-72 top-20 z-20 text-left"
+          >
+            <div className="relative h-32 w-full overflow-hidden bg-slate-900">
+              <img 
+                src="/images/horno.jpg" 
+                alt="Horno Continuo" 
+                className="w-full h-full object-cover opacity-95 hover:scale-105 transition-transform duration-500" 
+              />
+              <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-md text-[10px] font-bold text-white border border-white/20 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                HORNO-01
+              </div>
+              <div className="absolute bottom-1.5 right-2 px-1.5 py-0.5 rounded bg-amber-500/90 text-white font-bold text-[9px] shadow-xs">
+                240°C
+              </div>
+            </div>
+            <div className="p-3">
+              <div className="font-extrabold text-slate-900 text-xs truncate">Horno Continuo Curado</div>
+              <div className="text-[10px] text-slate-500 mt-0.5">Línea Termas Sole</div>
+              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                <span className="text-slate-400 font-medium">Quemadores:</span>
+                <span className="font-mono font-bold text-amber-700">Modulación OK</span>
+              </div>
+            </div>
+          </motion.div>
 
           {/* Contenedor Mockup 3D */}
           <div className="mockup-3d bg-white rounded-2xl border border-slate-200/90 overflow-hidden text-left shadow-2xl">
@@ -401,6 +458,139 @@ export default function Landing({ onNavigateToLogin }) {
             </div>
           </div>
         </motion.div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* SECCIÓN DE MAQUINARIA INDUSTRIAL Y MONITOREO EN PLANTA */}
+      {/* ========================================================================= */}
+      <section className="py-12 px-6 max-w-6xl mx-auto w-full">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 mb-3 shadow-2xs">
+            <Wrench size={13} className="text-blue-600" /> Monitoreo y Mantenimiento de Maquinaria
+          </div>
+          <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
+            Activos Críticos de Planta en Tiempo Real
+          </h3>
+          <p className="text-sm text-slate-600 max-w-xl mx-auto mt-2 leading-relaxed">
+            Plataforma diseñada para prensas de conformado, hornos continuos y celdas robotizadas en Grupo SOLE.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Tarjeta 1: Prensa Hidráulica */}
+          <motion.div 
+            whileHover={{ y: -4 }}
+            className="group rounded-3xl bg-white/90 backdrop-blur-xl border border-slate-200/90 shadow-lg hover:shadow-2xl transition-all overflow-hidden flex flex-col"
+          >
+            <div className="relative h-52 w-full overflow-hidden bg-slate-950">
+              <img 
+                src="/images/prensa.jpg" 
+                alt="Prensa Hidráulica 100T" 
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100" 
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent" />
+              <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-slate-900/80 backdrop-blur-md text-[11px] font-bold text-white border border-white/20 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                PRENSA-01
+              </div>
+              <div className="absolute bottom-3 left-3 right-3 text-white">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-300 block">Línea Metalmecánica</span>
+                <h4 className="text-base font-extrabold leading-tight">Prensa Hidráulica 100T Rexroth</h4>
+              </div>
+            </div>
+            <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+              <p className="text-xs text-slate-600 leading-relaxed m-0">
+                Estampado de cubas y matrices. Mantenimiento cronometrado de electroválvulas proporcionales, pistones y análisis de aceite hidráulico ISO 46.
+              </p>
+              <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 text-xs">
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/70">
+                  <span className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider">Presión Operativa:</span>
+                  <strong className="text-slate-900 font-mono text-xs">210 bar</strong>
+                </div>
+                <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-200/70">
+                  <span className="text-[10px] text-emerald-700 block font-semibold uppercase tracking-wider">Disponibilidad:</span>
+                  <strong className="text-emerald-700 font-mono text-xs">98.5% OEE</strong>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Tarjeta 2: Horno Continuo de Curado */}
+          <motion.div 
+            whileHover={{ y: -4 }}
+            className="group rounded-3xl bg-white/90 backdrop-blur-xl border border-slate-200/90 shadow-lg hover:shadow-2xl transition-all overflow-hidden flex flex-col"
+          >
+            <div className="relative h-52 w-full overflow-hidden bg-slate-950">
+              <img 
+                src="/images/horno.jpg" 
+                alt="Horno Continuo de Curado" 
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100" 
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent" />
+              <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-slate-900/80 backdrop-blur-md text-[11px] font-bold text-white border border-white/20 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                HORNO-01
+              </div>
+              <div className="absolute bottom-3 left-3 right-3 text-white">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-300 block">Pintura & Térmico</span>
+                <h4 className="text-base font-extrabold leading-tight">Horno Continuo de Curado</h4>
+              </div>
+            </div>
+            <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+              <p className="text-xs text-slate-600 leading-relaxed m-0">
+                Polimerizado de pintura electrostática para termas Sole. Control de curva térmica mediante termocuplas tipo K y modulación automática de gas.
+              </p>
+              <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 text-xs">
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/70">
+                  <span className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider">Temperatura:</span>
+                  <strong className="text-slate-900 font-mono text-xs">240°C Estable</strong>
+                </div>
+                <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-200/70">
+                  <span className="text-[10px] text-amber-800 block font-semibold uppercase tracking-wider">Quemadores:</span>
+                  <strong className="text-amber-800 font-mono text-xs">Modulando OK</strong>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Tarjeta 3: Línea de Ensamble y Robótica */}
+          <motion.div 
+            whileHover={{ y: -4 }}
+            className="group rounded-3xl bg-white/90 backdrop-blur-xl border border-slate-200/90 shadow-lg hover:shadow-2xl transition-all overflow-hidden flex flex-col"
+          >
+            <div className="relative h-52 w-full overflow-hidden bg-slate-950">
+              <img 
+                src="/images/ensamble.jpg" 
+                alt="Línea Automatizada de Ensamble" 
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100" 
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent" />
+              <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-slate-900/80 backdrop-blur-md text-[11px] font-bold text-white border border-white/20 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                ENSAMBLE-02
+              </div>
+              <div className="absolute bottom-3 left-3 right-3 text-white">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-300 block">Automatización & Soldadura</span>
+                <h4 className="text-base font-extrabold leading-tight">Línea de Ensamble & Robótica</h4>
+              </div>
+            </div>
+            <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+              <p className="text-xs text-slate-600 leading-relaxed m-0">
+                Robots de soldadura MIG y prueba hidrostática a 150 PSI. Trazabilidad integral de repuestos consumidos y canibalización al costo $0.
+              </p>
+              <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 text-xs">
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/70">
+                  <span className="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider">Ciclo Cadencia:</span>
+                  <strong className="text-slate-900 font-mono text-xs">45s / Unidad</strong>
+                </div>
+                <div className="bg-purple-50 p-2.5 rounded-xl border border-purple-200/70">
+                  <span className="text-[10px] text-purple-700 block font-semibold uppercase tracking-wider">Canibalización:</span>
+                  <strong className="text-purple-700 font-mono text-xs">100% Trazable</strong>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
       </section>
 
       {/* ========================================================================= */}

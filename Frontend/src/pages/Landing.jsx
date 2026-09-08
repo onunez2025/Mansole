@@ -23,11 +23,13 @@ import {
   Database,
   Lock,
   Zap,
-  Users
+  Users,
+  GitPullRequest
 } from 'lucide-react';
 import LandingBackground from '../components/LandingBackground';
+import { CURRENT_VERSION } from '../data/changelogData';
 
-export default function Landing({ onNavigateToLogin }) {
+export default function Landing({ onNavigateToLogin, onOpenChangelog }) {
   const [showArchModal, setShowArchModal] = useState(false);
   const [demoTab, setDemoTab] = useState('workorders'); // 'workorders' | 'kpis' | 'ai'
   
@@ -70,7 +72,13 @@ export default function Landing({ onNavigateToLogin }) {
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <span className="font-extrabold text-slate-900 text-xs sm:text-sm tracking-tight leading-tight truncate">GRUPO SOLE</span>
-              <span className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200/80 shrink-0">v4.2</span>
+              <button
+                onClick={onOpenChangelog}
+                className="text-[9px] sm:text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200/80 shrink-0 transition-colors cursor-pointer"
+                title="Ver qué hay de nuevo en esta versión (Changelog)"
+              >
+                {CURRENT_VERSION}
+              </button>
             </div>
             <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium leading-none block truncate">División Rinnai Perú</span>
           </div>
@@ -760,7 +768,14 @@ export default function Landing({ onNavigateToLogin }) {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
               Azure SQL Cloud
             </span>
-            <span>Versión 4.2.0</span>
+            <button
+              onClick={onOpenChangelog}
+              className="text-slate-600 hover:text-indigo-600 font-mono font-medium inline-flex items-center gap-1 transition-colors cursor-pointer"
+              title="Ver registro de cambios de cada versión (Changelog)"
+            >
+              <GitPullRequest size={12} className="text-indigo-600" />
+              <span>Versión {CURRENT_VERSION} (Changelog)</span>
+            </button>
           </div>
         </div>
       </footer>

@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Bell, Search, Menu, X, HelpCircle, AlertTriangle, 
-  Clock, CheckCircle2, Info, Trash2, CheckCheck, ExternalLink 
+  Clock, CheckCircle2, Info, Trash2, CheckCheck, ExternalLink,
+  GitPullRequest
 } from 'lucide-react';
+import { CURRENT_VERSION } from '../data/changelogData';
 
-export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu, isMobileOpen, onOpenHelp }) {
+export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu, isMobileOpen, onOpenHelp, onOpenChangelog }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -144,6 +146,19 @@ export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu
         >
           <HelpCircle size={15} className="text-blue-600 flex-shrink-0" />
           <span className="hidden sm:inline">Manual SOP</span>
+        </button>
+
+        {/* Botón y Badge de Versión / Changelog */}
+        <button
+          onClick={onOpenChangelog}
+          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/60 hover:border-indigo-200 text-xs font-semibold transition-all shadow-xs cursor-pointer group"
+          title="Registro de Versiones y Pull Requests (Changelog)"
+        >
+          <GitPullRequest size={14} className="text-indigo-600 flex-shrink-0 group-hover:scale-110 transition-transform" />
+          <span className="font-mono font-bold text-slate-900 group-hover:text-indigo-700">{CURRENT_VERSION}</span>
+          <span className="hidden xl:inline text-[10px] font-medium px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200/70">
+            Changelog
+          </span>
         </button>
 
         {/* Alertas y Notificaciones con Menú Desplegable Interactivo */}

@@ -11,10 +11,12 @@ import {
   LogOut,
   X,
   Sparkles,
-  Settings
+  Settings,
+  GitPullRequest
 } from 'lucide-react';
+import { CURRENT_VERSION } from '../data/changelogData';
 
-export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout, hasModule, isMobileOpen, onCloseMobile }) {
+export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout, hasModule, isMobileOpen, onCloseMobile, onOpenChangelog }) {
   const allMenuItems = [
     { id: 'dashboard', label: 'Dashboard & KPIs', icon: <LayoutDashboard size={18} /> },
     { id: 'workOrders', label: 'Órdenes de Trabajo (OT)', icon: <Hammer size={18} />, badge: 'Principal', module: 'workorders' },
@@ -55,9 +57,18 @@ export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout
               <h1 className="text-sm font-bold text-slate-900 tracking-tight leading-tight">
                 GRUPO SOLE
               </h1>
-              <p className="text-[11px] text-slate-500 font-medium leading-none">
-                CMMS Industrial
-              </p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <p className="text-[11px] text-slate-500 font-medium leading-none">
+                  CMMS Industrial
+                </p>
+                <button
+                  onClick={onOpenChangelog}
+                  className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors cursor-pointer"
+                  title="Ver qué hay de nuevo en esta versión"
+                >
+                  {CURRENT_VERSION}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -125,6 +136,23 @@ export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout
             </div>
           </div>
         </nav>
+
+        {/* Acceso directo a Novedades / Changelog */}
+        <div className="px-3 py-2 border-t border-slate-200/80 bg-slate-50/60">
+          <button
+            onClick={onOpenChangelog}
+            className="w-full flex items-center justify-between text-xs text-slate-600 hover:text-slate-900 p-1.5 rounded-lg hover:bg-white hover:shadow-2xs transition-all cursor-pointer group"
+            title="Historial de versiones y Pull Requests publicados"
+          >
+            <span className="flex items-center gap-1.5 text-[11px] font-medium">
+              <GitPullRequest size={13} className="text-indigo-600 group-hover:scale-110 transition-transform" />
+              <span>Novedades & Releases</span>
+            </span>
+            <span className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200/70">
+              {CURRENT_VERSION}
+            </span>
+          </button>
+        </div>
 
         {/* Pie de Sidebar: Perfil y Logout */}
         <div className="p-3 border-t border-slate-200/80 bg-white">

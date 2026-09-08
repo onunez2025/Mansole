@@ -14,6 +14,7 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import AccessDeniedPage from './pages/AccessDeniedPage';
 import HelpModal from './components/HelpModal';
+import ChangelogModal from './components/ChangelogModal';
 import { useAuth } from './hooks/useAuth';
 import './index.css';
 
@@ -37,6 +38,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showGlobalHelp, setShowGlobalHelp] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(false);
 
   // Si el usuario pierde acceso al módulo abierto (logout, cambio de rol), volver al dashboard.
   useEffect(() => {
@@ -83,29 +85,40 @@ export default function App() {
 
   if (!isAuthenticated) {
     return (
-      <AnimatePresence mode="wait">
-        {publicView === 'landing' ? (
-          <motion.div
-            key="landing"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            <Landing onNavigateToLogin={() => setPublicView('login')} />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="login"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            <Login onNavigateToLanding={() => setPublicView('landing')} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <>
+        <AnimatePresence mode="wait">
+          {publicView === 'landing' ? (
+            <motion.div
+              key="landing"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+            >
+              <Landing 
+                onNavigateToLogin={() => setPublicView('login')} 
+                onOpenChangelog={() => setShowChangelog(true)}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="login"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+            >
+              <Login onNavigateToLanding={() => setPublicView('landing')} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal Global de Registro de Cambios (Changelog) */}
+        <ChangelogModal 
+          isOpen={showChangelog} 
+          onClose={() => setShowChangelog(false)} 
+        />
+      </>
     );
   }
 
@@ -137,6 +150,7 @@ export default function App() {
         hasModule={hasModule}
         isMobileOpen={isMobileOpen}
         onCloseMobile={() => setIsMobileOpen(false)}
+        onOpenChangelog={() => setShowChangelog(true)}
       />
 
       <main className="main-content">
@@ -146,6 +160,7 @@ export default function App() {
           isMobileOpen={isMobileOpen}
           onToggleMobileMenu={() => setIsMobileOpen(!isMobileOpen)}
           onOpenHelp={() => setShowGlobalHelp(true)}
+          onOpenChangelog={() => setShowChangelog(true)}
         />
 
         <div className="page-container">
@@ -168,6 +183,12 @@ export default function App() {
         isOpen={showGlobalHelp} 
         onClose={() => setShowGlobalHelp(false)} 
         initialModule={activeTab === 'catalogs' ? 'catalogs' : (activeTab === 'inventory' ? 'inventory' : (activeTab === 'schedule' ? 'schedule' : (activeTab === 'assets' ? 'assets' : 'workOrders')))} 
+      />
+
+      {/* Modal Global de Registro de Cambios (Changelog & Pull Requests) */}
+      <ChangelogModal 
+        isOpen={showChangelog} 
+        onClose={() => setShowChangelog(false)} 
       />
     </div>
   );

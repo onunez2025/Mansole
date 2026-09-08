@@ -3,11 +3,51 @@
  * Cada entrada documenta el PR asociado, fecha, resumen ejecutivo y detalle de cambios por categoría.
  */
 
-export const CURRENT_VERSION = 'v2.6.0';
+export const CURRENT_VERSION = 'v2.7.0';
 export const LAST_RELEASE_DATE = '08 de Septiembre, 2026';
 export const GITHUB_REPO_URL = 'https://github.com/onunez2025/Mansole';
 
 export const CHANGELOG_DATA = [
+  {
+    version: 'v2.7.0',
+    prNumber: 25,
+    prTitle: 'feat(ai): copiloto interactivo Mansito con RAG en Azure SQL y DeepSeek V4 Flash para consultas globales',
+    prUrl: `${GITHUB_REPO_URL}/pull/25`,
+    commitHash: 'pending',
+    commitUrl: `${GITHUB_REPO_URL}/commits/master`,
+    date: '08 de Septiembre, 2026',
+    isLatest: true,
+    tag: 'Actual / Major AI',
+    tagColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    summary: 'Lanzamiento del copiloto y asistente de inteligencia artificial "Mansito", ubicado en la esquina inferior derecha, capaz de responder cualquier consulta sobre indicadores, usuarios, activos, repuestos y cronogramas de toda la plataforma.',
+    highlights: [
+      'Asistente de IA "Mansito" flotante y reactivo en la esquina inferior derecha.',
+      'Consultas en lenguaje natural con RAG en vivo conectado a las tablas de Azure SQL (MANSOLE).',
+      'Reporte conversacional de indicadores (KPIs), disponibilidad, MTBF, MTTR y paradas acumuladas.',
+      'Auditoría y consulta de actividades, horas trabajadas y tareas por técnico o usuario específico.',
+      'Diagnóstico de máquinas críticas, repuestos con stock bajo y piezas canibalizadas a $0 USD.'
+    ],
+    changes: [
+      {
+        type: 'ai',
+        scope: 'Copiloto Mansito',
+        title: 'Asistente IA permanente para toda la plataforma',
+        desc: 'Widget flotante accesible desde cualquier módulo con memoria conversacional, sugerencias rápidas y renderizado Markdown.'
+      },
+      {
+        type: 'feat',
+        scope: 'Backend RAG',
+        title: 'Endpoint POST /api/ai/mansito',
+        desc: 'Recuperación de contexto multi-tabla (KPIs, Assets, Users, SpareParts, Schedule, WorkOrders) e inferencia con DeepSeek V4 Flash.'
+      },
+      {
+        type: 'perf',
+        scope: 'Resiliencia',
+        title: 'Motor Experto de Reglas Offline (Fallback)',
+        desc: 'Garantiza respuestas inmediatas incluso en caso de desconexión temporal de la API externa de IA.'
+      }
+    ]
+  },
   {
     version: 'v2.6.0',
     prNumber: 24,
@@ -16,8 +56,8 @@ export const CHANGELOG_DATA = [
     commitHash: '68433db',
     commitUrl: `${GITHUB_REPO_URL}/commit/68433db`,
     date: '08 de Septiembre, 2026',
-    isLatest: true,
-    tag: 'Actual / Estable',
+    isLatest: false,
+    tag: 'Estable',
     tagColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     summary: 'Incorporación de filtrado temporal avanzado en el Dashboard de KPIs, Centro de Notificaciones interactivo en Navbar y visor centralizado de versiones y Pull Requests.',
     highlights: [

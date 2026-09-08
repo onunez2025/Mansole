@@ -15,6 +15,7 @@ import Login from './pages/Login';
 import AccessDeniedPage from './pages/AccessDeniedPage';
 import HelpModal from './components/HelpModal';
 import ChangelogModal from './components/ChangelogModal';
+import MansitoAssistant from './components/MansitoAssistant';
 import { useAuth } from './hooks/useAuth';
 import './index.css';
 
@@ -190,6 +191,9 @@ export default function App() {
         isOpen={showChangelog} 
         onClose={() => setShowChangelog(false)} 
       />
+
+      {/* Asistente Flotante de IA de Planta: Mansito */}
+      <MansitoAssistant currentUser={user} />
     </div>
   );
 }

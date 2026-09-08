@@ -195,6 +195,8 @@ export const api = {
   // === IA ===
   diagnoseWithAI: async (assetName, symptom, assetCode) =>
     await client.post('/ai/diagnose', { assetName, symptom, assetCode }),
+  askMansito: async (question, history = [], currentUser = null) =>
+    await client.post('/ai/mansito', { question, history, currentUser }),
 
   // === Catálogos Maestros (CRUD) ===
   getCatalogAreas:        async () => await client.get('/catalogs/areas'),

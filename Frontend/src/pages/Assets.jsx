@@ -1,6 +1,10 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { api } from '../services/api';
-import { Wrench, FileText, Plus, CheckCircle2, AlertOctagon, Layers, Edit3, Trash2, Search } from 'lucide-react';
+import { 
+  Wrench, FileText, Plus, CheckCircle2, AlertOctagon, Layers, 
+  Edit3, Trash2, Search, UploadCloud, Download, ExternalLink, 
+  Paperclip, Loader2, Image as ImageIcon 
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { TableSkeleton } from '../components/UI';
 import ModalPortal from '../components/UI/ModalPortal';
@@ -18,6 +22,12 @@ export default function Assets({ currentUser }) {
   const [editingAsset, setEditingAsset] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [newAsset, setNewAsset] = useState({ code: '', name: '', brand: '', model: '', serialNumber: '', status: 'Operativo', areaId: '', categoryId: '' });
+
+  // Estado de Archivos Adjuntos (Azure Blob Storage)
+  const [attachments, setAttachments] = useState([]);
+  const [loadingAttachments, setLoadingAttachments] = useState(false);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const fileInputRef = useRef(null);
 
   const loadAssets = (silent = false) => {
     if (!silent && !cachedAssetsList) setLoading(true);
@@ -57,7 +67,64 @@ export default function Assets({ currentUser }) {
 
   useEffect(() => { loadAssets(); }, []);
 
+  // Consultar adjuntos reales de Azure Blob Storage al seleccionar un activo
+  const loadAttachments = (assetId) => {
+    setLoadingAttachments(true);
+    api.getAttachments('Asset', assetId)
+      .then(res => setAttachments(Array.isArray(res.data) ? res.data : []))
+      .catch(() => setAttachments([]))
+      .finally(() => setLoadingAttachments(false));
+  };
+
+  useEffect(() => {
+    if (selectedAsset?.id) {
+      loadAttachments(selectedAsset.id);
+    } else {
+      setAttachments([]);
+    }
+  }, [selectedAsset]);
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedAsset) return;
+
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('El archivo excede los 50MB permitidos');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('entityType', 'Asset');
+    formData.append('entityId', selectedAsset.id);
+
+    setUploadingAttachment(true);
+    const toastId = toast.loading(`Subiendo "${file.name}" a Azure Blob Storage...`);
+    try {
+      await api.uploadAttachment(formData);
+      toast.success(`Archivo guardado exitosamente en Azure Blob Storage`, { id: toastId });
+      loadAttachments(selectedAsset.id);
+    } catch (err) {
+      toast.error(`Error al subir a Azure: ${err.response?.data?.details || err.message}`, { id: toastId });
+    } finally {
+      setUploadingAttachment(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId, fileName) => {
+    if (!window.confirm(`¿Deseas desvincular el archivo "${fileName}"?`)) return;
+    try {
+      await api.deleteAttachment(attachmentId);
+      toast.success('Archivo desvinculado de la máquina');
+      loadAttachments(selectedAsset.id);
+    } catch (err) {
+      toast.error('Error al desvincular archivo');
+    }
+  };
+
   const openCreate = () => {
+
     setEditingAsset(null);
     setNewAsset({ code: '', name: '', brand: '', model: '', serialNumber: '', status: 'Operativo', areaId: areas[0]?.Id || '', categoryId: categories[0]?.Id || '' });
     setShowCreateModal(true);
@@ -220,17 +287,120 @@ export default function Assets({ currentUser }) {
                   <div><span className="text-slate-500">Estado Actual:</span> <span className="badge badge-success ml-1">{selectedAsset.status}</span></div>
                 </div>
               </div>
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2.5 flex items-center gap-2">
-                <Layers size={15} className="text-slate-500" /> Archivos y Planos Adjuntos (Azure Blob Storage)
-              </h4>
-              <div className="space-y-2 mb-4">
-                {[`Manual_Operacion_${selectedAsset.brand || 'Equipo'}.pdf`, `Plano_LOTO_${selectedAsset.code}.dwg`].map(f => (
-                  <div key={f} className="flex items-center justify-between p-2.5 sm:p-3 bg-white rounded-lg border border-slate-200 text-xs gap-2">
-                    <span className="font-medium text-slate-800 truncate">📄 {f}</span>
-                    <button className="btn btn-secondary text-xs py-1 px-2.5 flex-shrink-0">Descargar Blob</button>
-                  </div>
-                ))}
+              {/* Sección de Documentos y Planos en Azure Blob Storage */}
+              <div className="flex items-center justify-between mb-2.5">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers size={14} className="text-blue-600" />
+                  <span>Planos & Manuales (Azure Blob Storage)</span>
+                  {attachments.length > 0 && (
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200 ml-1">
+                      {attachments.length}
+                    </span>
+                  )}
+                </h4>
+
+                <div>
+                  <button 
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()} 
+                    disabled={uploadingAttachment} 
+                    className="btn btn-primary text-xs py-1 px-2.5 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {uploadingAttachment ? (
+                      <>
+                        <Loader2 size={13} className="animate-spin" />
+                        <span>Subiendo a Azure...</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud size={13} />
+                        <span>Subir Archivo</span>
+                      </>
+                    )}
+                  </button>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleFileUpload} 
+                    style={{ display: 'none' }} 
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.dwg,.dxf,.png,.jpg,.jpeg,.webp" 
+                  />
+                </div>
               </div>
+
+              {loadingAttachments ? (
+                <div className="p-4 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-200 mb-4">
+                  <Loader2 size={16} className="animate-spin mx-auto mb-1 text-slate-400" />
+                  <span>Consultando Azure Blob Storage...</span>
+                </div>
+              ) : attachments.length === 0 ? (
+                <div className="p-4 text-center bg-slate-50/80 rounded-xl border border-dashed border-slate-300 text-xs text-slate-500 mb-4">
+                  <Paperclip size={20} className="mx-auto mb-1.5 text-slate-400 opacity-60" />
+                  <p className="font-semibold text-slate-700 mb-0.5">Sin archivos adjuntos aún</p>
+                  <p className="text-[11px] text-slate-500 max-w-sm mx-auto mb-2">
+                    Puedes adjuntar manuales de operación en PDF, planos mecánicos DWG o fotos de placa directamente a Azure Blob Storage.
+                  </p>
+                  <button 
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()} 
+                    className="text-xs font-bold text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                  >
+                    + Adjuntar primer archivo a Azure
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2 mb-4 max-h-52 overflow-y-auto pr-1">
+                  {attachments.map(att => {
+                    const ext = att.fileName?.split('.').pop()?.toLowerCase() || '';
+                    const isPdf = ext === 'pdf';
+                    const isImg = ['png', 'jpg', 'jpeg', 'webp'].includes(ext);
+                    const isCad = ['dwg', 'dxf'].includes(ext);
+
+                    return (
+                      <div key={att.id} className="flex items-center justify-between p-2 sm:p-2.5 bg-white hover:bg-slate-50 rounded-xl border border-slate-200 text-xs gap-2 transition-colors">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                            isPdf ? 'bg-red-50 text-red-600' : (isImg ? 'bg-blue-50 text-blue-600' : (isCad ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-600'))
+                          }`}>
+                            {isPdf ? <FileText size={14} /> : (isImg ? <ImageIcon size={14} /> : (isCad ? <Layers size={14} /> : <Paperclip size={14} />))}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="font-semibold text-slate-800 truncate block text-xs" title={att.fileName}>
+                              {att.fileName}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-mono block">
+                              {att.uploadedAt ? new Date(att.uploadedAt).toLocaleString('es-PE') : 'Azure Blob'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <a 
+                            href={att.blobUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            download={att.fileName}
+                            className="btn btn-secondary text-[11px] py-1 px-2 flex items-center gap-1 hover:text-blue-700"
+                            title="Descargar o abrir en pestaña nueva"
+                          >
+                            <ExternalLink size={12} />
+                            <span className="hidden sm:inline">Ver / Bajar</span>
+                          </a>
+                          <button 
+                            type="button"
+                            onClick={() => handleDeleteAttachment(att.id, att.fileName)} 
+                            className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                            title="Desvincular archivo"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
                 <button className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => setSelectedAsset(null)}>Cerrar</button>
                 <button className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center" onClick={() => { setSelectedAsset(null); openEdit(selectedAsset); }}>

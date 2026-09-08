@@ -213,4 +213,13 @@ export const api = {
   createCatalogCostCenter: async (data) => await client.post('/catalogs/cost-centers', data),
   updateCatalogCostCenter: async (code, data) => await client.put(`/catalogs/cost-centers/${code}`, data),
   deleteCatalogCostCenter: async (code) => await client.delete(`/catalogs/cost-centers/${code}`),
+
+  // === Adjuntos / Documentos en Azure Blob Storage (Manuales, Planos, Evidencias) ===
+  getAttachments:   async (entityType, entityId) => await client.get(`/attachments/${entityType}/${entityId}`),
+  uploadAttachment: async (formData, onProgress) => await client.post('/attachments/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress: onProgress
+  }),
+  deleteAttachment: async (id) => await client.delete(`/attachments/${id}`),
 };
+

@@ -82,6 +82,10 @@ app.use('/api/ai',
     { method: 'POST', pattern: /^\/diagnose$/, action: 'view' }
   ]),
   require('./routes/aiRoutes'));
+
+// Gestión de Archivos y Evidencias en Azure Blob Storage (Manuales, Planos, Fotos)
+app.use('/api/attachments', require('./routes/attachmentRoutes'));
+
 const path = require('path');
 
 // Servir Frontend compilado si existe la carpeta public/dist

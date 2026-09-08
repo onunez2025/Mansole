@@ -742,31 +742,63 @@ export default function WorkOrders({ currentUser }) {
               })()}
             </div>
 
-            {/* ASISTENTE DE INTELIGENCIA ARTIFICIAL (Módulo 8) */}
+            {/* ASISTENTE DE INTELIGENCIA ARTIFICIAL (Módulo 8 con RAG e Historial de Azure SQL) */}
             <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-3 sm:p-4 mb-3 shadow-xs">
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center flex-shrink-0">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
                     <Bot size={16} />
                   </div>
                   <div className="min-w-0">
                     <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">Asistente IA Diagnóstico</h4>
-                    <span className="text-[11px] text-slate-500 hidden sm:block">Recomendaciones predictivas de averías</span>
+                    <span className="text-[11px] text-slate-500 hidden sm:block">DeepSeek V4 Flash con Histórico de Azure SQL</span>
                   </div>
                 </div>
-                {!aiDiagnosis && (
+                {!aiDiagnosis ? (
                   <button 
                     className="btn btn-primary text-xs py-1 px-2.5 flex-shrink-0 flex items-center gap-1" 
                     disabled={aiLoading}
                     onClick={() => triggerAiHelp(selectedOT.assetName, selectedOT.description, selectedOT.assetCode)}
                   >
-                    {aiLoading ? 'Analizando...' : <><Bot size={13} /><span>Consultar IA</span></>}
+                    {aiLoading ? (
+                      <span className="flex items-center gap-1">
+                        <span className="w-2.5 h-2.5 rounded-full border-2 border-white border-t-transparent animate-spin inline-block"></span>
+                        Consultando DeepSeek...
+                      </span>
+                    ) : (
+                      <><Bot size={13} /><span>Consultar IA</span></>
+                    )}
+                  </button>
+                ) : (
+                  <button 
+                    className="text-[11px] font-semibold text-indigo-700 hover:text-indigo-900 bg-indigo-100/70 hover:bg-indigo-100 px-2 py-1 rounded-md transition-colors"
+                    onClick={() => triggerAiHelp(selectedOT.assetName, selectedOT.description, selectedOT.assetCode)}
+                    disabled={aiLoading}
+                  >
+                    {aiLoading ? 'Re-analizando...' : '↻ Reconsultar IA'}
                   </button>
                 )}
               </div>
 
               {aiDiagnosis ? (
-                <div className="mt-2.5 pt-2.5 border-t border-indigo-100 text-xs space-y-2 leading-relaxed">
+                <div className="mt-2.5 pt-2.5 border-t border-indigo-100 text-xs space-y-2.5 leading-relaxed">
+                  {/* Análisis de Histórico RAG */}
+                  <div className="bg-white border border-indigo-200 rounded-lg p-2.5 shadow-2xs">
+                    <div className="flex items-center justify-between gap-1 mb-1.5 flex-wrap">
+                      <span className="text-[11px] font-bold text-indigo-950 flex items-center gap-1.5">
+                        <span>📚</span> <span>Historial de Mantenimientos Previos</span>
+                      </span>
+                      {aiDiagnosis.aiModel && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                          {aiDiagnosis.aiModel}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-700 m-0 leading-relaxed font-normal">
+                      {aiDiagnosis.historicalAnalysis || "ℹ️ No se detectaron fallas similares previas para este equipo en el historial."}
+                    </p>
+                  </div>
+
                   <div>
                     <strong className="text-red-700 block mb-0.5 font-semibold">⚠️ Posibles Causas Raíz:</strong>
                     <ul className="list-disc pl-5 text-slate-600 space-y-0.5">
@@ -783,13 +815,14 @@ export default function WorkOrders({ currentUser }) {
                       ))}
                     </ol>
                   </div>
-                  <div className="bg-amber-50 border border-amber-200 p-2 rounded-lg text-amber-800 font-medium text-[11px]">
-                    {aiDiagnosis.safetyWarning || "🚨 Aplicar protocolo de bloqueo y etiquetado LOTO antes de intervenir."}
+                  <div className="bg-amber-50 border border-amber-200 p-2 rounded-lg text-amber-800 font-medium text-[11px] flex items-start gap-1.5">
+                    <span>🛡️</span>
+                    <span>{aiDiagnosis.safetyWarning || "Aplicar protocolo de bloqueo y etiquetado LOTO antes de intervenir."}</span>
                   </div>
                 </div>
               ) : (
                 <p className="text-[11px] text-slate-500 mt-1.5 hidden sm:block m-0">
-                  Presiona el botón para analizar la avería y obtener causas probables y solución paso a paso.
+                  Presiona el botón para que DeepSeek analice el historial de fallas en Azure SQL y brinde diagnóstico predictivo y solución técnica.
                 </p>
               )}
             </div>

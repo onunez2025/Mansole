@@ -114,7 +114,10 @@ export default function App() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
             >
-              <Login onBackToLanding={() => setPublicView('landing')} />
+              <Login 
+                onBackToLanding={() => setPublicView('landing')} 
+                onNavigateToLanding={() => setPublicView('landing')} 
+              />
             </motion.div>
           )}
         </AnimatePresence>

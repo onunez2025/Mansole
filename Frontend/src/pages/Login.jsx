@@ -4,7 +4,10 @@ import { Shield, Lock, ArrowRight, AlertCircle, CheckCircle2, User, KeyRound } f
 import { useAuth } from '../hooks/useAuth';
 import IndustrialBackground from '../components/IndustrialBackground';
 
-export default function Login({ onNavigateToLanding }) {
+import { CURRENT_VERSION } from '../data/changelogData';
+
+export default function Login({ onNavigateToLanding, onBackToLanding }) {
+  const handleBack = onNavigateToLanding || onBackToLanding;
   const { login, isLoading } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -41,13 +44,13 @@ export default function Login({ onNavigateToLanding }) {
               GRUPO SOLE
             </span>
             <span className="text-xs text-cyan-400 font-semibold tracking-wide">
-              CMMS Industrial v4.2
+              CMMS Industrial {CURRENT_VERSION}
             </span>
           </div>
         </div>
 
         <button
-          onClick={onNavigateToLanding}
+          onClick={handleBack}
           className="text-xs font-semibold text-white/90 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl px-4 py-2 transition-all backdrop-blur-md shadow-sm flex items-center gap-1.5 cursor-pointer"
         >
           ← Regresar al Inicio

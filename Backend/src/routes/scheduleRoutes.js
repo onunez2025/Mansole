@@ -29,7 +29,7 @@ router.get('/', async (req, res) => {
     
     res.json(enriched);
   } catch (e) {
-    res.status(500).json({ error: 'Error cargando cronograma desde Azure SQL', details: e.message });
+    res.status(500).json({ error: 'Error cargando cronograma desde Azure SQL' });
   }
 });
 
@@ -47,7 +47,7 @@ router.put('/:id/reprogram', async (req, res) => {
 
     res.json({ message: 'Fecha de cronograma reprogramada con éxito en Azure SQL', id, newDueDate, reason });
   } catch (e) {
-    res.status(500).json({ error: 'Error al reprogramar actividad', details: e.message });
+    res.status(500).json({ error: 'Error al reprogramar actividad' });
   }
 });
 
@@ -77,7 +77,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json({ id: result.recordset[0].Id, message: 'Actividad preventiva programada en Azure SQL (MANSOLE)' });
   } catch (e) {
-    res.status(500).json({ error: 'Error al programar actividad preventiva', details: e.message });
+    res.status(500).json({ error: 'Error al programar actividad preventiva' });
   }
 });
 
@@ -90,7 +90,7 @@ router.delete('/:id', async (req, res) => {
       .query('DELETE FROM MANSOLE.AssetActivities WHERE Id = @id');
     res.json({ message: 'Entrada de cronograma eliminada de Azure SQL (MANSOLE)' });
   } catch (e) {
-    res.status(500).json({ error: 'Error al eliminar entrada de cronograma', details: e.message });
+    res.status(500).json({ error: 'Error al eliminar entrada de cronograma' });
   }
 });
 

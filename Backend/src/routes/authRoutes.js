@@ -54,8 +54,7 @@ router.post('/login', rateLimit(5, 15 * 60 * 1000), async (req, res) => {
 
     const userResult = await pool.request()
       .input('email', sql.NVarChar, targetEmail)
-      .input('rawInput', sql.NVarChar, input)
-      .query(`${USER_SELECT} WHERE LOWER(u.Email) = @email OR (LOWER(u.Email) LIKE @rawInput + '@%' AND u.RoleId = 1)`);
+      .query(`${USER_SELECT} WHERE LOWER(u.Email) = @email`);
 
     if (userResult.recordset.length === 0) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
@@ -172,7 +171,7 @@ router.get('/me', authenticateToken, async (req, res) => {
     res.json({ success: true, user: toPublicUser(row) });
   } catch (error) {
     console.error('Get me error:', error);
-    res.status(500).json({ error: 'Error al obtener usuario', details: error.message });
+    res.status(500).json({ error: 'Error al obtener usuario' });
   }
 });
 

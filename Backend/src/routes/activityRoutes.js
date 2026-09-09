@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
     const result = await request.query(query);
     res.json(result.recordset);
   } catch (e) {
-    res.status(500).json({ error: 'Error al consultar catálogo de actividades', details: e.message });
+    res.status(500).json({ error: 'Error al consultar catálogo de actividades' });
   }
 });
 
@@ -64,7 +64,7 @@ router.post('/', async (req, res) => {
     }
     res.status(201).json({ id: newId, message: 'Actividad registrada correctamente en Azure SQL' });
   } catch (e) {
-    res.status(500).json({ error: 'Error al insertar actividad maestra', details: e.message });
+    res.status(500).json({ error: 'Error al insertar actividad maestra' });
   }
 });
 
@@ -86,7 +86,7 @@ router.put('/:id', async (req, res) => {
       `);
     res.json({ message: 'Actividad actualizada' });
   } catch (e) {
-    res.status(500).json({ error: 'Error al actualizar actividad', details: e.message });
+    res.status(500).json({ error: 'Error al actualizar actividad' });
   }
 });
 
@@ -99,7 +99,7 @@ router.delete('/:id', async (req, res) => {
       .query('DELETE FROM MANSOLE.Activities WHERE Id = @id');
     res.json({ message: 'Actividad eliminada de Azure SQL (MANSOLE)' });
   } catch (e) {
-    res.status(500).json({ error: 'Error al eliminar actividad', details: e.message });
+    res.status(500).json({ error: 'Error al eliminar actividad' });
   }
 });
 

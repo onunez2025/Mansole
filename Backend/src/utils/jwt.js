@@ -76,6 +76,5 @@ module.exports = {
   generateRefreshToken,
   verifyToken,
   decodeToken,
-  generateTokens,
-  JWT_SECRET
+  generateTokens
 };

@@ -227,7 +227,7 @@ router.get('/maintenance-history', async (req, res) => {
     });
   } catch (err) {
     console.error('Error generando reporte de historial de mantenimiento:', err);
-    res.status(500).json({ error: 'Error al consultar historial de mantenimiento', details: err.message });
+    res.status(500).json({ error: 'Error al consultar historial de mantenimiento' });
   }
 });
 
@@ -336,7 +336,7 @@ router.get('/work-order/:id', async (req, res) => {
     });
   } catch (err) {
     console.error('Error obteniendo detalle de OT para reporte:', err);
-    res.status(500).json({ error: 'Error al consultar datos de la OT', details: err.message });
+    res.status(500).json({ error: 'Error al consultar datos de la OT' });
   }
 });
 

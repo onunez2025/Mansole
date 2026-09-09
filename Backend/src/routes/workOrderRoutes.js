@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
     res.json(result.recordset);
   } catch (e) {
     console.error('Error fetching work orders:', e.message);
-    res.status(500).json({ error: 'Error consultando OTs', details: e.message });
+    res.status(500).json({ error: 'Error consultando OTs' });
   }
 });
 
@@ -110,7 +110,7 @@ router.get('/:id', async (req, res) => {
     res.json(ot);
   } catch (e) {
     console.error('Error obteniendo OT:', e);
-    res.status(500).json({ error: 'Error obteniendo OT', details: e.message });
+    res.status(500).json({ error: 'Error obteniendo OT' });
   }
 });
 
@@ -133,7 +133,7 @@ router.get('/:id/tasks', async (req, res) => {
       .query(query);
     res.json(result.recordset);
   } catch (err) {
-    res.status(500).json({ error: 'Error obteniendo tareas de la OT', details: err.message });
+    res.status(500).json({ error: 'Error obteniendo tareas de la OT' });
   }
 });
 
@@ -180,7 +180,7 @@ router.post('/:id/tasks', async (req, res) => {
     res.status(201).json({ id: result.recordset[0].Id, message: 'Tarea agregada a la OT' });
   } catch (err) {
     console.error('Error agregando tarea a la OT:', err);
-    res.status(500).json({ error: 'Error al agregar tarea', details: err.message });
+    res.status(500).json({ error: 'Error al agregar tarea' });
   }
 });
 
@@ -209,7 +209,7 @@ router.put('/tasks/:taskId/start', async (req, res) => {
 
     res.json({ message: 'Tarea iniciada. Cronómetro en marcha.' });
   } catch (err) {
-    res.status(500).json({ error: 'Error al iniciar tarea', details: err.message });
+    res.status(500).json({ error: 'Error al iniciar tarea' });
   }
 });
 
@@ -257,7 +257,7 @@ router.put('/tasks/:taskId/finish', async (req, res) => {
 
     res.json({ message: 'Tarea completada. Tiempo registrado con éxito.' });
   } catch (err) {
-    res.status(500).json({ error: 'Error al finalizar tarea', details: err.message });
+    res.status(500).json({ error: 'Error al finalizar tarea' });
   }
 });
 
@@ -302,7 +302,7 @@ router.delete('/tasks/:taskId', async (req, res) => {
       .query(query);
     res.json({ message: 'Tarea eliminada de la OT' });
   } catch (err) {
-    res.status(500).json({ error: 'Error al eliminar tarea', details: err.message });
+    res.status(500).json({ error: 'Error al eliminar tarea' });
   }
 });
 
@@ -347,7 +347,7 @@ router.get('/:id/spareparts', async (req, res) => {
     res.json(parts);
   } catch (err) {
     console.error('Error obteniendo repuestos de la OT:', err);
-    res.status(500).json({ error: 'Error obteniendo repuestos de la OT', details: err.message });
+    res.status(500).json({ error: 'Error obteniendo repuestos de la OT' });
   }
 });
 
@@ -480,7 +480,7 @@ router.post('/tasks/:taskId/spareparts', async (req, res) => {
     });
   } catch (err) {
     console.error('Error asignando repuesto a la tarea:', err);
-    res.status(500).json({ error: 'Error al asignar repuesto a la tarea', details: err.message });
+    res.status(500).json({ error: 'Error al asignar repuesto a la tarea' });
   }
 });
 
@@ -556,7 +556,7 @@ router.delete('/spareparts/:id', async (req, res) => {
     res.json({ message: `Repuesto ${SparePartCode || ''} devuelto al stock del almacén con éxito.` });
   } catch (err) {
     console.error('Error eliminando repuesto consumido:', err);
-    res.status(500).json({ error: 'Error al eliminar repuesto de la OT', details: err.message });
+    res.status(500).json({ error: 'Error al eliminar repuesto de la OT' });
   }
 });
 
@@ -567,9 +567,10 @@ router.post('/', async (req, res) => {
   try {
     const pool = await getDbConnection();
     
+    const LABOR_RATE = parseFloat(process.env.LABOR_RATE_PER_HOUR || '30');
     let labor = 0;
     if (Array.isArray(technicians)) {
-      technicians.forEach(t => labor += (parseFloat(t.hours || 0) * 30)); // $30/hora estándar
+      technicians.forEach(t => labor += (parseFloat(t.hours || 0) * LABOR_RATE));
     }
     let partsCost = 0;
     if (Array.isArray(spareParts)) {
@@ -613,7 +614,7 @@ router.post('/', async (req, res) => {
     res.status(201).json({ id: insertedId, code, message: 'Orden de trabajo creada con éxito en Azure SQL' });
   } catch (error) {
     console.error('Error insertando OT:', error);
-    res.status(500).json({ error: 'Error al crear la OT', details: error.message });
+    res.status(500).json({ error: 'Error al crear la OT' });
   }
 });
 
@@ -645,7 +646,7 @@ router.put('/:id/status', async (req, res) => {
     await request.query(query);
     res.json({ message: 'OT actualizada con éxito en Azure SQL' });
   } catch(e) {
-    res.status(500).json({ error: 'Error actualizando OT', details: e.message });
+    res.status(500).json({ error: 'Error actualizando OT' });
   }
 });
 
@@ -715,7 +716,7 @@ router.put('/:id/close', async (req, res) => {
     res.json({ message: `Orden de Trabajo ${ot.Code} cerrada y liquidada exitosamente.`, status: 'Cerrada' });
   } catch (err) {
     console.error('Error cerrando OT:', err);
-    res.status(500).json({ error: 'Error al cerrar la Orden de Trabajo', details: err.message });
+    res.status(500).json({ error: 'Error al cerrar la Orden de Trabajo' });
   }
 });
 
@@ -807,7 +808,7 @@ router.get('/:id/pdf', async (req, res) => {
     doc.end();
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: 'Error generando PDF desde Azure SQL', details: e.message });
+    res.status(500).json({ error: 'Error generando PDF desde Azure SQL' });
   }
 });
 

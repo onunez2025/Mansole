@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
     const result = await pool.request().query('SELECT * FROM MANSOLE.SpareParts ORDER BY Name');
     res.json(result.recordset.map((r, idx) => normalizeItem(r, idx)));
   } catch (e) {
-    res.status(500).json({ error: 'Error cargando inventario desde SQL', details: e.message });
+    res.status(500).json({ error: 'Error cargando inventario desde SQL' });
   }
 });
 
@@ -55,7 +55,7 @@ router.get('/transactions', async (req, res) => {
     const result = await pool.request().query(query);
     res.json(result.recordset.map((r, idx) => normalizeItem(r, idx)));
   } catch (e) {
-    res.status(500).json({ error: 'Error cargando historial de transacciones desde SQL', details: e.message });
+    res.status(500).json({ error: 'Error cargando historial de transacciones desde SQL' });
   }
 });
 
@@ -76,7 +76,7 @@ router.get('/entries', async (req, res) => {
     const result = await pool.request().query(query);
     res.json(result.recordset.map((r, idx) => normalizeItem(r, idx)));
   } catch (e) {
-    res.status(500).json({ error: 'Error cargando entradas desde SQL', details: e.message });
+    res.status(500).json({ error: 'Error cargando entradas desde SQL' });
   }
 });
 
@@ -97,7 +97,7 @@ router.get('/exits', async (req, res) => {
     const result = await pool.request().query(query);
     res.json(result.recordset.map((r, idx) => normalizeItem(r, idx)));
   } catch (e) {
-    res.status(500).json({ error: 'Error cargando salidas desde SQL', details: e.message });
+    res.status(500).json({ error: 'Error cargando salidas desde SQL' });
   }
 });
 
@@ -174,7 +174,7 @@ router.post('/transaction', async (req, res) => {
     });
   } catch (e) {
     console.error('Error insertando inventario:', e.message);
-    res.status(500).json({ error: 'Error registrando transacción de inventario', details: e.message });
+    res.status(500).json({ error: 'Error registrando transacción de inventario' });
   }
 });
 
@@ -201,7 +201,7 @@ router.post('/', async (req, res) => {
     
     res.status(201).json({ id: pRes.recordset[0].Id, message: 'Repuesto registrado en Azure SQL' });
   } catch (e) {
-    res.status(500).json({ error: 'Error registrando repuesto', details: e.message });
+    res.status(500).json({ error: 'Error registrando repuesto' });
   }
 });
 
@@ -228,7 +228,7 @@ router.put('/:id', async (req, res) => {
       `);
     res.json({ message: 'Repuesto actualizado en Azure SQL' });
   } catch (e) {
-    res.status(500).json({ error: 'Error al actualizar repuesto', details: e.message });
+    res.status(500).json({ error: 'Error al actualizar repuesto' });
   }
 });
 
@@ -241,7 +241,7 @@ router.delete('/:id', async (req, res) => {
       .query('DELETE FROM MANSOLE.SpareParts WHERE Id = @id');
     res.json({ message: 'Repuesto eliminado de Azure SQL (MANSOLE)' });
   } catch (e) {
-    res.status(500).json({ error: 'Error al eliminar repuesto', details: e.message });
+    res.status(500).json({ error: 'Error al eliminar repuesto' });
   }
 });
 

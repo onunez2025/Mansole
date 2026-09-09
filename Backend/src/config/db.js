@@ -39,7 +39,12 @@ async function getDbConnection() {
     return poolPromise;
   }
   try {
-    poolPromise = new sql.ConnectionPool(dbConfig).connect();
+    const newPool = new sql.ConnectionPool(dbConfig);
+    newPool.on('error', (err) => {
+      console.error('❌ Error en pool de Azure SQL (reconectando):', err.message);
+      poolPromise = null;
+    });
+    poolPromise = newPool.connect();
     const pool = await poolPromise;
     console.log(`✅ Conexión a Azure SQL Server (${dbConfig.database} / MANSOLE) establecida exitosamente.`);
     return pool;
@@ -52,6 +57,5 @@ async function getDbConnection() {
 
 module.exports = {
   sql,
-  getDbConnection,
-  dbConfig
+  getDbConnection
 };

@@ -19,7 +19,7 @@ router.get('/areas', async (req, res) => {
     res.json(result.recordset);
   } catch (err) {
     console.error('Error GET /catalogs/areas:', err);
-    res.status(500).json({ error: 'Error al obtener áreas', details: err.message });
+    res.status(500).json({ error: 'Error al obtener áreas' });
   }
 });
 
@@ -44,7 +44,7 @@ router.post('/areas', async (req, res) => {
     res.status(201).json({ id: result.recordset[0].Id, message: 'Área creada con éxito' });
   } catch (err) {
     console.error('Error POST /catalogs/areas:', err);
-    res.status(500).json({ error: 'Error al crear área', details: err.message });
+    res.status(500).json({ error: 'Error al crear área' });
   }
 });
 
@@ -70,7 +70,7 @@ router.put('/areas/:id', async (req, res) => {
     res.json({ message: 'Área actualizada con éxito' });
   } catch (err) {
     console.error('Error PUT /catalogs/areas/:id:', err);
-    res.status(500).json({ error: 'Error al actualizar área', details: err.message });
+    res.status(500).json({ error: 'Error al actualizar área' });
   }
 });
 
@@ -96,7 +96,7 @@ router.delete('/areas/:id', async (req, res) => {
     res.json({ message: 'Área eliminada con éxito' });
   } catch (err) {
     console.error('Error DELETE /catalogs/areas/:id:', err);
-    res.status(500).json({ error: 'Error al eliminar área', details: err.message });
+    res.status(500).json({ error: 'Error al eliminar área' });
   }
 });
 
@@ -117,7 +117,7 @@ router.get('/categories', async (req, res) => {
     res.json(result.recordset);
   } catch (err) {
     console.error('Error GET /catalogs/categories:', err);
-    res.status(500).json({ error: 'Error al obtener categorías', details: err.message });
+    res.status(500).json({ error: 'Error al obtener categorías' });
   }
 });
 
@@ -140,7 +140,7 @@ router.post('/categories', async (req, res) => {
     res.status(201).json({ id: result.recordset[0].Id, message: 'Categoría creada con éxito' });
   } catch (err) {
     console.error('Error POST /catalogs/categories:', err);
-    res.status(500).json({ error: 'Error al crear categoría', details: err.message });
+    res.status(500).json({ error: 'Error al crear categoría' });
   }
 });
 
@@ -165,7 +165,7 @@ router.put('/categories/:id', async (req, res) => {
     res.json({ message: 'Categoría actualizada con éxito' });
   } catch (err) {
     console.error('Error PUT /catalogs/categories/:id:', err);
-    res.status(500).json({ error: 'Error al actualizar categoría', details: err.message });
+    res.status(500).json({ error: 'Error al actualizar categoría' });
   }
 });
 
@@ -191,7 +191,7 @@ router.delete('/categories/:id', async (req, res) => {
     res.json({ message: 'Categoría eliminada con éxito' });
   } catch (err) {
     console.error('Error DELETE /catalogs/categories/:id:', err);
-    res.status(500).json({ error: 'Error al eliminar categoría', details: err.message });
+    res.status(500).json({ error: 'Error al eliminar categoría' });
   }
 });
 
@@ -211,7 +211,7 @@ router.get('/cost-centers', async (req, res) => {
     res.json(result.recordset);
   } catch (err) {
     console.error('Error GET /catalogs/cost-centers:', err);
-    res.status(500).json({ error: 'Error al obtener centros de costo', details: err.message });
+    res.status(500).json({ error: 'Error al obtener centros de costo' });
   }
 });
 
@@ -237,7 +237,7 @@ router.post('/cost-centers', async (req, res) => {
     res.status(201).json({ message: 'Centro de costo registrado con éxito' });
   } catch (err) {
     console.error('Error POST /catalogs/cost-centers:', err);
-    res.status(500).json({ error: 'Error al registrar centro de costo', details: err.message });
+    res.status(500).json({ error: 'Error al registrar centro de costo' });
   }
 });
 
@@ -266,7 +266,7 @@ router.put('/cost-centers/:code', async (req, res) => {
     res.json({ message: 'Centro de costo actualizado con éxito' });
   } catch (err) {
     console.error('Error PUT /catalogs/cost-centers/:code:', err);
-    res.status(500).json({ error: 'Error al actualizar centro de costo', details: err.message });
+    res.status(500).json({ error: 'Error al actualizar centro de costo' });
   }
 });
 
@@ -281,7 +281,7 @@ router.delete('/cost-centers/:code', async (req, res) => {
     res.json({ message: 'Centro de costo eliminado con éxito' });
   } catch (err) {
     console.error('Error DELETE /catalogs/cost-centers/:code:', err);
-    res.status(500).json({ error: 'Error al eliminar centro de costo', details: err.message });
+    res.status(500).json({ error: 'Error al eliminar centro de costo' });
   }
 });
 

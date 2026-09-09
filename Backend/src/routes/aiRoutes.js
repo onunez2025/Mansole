@@ -11,12 +11,14 @@ if (dns.setDefaultResultOrder) {
 const { getDbConnection, sql } = require('../config/db');
 const { SCHEMA_TABLES, queryDatabaseForMansito } = require('../services/mansitoKnowledgeService');
 
-// Credenciales de IA gestionadas de forma segura desde variables de entorno (.env) con respaldo decodificado
-const DEFAULT_DEEPSEEK_KEY = Buffer.from('c2stNDJhYzQyZjk5MTBlNDZlMjhhYjBlZDVhMWMxMDYyMjQ=', 'base64').toString('utf8');
-const DEFAULT_NVIDIA_KEY = Buffer.from('bnZhcGktZk8yc3hvNkNGVGsxU0QxaDdJeXZ5MDFlS3NEZEZQQ3E2Skl1dHFlMGxTb096cjd1TUNJU1dtVHB6ZUdjVG9pOA==', 'base64').toString('utf8');
-
-const getDeepSeekApiKey = () => (process.env.DEEPSEEK_API_KEY || DEFAULT_DEEPSEEK_KEY).trim();
-const getNvidiaApiKey = () => (process.env.NVIDIA_API_KEY || DEFAULT_NVIDIA_KEY).trim();
+const getDeepSeekApiKey = () => {
+  if (!process.env.DEEPSEEK_API_KEY) throw new Error('DEEPSEEK_API_KEY no configurada en .env');
+  return process.env.DEEPSEEK_API_KEY.trim();
+};
+const getNvidiaApiKey = () => {
+  if (!process.env.NVIDIA_API_KEY) throw new Error('NVIDIA_API_KEY no configurada en .env');
+  return process.env.NVIDIA_API_KEY.trim();
+};
 
 
 

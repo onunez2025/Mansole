@@ -4,10 +4,26 @@ const multer = require('multer');
 const { getDbConnection, sql } = require('../config/db');
 const { uploadToBlob } = require('../services/blobService');
 
-// Configuración de Multer para carga en memoria (máximo 50MB por archivo)
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain'
+]);
+
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 } // 50 MB
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Tipo de archivo no permitido: ${file.mimetype}`));
+    }
+  }
 });
 
 /**
@@ -75,8 +91,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
   } catch (error) {
     console.error('Error al subir archivo a Azure Blob Storage:', error);
     res.status(500).json({ 
-      error: 'Error al subir archivo a Azure Blob Storage', 
-      details: error.message 
+      error: 'Error al subir archivo a Azure Blob Storage' 
     });
   }
 });
@@ -122,7 +137,7 @@ router.get('/:entityType/:entityId', async (req, res) => {
     res.json(attachments);
   } catch (error) {
     console.error('Error al consultar adjuntos:', error);
-    res.status(500).json({ error: 'Error al consultar adjuntos en BD', details: error.message });
+    res.status(500).json({ error: 'Error al consultar adjuntos en BD' });
   }
 });
 
@@ -141,7 +156,7 @@ router.delete('/:id', async (req, res) => {
     res.json({ message: 'Adjunto desvinculado exitosamente de la base de datos' });
   } catch (error) {
     console.error('Error al eliminar adjunto:', error);
-    res.status(500).json({ error: 'Error al eliminar adjunto', details: error.message });
+    res.status(500).json({ error: 'Error al eliminar adjunto' });
   }
 });
 

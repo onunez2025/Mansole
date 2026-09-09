@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
     res.json(result.recordset);
   } catch (e) {
     console.error('Error GET assets:', e.message);
-    res.status(500).json({ error: 'Error de conexión a la Base de Datos', details: e.message });
+    res.status(500).json({ error: 'Error de conexión a la Base de Datos' });
   }
 });
 
@@ -28,7 +28,7 @@ router.get('/areas', async (req, res) => {
     const result = await pool.request().query('SELECT * FROM MANSOLE.Areas ORDER BY CostCenterCode');
     res.json(result.recordset);
   } catch (e) {
-    res.status(500).json({ error: 'Error al cargar áreas', details: e.message });
+    res.status(500).json({ error: 'Error al cargar áreas' });
   }
 });
 
@@ -39,7 +39,7 @@ router.get('/categories', async (req, res) => {
     const result = await pool.request().query('SELECT * FROM MANSOLE.AssetCategories ORDER BY Name');
     res.json(result.recordset);
   } catch (e) {
-    res.status(500).json({ error: 'Error al cargar categorías', details: e.message });
+    res.status(500).json({ error: 'Error al cargar categorías' });
   }
 });
 
@@ -69,7 +69,7 @@ router.post('/', async (req, res) => {
     res.status(201).json({ id: result.recordset[0].Id, code, message: 'Activo registrado exitosamente en Azure SQL' });
   } catch (e) {
     console.error('Error POST asset:', e.message);
-    res.status(500).json({ error: 'Error al insertar activo', details: e.message });
+    res.status(500).json({ error: 'Error al insertar activo' });
   }
 });
 
@@ -96,7 +96,7 @@ router.put('/:id', async (req, res) => {
       `);
     res.json({ message: 'Activo actualizado en Azure SQL (MANSOLE)' });
   } catch (e) {
-    res.status(500).json({ error: 'Error al actualizar activo', details: e.message });
+    res.status(500).json({ error: 'Error al actualizar activo' });
   }
 });
 
@@ -111,7 +111,7 @@ router.put('/:id/status', async (req, res) => {
       .query('UPDATE MANSOLE.Assets SET Status = @status WHERE Id = @id');
     res.json({ message: 'Estado actualizado en Azure SQL Server (MANSOLE)' });
   } catch (e) {
-    res.status(500).json({ error: 'Error al actualizar estado', details: e.message });
+    res.status(500).json({ error: 'Error al actualizar estado' });
   }
 });
 
@@ -124,7 +124,7 @@ router.delete('/:id', async (req, res) => {
       .query('DELETE FROM MANSOLE.Assets WHERE Id = @id');
     res.json({ message: 'Activo eliminado de Azure SQL (MANSOLE)' });
   } catch (e) {
-    res.status(500).json({ error: 'Error al eliminar activo', details: e.message });
+    res.status(500).json({ error: 'Error al eliminar activo' });
   }
 });
 

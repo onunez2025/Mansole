@@ -13,7 +13,11 @@ app.set('trust proxy', true);
 const PORT = process.env.PORT || 5000;
 
 // Middlewares globales
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -92,7 +96,7 @@ app.use('/api/ai',
 
 
 // Gestión de Archivos y Evidencias en Azure Blob Storage (Manuales, Planos, Fotos)
-app.use('/api/attachments', require('./routes/attachmentRoutes'));
+app.use('/api/attachments', authenticateToken, require('./routes/attachmentRoutes'));
 
 const path = require('path');
 
@@ -117,7 +121,7 @@ app.use((req, res, next) => {
 // Manejo global de errores 500
 app.use((err, req, res, next) => {
   console.error('Error no controlado:', err.stack);
-  res.status(500).json({ error: 'Error interno del servidor (500)', details: err.message });
+  res.status(500).json({ error: 'Error interno del servidor (500)' });
 });
 
 // Arrancar el servidor y cron de mantenimiento preventivo

@@ -6,7 +6,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const { getDbConnection } = require('./config/db');
-const { requireModule } = require('./middleware/authMiddleware');
+const { requireModule, authenticateToken } = require('./middleware/authMiddleware');
 
 const app = express();
 app.set('trust proxy', true);
@@ -77,7 +77,7 @@ app.use('/api/users', require('./routes/usersRoutes'));
 app.use('/api/kpi', requireModule('reports'), require('./routes/kpiRoutes'));
 
 // Módulo de Reportes: Historial ConsuMan y Fichas Técnicas de OT
-app.use('/api/reports', require('./routes/reportsRoutes'));
+app.use('/api/reports', authenticateToken, require('./routes/reportsRoutes'));
 
 // Catálogos Maestros de Configuración (Áreas, CECOs, Categorías)
 app.use('/api/catalogs', requireModule('assets'), require('./routes/catalogRoutes'));

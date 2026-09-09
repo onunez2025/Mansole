@@ -30,7 +30,8 @@ import LandingBackground from '../components/LandingBackground';
 import { CURRENT_VERSION } from '../data/changelogData';
 import ModalPortal from '../components/UI/ModalPortal';
 
-export default function Landing({ onNavigateToLogin, onOpenChangelog }) {
+export default function Landing({ onNavigateToLogin, onGoToLogin, onOpenChangelog }) {
+  const handleLogin = onNavigateToLogin || onGoToLogin;
   const [showArchModal, setShowArchModal] = useState(false);
   const [demoTab, setDemoTab] = useState('workorders'); // 'workorders' | 'kpis' | 'ai'
   
@@ -92,7 +93,7 @@ export default function Landing({ onNavigateToLogin, onOpenChangelog }) {
           </div>
 
           <button 
-            onClick={onNavigateToLogin}
+            onClick={handleLogin}
             className="btn btn-primary text-xs py-2 px-3 sm:px-4 shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 group shrink-0 cursor-pointer"
           >
             <span>Ingresar</span>
@@ -155,7 +156,7 @@ export default function Landing({ onNavigateToLogin, onOpenChangelog }) {
           className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3 max-w-md sm:max-w-none mx-auto mb-10 sm:mb-14"
         >
           <button 
-            onClick={onNavigateToLogin}
+            onClick={handleLogin}
             className="btn btn-primary w-full sm:w-auto py-3 px-6 text-sm font-semibold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group cursor-pointer"
           >
             <span>Acceder a la Plataforma</span>

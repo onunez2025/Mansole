@@ -102,6 +102,7 @@ export default function App() {
             >
               <Landing 
                 onGoToLogin={() => setPublicView('login')} 
+                onNavigateToLogin={() => setPublicView('login')} 
                 onOpenChangelog={() => setShowChangelog(true)}
               />
             </motion.div>

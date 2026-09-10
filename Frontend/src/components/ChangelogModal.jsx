@@ -62,10 +62,10 @@ export default function ChangelogModal({ isOpen, onClose }) {
     return CHANGELOG_DATA.filter(item => {
       // Filtro por versión
       if (selectedVersionFilter !== 'ALL') {
-        if (selectedVersionFilter === 'v2.6' && !item.version.startsWith('v2.6')) return false;
-        if (selectedVersionFilter === 'v2.5' && !item.version.startsWith('v2.5')) return false;
-        if (selectedVersionFilter === 'v2.4' && !item.version.startsWith('v2.4')) return false;
-        if (selectedVersionFilter === 'v2.0-v2.3' && (item.version.startsWith('v2.6') || item.version.startsWith('v2.5') || item.version.startsWith('v2.4'))) return false;
+        if (selectedVersionFilter === 'v2.10' && !item.version.startsWith('v2.10')) return false;
+        if (selectedVersionFilter === 'v2.9' && !item.version.startsWith('v2.9')) return false;
+        if (selectedVersionFilter === 'v2.8' && !item.version.startsWith('v2.8')) return false;
+        if (selectedVersionFilter === 'v2.0-v2.7' && (item.version.startsWith('v2.10') || item.version.startsWith('v2.9') || item.version.startsWith('v2.8'))) return false;
       }
 
       // Filtro por tipo de cambio
@@ -230,10 +230,10 @@ export default function ChangelogModal({ isOpen, onClose }) {
             </span>
             {[
               { id: 'ALL', label: 'Todas las versiones' },
-              { id: 'v2.6', label: 'v2.6.x (Actual)' },
-              { id: 'v2.5', label: 'v2.5.x' },
-              { id: 'v2.4', label: 'v2.4.x' },
-              { id: 'v2.0-v2.3', label: 'v2.0 - v2.3' }
+              { id: 'v2.10', label: 'v2.10.x (Actual)' },
+              { id: 'v2.9', label: 'v2.9.x' },
+              { id: 'v2.8', label: 'v2.8.x' },
+              { id: 'v2.0-v2.7', label: 'v2.0 - v2.7' }
             ].map(f => (
               <button
                 key={f.id}

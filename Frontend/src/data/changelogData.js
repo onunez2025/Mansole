@@ -3,11 +3,76 @@
  * Cada entrada documenta el PR asociado, fecha, resumen ejecutivo y detalle de cambios por categoría.
  */
 
-export const CURRENT_VERSION = 'v2.9.0';
-export const LAST_RELEASE_DATE = '08 de Septiembre, 2026';
+export const CURRENT_VERSION = 'v2.10.0';
+export const LAST_RELEASE_DATE = '10 de Septiembre, 2026';
 export const GITHUB_REPO_URL = 'https://github.com/onunez2025/Mansole';
 
 export const CHANGELOG_DATA = [
+  {
+    version: 'v2.10.0',
+    prNumber: 29,
+    prTitle: 'feat: QR movil sin login, catalogo de ubicaciones, firmas digitales canvas, imagen de activos y optimizacion de OTs',
+    prUrl: `${GITHUB_REPO_URL}/pull/29`,
+    commitHash: '3396d38',
+    commitUrl: `${GITHUB_REPO_URL}/commit/3396d38`,
+    date: '10 de Septiembre, 2026',
+    isLatest: true,
+    tag: 'Actual / Major Release',
+    tagColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    summary: 'Lanzamiento integral de movilidad en planta e interactividad operativa: códigos QR industriales escaneables desde la cámara del celular sin login para consulta instantánea de OTs pendientes, lienzo de firmas digitales táctiles en Ficha Técnica, gestión de fotografías de activos en Azure Blob Storage, nuevo catálogo maestro de Ubicaciones Físicas, tipo de mantenimiento "Mejora", y mejoras de usabilidad en el Cronograma y emisión de OTs.',
+    highlights: [
+      'Escaneo QR Móvil sin Login: Los técnicos escanean la etiqueta de la máquina con la cámara de su celular y acceden instantáneamente a la ficha y a las OTs pendientes del activo.',
+      'Firmas Digitales Táctiles en Canvas: Ficha Técnica de OT con lienzo interactivo para captura de firmas digitales del Técnico, Supervisor y Producción, con exportación a PDF autenticado.',
+      'Gestión de Imágenes de Maquinaria: Carga y actualización de fotografías de activos con almacenamiento en la nube Azure Blob Storage y previsualización en vivo.',
+      'Catálogo Maestro de Ubicaciones Físicas: Nuevo módulo en Configuración de Catálogos para registrar naves, pabellones y zonas de planta vinculadas a los activos.',
+      'Tipo de Mantenimiento Mejora y CeCos: Incorporación del tipo Mejora para modificaciones sin avería, tiempo de parada KPI exclusivo para correctivos e integración de CeCos SAP.',
+      'Cronograma Preventivo Mejorado: Píldoras de calendario con nombre de máquina legible, modal de detalle con botón "Iniciar Mantenimiento (Crear OT)" y control de permisos de reprogramación.'
+    ],
+    changes: [
+      {
+        type: 'feat',
+        scope: 'Movilidad QR',
+        title: 'Generación y Escaneo Directo de QR por Activo',
+        desc: 'Modal para generar e imprimir stickers industriales con QR. Escaneo público móvil (/scan/asset/:code) optimizado para smartphone sin requerir login previo.'
+      },
+      {
+        type: 'feat',
+        scope: 'Firmas Digitales',
+        title: 'Lienzo Canvas Táctil en Ficha Técnica',
+        desc: 'Captura de firmas digitales manuscritas para 3 firmantes (Técnico, Supervisor, Jefe de Producción), solución al z-index de modales y descarga directa de PDF autenticado.'
+      },
+      {
+        type: 'feat',
+        scope: 'Activos',
+        title: 'Edición de Fotos de Activos y Azure Blob Storage',
+        desc: 'Capacidad de editar la imagen del activo desde la ficha técnica con subida segura a Azure Blob Storage y sincronización en tiempo real.'
+      },
+      {
+        type: 'feat',
+        scope: 'Catálogos',
+        title: 'Nuevo Catálogo de Ubicaciones Físicas',
+        desc: 'Módulo administrativo para registrar ubicaciones en planta con código, nombre y pabellón, incorporado como campo seleccionable en el formulario de activos.'
+      },
+      {
+        type: 'feat',
+        scope: 'Órdenes de Trabajo',
+        title: 'Tipo Mejora, CeCos SAP y Tiempo de Parada Correctivo',
+        desc: 'Adición del tipo Mejora, campo Tiempo de Parada restringido a fallas correctivas, autoasignación del técnico creador y retiro de campos redundantes de horas planificadas.'
+      },
+      {
+        type: 'feat',
+        scope: 'Cronograma',
+        title: 'Visibilidad de Píldoras y Botón Iniciar Mantenimiento',
+        desc: 'Código y nombre de máquina destacados en dos líneas, modal de detalle con acción rápida para emitir la OT preventiva y restricción de reprogramación a supervisores.'
+      },
+      {
+        type: 'perf',
+        scope: 'UX Móvil',
+        title: 'Diagnóstico IA Compacto y Descripción del Problema',
+        desc: 'Presentación clara y legible de la falla original en el detalle de la OT y resumen condensado del diagnóstico predictivo asistido por IA para visualización en teléfonos.'
+      }
+    ]
+  },
   {
     version: 'v2.9.0',
     prNumber: 28,
@@ -16,9 +81,9 @@ export const CHANGELOG_DATA = [
     commitHash: '858288b',
     commitUrl: `${GITHUB_REPO_URL}/commit/858288b`,
     date: '08 de Septiembre, 2026',
-    isLatest: true,
-    tag: 'Actual / Major Release',
-    tagColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    isLatest: false,
+    tag: 'Release Estable',
+    tagColor: 'bg-slate-50 text-slate-700 border-slate-200',
     summary: 'Lanzamiento integral de módulos de reportes oficiales para Planta Callao / Metusa: Ficha Técnica individual de Orden de Trabajo con firmas tripartitas, Módulo de Reportes con Historial ConsuMan por fechas (PDF y CSV), Programación Preventiva interactiva y modernización de Mansito con panel lateral expandible y motor DeepSeek.',
     highlights: [
       'Reporte 1: Ficha Técnica de Orden de Trabajo con cronometraje de horas hombre, repuestos valorizados y 3 bloques de firmas (Técnico, Supervisor y Producción).',

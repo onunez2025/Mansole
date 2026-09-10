@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { api, API_BASE } from '../services/api';
-import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle2, AlertTriangle, Filter, CheckCircle, Clock, HelpCircle, Timer, Trash2, PlusCircle, Check, X, Package, Boxes, Lock, ChevronDown, ChevronUp, Printer, UserCheck, Sparkles } from 'lucide-react';
+import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle2, AlertTriangle, Filter, CheckCircle, Clock, HelpCircle, Timer, Trash2, PlusCircle, Check, X, Package, Boxes, Lock, ChevronDown, ChevronUp, Printer, UserCheck, Sparkles, Zap, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { OrderCardSkeleton } from '../components/UI';
 import HelpModal from '../components/HelpModal';
@@ -445,8 +445,33 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
     }
   };
 
-  const downloadPDF = (id) => {
-    window.open(`${API_BASE}/workorders/${id}/pdf`, '_blank');
+  const downloadPDF = async (id, code) => {
+    try {
+      toast.loading('Generando Acta PDF...', { id: 'workorder-pdf' });
+      const res = await api.getWorkOrderPDF(id);
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Acta_${code || id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => window.URL.revokeObjectURL(url), 2000);
+      toast.success('Acta PDF generada correctamente', { id: 'workorder-pdf' });
+    } catch (err) {
+      console.warn('Fallo descarga directa blob, probando ventana con token:', err.message);
+      try {
+        const tokenData = localStorage.getItem('tokens') ? JSON.parse(localStorage.getItem('tokens')) : null;
+        const accessToken = tokenData?.accessToken || tokenData?.token || '';
+        if (accessToken) {
+          window.open(`${API_BASE}/workorders/${id}/pdf?token=${accessToken}`, '_blank');
+          toast.dismiss('workorder-pdf');
+          return;
+        }
+      } catch (_) {}
+      toast.error('Error al generar PDF: ' + (err.response?.data?.error || err.message), { id: 'workorder-pdf' });
+    }
   };
 
   // Conteos por etapa de proceso para la barra de Pipeline
@@ -682,8 +707,8 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
                   </button>
 
                   <button 
-                    className="btn btn-secondary text-xs py-1.5 px-2.5 text-slate-700 justify-center"
-                    onClick={() => downloadPDF(ot.id)}
+                    className="btn btn-secondary text-xs py-1.5 px-2.5 text-slate-700 justify-center cursor-pointer"
+                    onClick={() => downloadPDF(ot.id, ot.code)}
                     title="Descargar Acta Formal en PDF"
                   >
                     <Download size={13} /> <span className="hidden sm:inline">PDF</span>
@@ -702,7 +727,17 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
             <div className="modal-content" style={{ maxWidth: '760px' }} onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-3 pb-2.5 border-b border-slate-200 gap-2">
               <div className="min-w-0 flex-1">
-                <span className="text-[11px] font-extrabold text-slate-500 font-mono">{selectedOT.code} • {selectedOT.type}</span>
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className="text-xs font-black text-blue-700 font-mono tracking-tight">{selectedOT.code}</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    selectedOT.type === 'Correctivo' ? 'bg-rose-100 text-rose-800 border border-rose-200' :
+                    selectedOT.type === 'Mejora' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 
+                    'bg-blue-100 text-blue-800 border border-blue-200'
+                  }`}>
+                    {selectedOT.type}
+                  </span>
+                  <span className="text-[10px] text-slate-500">Prioridad: <strong className="text-slate-800">{selectedOT.priority}</strong></span>
+                </div>
                 <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight truncate">{selectedOT.assetName}</h3>
                 <p className="text-[11px] text-slate-500 truncate">Área: {selectedOT.areaName} • CECO: {selectedOT.costCenterCode}</p>
               </div>
@@ -796,7 +831,42 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
 
               {openSections.desc && (
                 <div className="px-3 sm:px-4 pb-3 sm:pb-4 pt-1 space-y-2 border-t border-slate-200/80">
-                  <p className="text-xs text-slate-800 leading-relaxed m-0">{selectedOT.description}</p>
+                  {/* Tarjeta destacada y visible de la Descripción del Problema / Trabajo */}
+                  <div className={`p-3 rounded-xl border ${
+                    selectedOT.type === 'Correctivo' 
+                      ? 'bg-amber-50/90 border-amber-300/80 text-amber-950'
+                      : selectedOT.type === 'Mejora'
+                        ? 'bg-indigo-50/90 border-indigo-200 text-indigo-950'
+                        : 'bg-slate-100/90 border-slate-300 text-slate-900'
+                  }`}>
+                    <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                      <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
+                        {selectedOT.type === 'Correctivo' ? (
+                          <>
+                            <AlertCircle size={15} className="text-amber-600 shrink-0" />
+                            <span className="text-amber-900">Avería / Falla Reportada en Máquina:</span>
+                          </>
+                        ) : selectedOT.type === 'Mejora' ? (
+                          <>
+                            <Sparkles size={15} className="text-indigo-600 shrink-0" />
+                            <span className="text-indigo-900">Propuesta / Detalle de la Mejora:</span>
+                          </>
+                        ) : (
+                          <>
+                            <FileText size={15} className="text-blue-600 shrink-0" />
+                            <span className="text-blue-900">Alcance de la Labor Preventiva:</span>
+                          </>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-semibold text-slate-500">
+                        Código Activo: <strong className="text-slate-800 font-mono">{selectedOT.assetCode}</strong>
+                      </span>
+                    </div>
+
+                    <p className="text-xs sm:text-sm font-medium text-slate-900 leading-relaxed m-0 whitespace-pre-wrap">
+                      {selectedOT.description || selectedOT.Description || 'Sin descripción detallada registrada para esta orden.'}
+                    </p>
+                  </div>
                   {/* Control y Desglose Automático del Tiempo de Parada */}
                   {(() => {
                     const preDowntime = parseInt(selectedOT.preDowntimeMinutes !== undefined ? selectedOT.preDowntimeMinutes : (selectedOT.PreDowntimeMinutes || 0)) || 0;
@@ -973,43 +1043,66 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
               </div>
 
               {aiDiagnosis && openSections.ai && (
-                <div className="px-3 pb-3 pt-1 border-t border-indigo-100 text-xs space-y-2.5 leading-relaxed max-h-80 overflow-y-auto pr-1">
-                  {/* Análisis de Histórico RAG */}
-                  <div className="bg-white border border-indigo-200 rounded-lg p-2.5 shadow-2xs">
-                    <div className="flex items-center justify-between gap-1 mb-1.5 flex-wrap">
-                      <span className="text-[11px] font-bold text-indigo-950 flex items-center gap-1.5">
-                        <span>📚</span> <span>Historial de Mantenimientos Previos</span>
-                      </span>
+                <div className="px-3 pb-3 pt-1 border-t border-indigo-100 text-xs space-y-2.5 max-h-96 overflow-y-auto">
+                  {/* Encabezado de métricas rápidas de diagnóstico */}
+                  <div className="flex items-center justify-between gap-1.5 flex-wrap bg-white border border-indigo-100 p-2 rounded-lg text-[11px]">
+                    <span className="font-bold text-slate-800 flex items-center gap-1">
+                      <Zap size={13} className="text-amber-500" />
+                      <span>Diagnóstico Rápido para Taller</span>
+                    </span>
+                    <div className="flex items-center gap-1">
+                      {aiDiagnosis.confidenceScore && (
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold text-[10px] border border-emerald-200">
+                          {aiDiagnosis.confidenceScore} Confianza
+                        </span>
+                      )}
                       {aiDiagnosis.aiModel && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 truncate max-w-[130px]">
                           {aiDiagnosis.aiModel}
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-700 m-0 leading-relaxed font-normal">
-                      {aiDiagnosis.historicalAnalysis || "ℹ️ No se detectaron fallas similares previas para este equipo en el historial."}
-                    </p>
                   </div>
 
-                  <div>
-                    <strong className="text-red-700 block mb-0.5 font-semibold">⚠️ Posibles Causas Raíz:</strong>
-                    <ul className="list-disc pl-5 text-slate-600 space-y-0.5">
-                      {aiDiagnosis.possibleCauses && aiDiagnosis.possibleCauses.map((c, i) => (
-                        <li key={i}>{c}</li>
+                  {/* 1. Causas Probables (Tarjetas compactas) */}
+                  <div className="bg-rose-50/60 border border-rose-200/80 rounded-xl p-2.5 space-y-1.5">
+                    <span className="text-[11px] font-bold text-rose-900 uppercase tracking-wider flex items-center gap-1">
+                      <span>⚠️</span> Causas Raíz Probables:
+                    </span>
+                    <div className="space-y-1">
+                      {aiDiagnosis.possibleCauses && aiDiagnosis.possibleCauses.slice(0, 3).map((c, i) => (
+                        <div key={i} className="flex items-start gap-1.5 text-xs text-slate-800 bg-white p-2 rounded-lg border border-rose-100 shadow-2xs">
+                          <span className="font-bold text-rose-600 shrink-0">{i + 1}.</span>
+                          <span className="leading-snug">{c}</span>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </div>
-                  <div>
-                    <strong className="text-emerald-700 block mb-0.5 font-semibold">🔧 Pasos Recomendados:</strong>
-                    <ol className="list-decimal pl-5 text-slate-700 space-y-0.5 font-medium">
-                      {aiDiagnosis.recommendedSteps && aiDiagnosis.recommendedSteps.map((r, i) => (
-                        <li key={i}>{r}</li>
+
+                  {/* 2. Pasos Recomendados de Acción Inmediata */}
+                  <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-xl p-2.5 space-y-1.5">
+                    <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1">
+                      <span>🔧</span> Pasos de Acción Inmediata:
+                    </span>
+                    <div className="space-y-1">
+                      {aiDiagnosis.recommendedSteps && aiDiagnosis.recommendedSteps.slice(0, 3).map((r, i) => (
+                        <div key={i} className="flex items-start gap-1.5 text-xs text-slate-800 bg-white p-2 rounded-lg border border-emerald-100 shadow-2xs font-medium">
+                          <span className="font-bold text-emerald-700 shrink-0">✓</span>
+                          <span className="leading-snug">{r.replace(/^\d+\.\s*/, '')}</span>
+                        </div>
                       ))}
-                    </ol>
+                    </div>
                   </div>
-                  <div className="bg-amber-50 border border-amber-200 p-2 rounded-lg text-amber-800 font-medium text-[11px] flex items-start gap-1.5">
-                    <span>🛡️</span>
-                    <span>{aiDiagnosis.safetyWarning || "Aplicar protocolo de bloqueo y etiquetado LOTO antes de intervenir."}</span>
+
+                  {/* 3. Seguridad / Protocolo LOTO */}
+                  <div className="bg-amber-50 border border-amber-300/80 p-2 rounded-xl text-amber-900 font-semibold text-[11px] flex items-center gap-2 shadow-2xs">
+                    <span className="text-base shrink-0">🛡️</span>
+                    <span className="leading-tight">{aiDiagnosis.safetyWarning || "Aplicar protocolo de bloqueo y etiquetado LOTO antes de intervenir."}</span>
+                  </div>
+
+                  {/* 4. Antecedente en Historial Azure SQL */}
+                  <div className="text-[10px] text-slate-500 px-1 flex items-center justify-between">
+                    <span className="truncate">📚 {aiDiagnosis.historicalAnalysis || "Sin fallas previas registradas en base de datos."}</span>
                   </div>
                 </div>
               )}
@@ -1447,8 +1540,13 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
                 >
                   <Printer size={14} /> <span>Ficha Técnica (Firmas)</span>
                 </button>
-                <button className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1" onClick={() => downloadPDF(selectedOT.id)} title="Descargar Acta PDF rápida">
-                  <Download size={14} /> <span>Acta Rápida</span>
+                <button 
+                  type="button"
+                  className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1 font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer" 
+                  onClick={() => downloadPDF(selectedOT.id, selectedOT.code)} 
+                  title="Descargar Acta Formal en PDF"
+                >
+                  <Download size={14} /> <span>Acta Rápida (PDF)</span>
                 </button>
               </div>
 

@@ -1,8 +1,172 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { api } from '../services/api';
-import { Printer, X, Download, Clock, Wrench, ShieldAlert, CheckCircle2, FileText, AlertCircle } from 'lucide-react';
+import { Printer, X, Download, Clock, Wrench, ShieldAlert, CheckCircle2, FileText, AlertCircle, RotateCcw } from 'lucide-react';
 import ModalPortal from './UI/ModalPortal';
 import { toast } from 'sonner';
+
+/**
+ * Componente de Firma Digital en Canvas (Táctil y Mouse)
+ */
+function SignaturePad({ label, role, signerKey, orderId, defaultName }) {
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasSignature, setHasSignature] = useState(false);
+  const [signerName, setSignerName] = useState(() => {
+    return localStorage.getItem(`mansole_sign_name_${orderId}_${signerKey}`) || defaultName || '';
+  });
+
+  const storageKey = `mansole_sign_img_${orderId}_${signerKey}`;
+
+  // Cargar firma guardada al montar o cambiar de OT
+  useEffect(() => {
+    const saved = localStorage.getItem(storageKey);
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      if (saved) {
+        const img = new Image();
+        img.onload = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
+          setHasSignature(true);
+        };
+        img.src = saved;
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        setHasSignature(false);
+      }
+    }
+  }, [orderId, signerKey, storageKey]);
+
+  const handleNameChange = (val) => {
+    setSignerName(val);
+    localStorage.setItem(`mansole_sign_name_${orderId}_${signerKey}`, val);
+  };
+
+  const getCoordinates = (e) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height)
+    };
+  };
+
+  const startDrawing = (e) => {
+    if (e.touches) e.preventDefault();
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const { x, y } = getCoordinates(e);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    setIsDrawing(true);
+  };
+
+  const draw = (e) => {
+    if (!isDrawing) return;
+    if (e.touches) e.preventDefault();
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const { x, y } = getCoordinates(e);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    setHasSignature(true);
+  };
+
+  const stopDrawing = (e) => {
+    if (!isDrawing) return;
+    if (e.touches) e.preventDefault();
+    setIsDrawing(false);
+    const canvas = canvasRef.current;
+    if (canvas) {
+      try {
+        const dataUrl = canvas.toDataURL('image/png');
+        localStorage.setItem(storageKey, dataUrl);
+      } catch (err) {
+        console.error('Error saving signature:', err);
+      }
+    }
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setHasSignature(false);
+      localStorage.removeItem(storageKey);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center bg-slate-50/70 border border-slate-200 rounded-xl p-3 text-center print:border-none print:bg-transparent print:p-0">
+      {/* Canvas Pad */}
+      <div className="relative w-full max-w-[220px] bg-white border border-dashed border-slate-300 rounded-lg overflow-hidden shadow-2xs print:border-b print:border-t-0 print:border-l-0 print:border-r-0 print:border-slate-800 print:rounded-none">
+        <canvas
+          ref={canvasRef}
+          width={220}
+          height={85}
+          className="touch-none w-full h-[80px] cursor-crosshair block"
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          onTouchStart={startDrawing}
+          onTouchMove={draw}
+          onTouchEnd={stopDrawing}
+        />
+        {!hasSignature && (
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-[10px] text-slate-400 font-medium select-none print:hidden">
+            ✍️ Firma digital aquí
+          </div>
+        )}
+      </div>
+
+      {/* Acciones de Firma y Estado */}
+      <div className="flex items-center justify-between w-full max-w-[220px] mt-1 print:hidden">
+        <span className="text-[10px] font-medium">
+          {hasSignature ? (
+            <span className="text-emerald-600 font-bold flex items-center gap-0.5">✓ Registrada</span>
+          ) : (
+            <span className="text-amber-600">Pendiente</span>
+          )}
+        </span>
+        {hasSignature && (
+          <button
+            type="button"
+            onClick={clearSignature}
+            className="text-[10px] text-rose-600 hover:text-rose-800 font-semibold px-1.5 py-0.5 rounded hover:bg-rose-50 transition-colors cursor-pointer flex items-center gap-0.5"
+            title="Borrar firma para volver a firmar"
+          >
+            <RotateCcw size={10} />
+            <span>Limpiar</span>
+          </button>
+        )}
+      </div>
+
+      {/* Nombre y Cargo del Firmante */}
+      <div className="w-full max-w-[220px] mt-2">
+        <input
+          type="text"
+          value={signerName}
+          onChange={(e) => handleNameChange(e.target.value)}
+          placeholder="Nombre del firmante"
+          className="w-full text-center text-xs font-bold text-slate-900 bg-transparent border-b border-slate-300 focus:border-blue-600 focus:outline-none py-0.5 print:border-none"
+        />
+        <div className="font-bold text-[11px] text-slate-800 mt-0.5">{label}</div>
+        <div className="text-[9px] text-slate-500">{role}</div>
+      </div>
+    </div>
+  );
+}
 
 export default function WorkOrderReportModal({ isOpen, onClose, orderId, orderCode }) {
   const [loading, setLoading] = useState(true);
@@ -29,43 +193,73 @@ export default function WorkOrderReportModal({ isOpen, onClose, orderId, orderCo
     window.print();
   };
 
+  const handleDownloadPDF = async () => {
+    try {
+      toast.loading('Generando Acta PDF...', { id: 'pdf-modal-toast' });
+      const res = await api.getWorkOrderPDF(orderId);
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Acta_${orderCode || orderData?.Code || orderId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => window.URL.revokeObjectURL(url), 2000);
+      toast.success('Acta PDF descargada con éxito', { id: 'pdf-modal-toast' });
+    } catch (err) {
+      toast.error('Error al generar PDF: ' + (err.response?.data?.error || err.message), { id: 'pdf-modal-toast' });
+    }
+  };
+
   return (
     <ModalPortal>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/60 backdrop-blur-xs overflow-y-auto">
+      {/* z-[100002] para garantizar que se abra ENCIMA del modal de detalle de OT */}
+      <div className="fixed inset-0 z-[100002] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
         <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[92vh] overflow-hidden animate-fadeIn">
           
           {/* Barra de Acciones Superior (No imprimible) */}
           <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between gap-3 shrink-0 print:hidden">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
                 <FileText size={18} />
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-white tracking-tight">
+              <div className="min-w-0">
+                <h4 className="text-sm font-bold text-white tracking-tight truncate">
                   Ficha Técnica & Acta de Servicio: {orderCode || orderData?.Code || 'OT'}
                 </h4>
-                <p className="text-[11px] text-slate-300">
+                <p className="text-[11px] text-slate-300 truncate">
                   Documento formal para archivo técnico, liquidación contable y firmas
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleDownloadPDF}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                title="Descargar Acta Formal en PDF"
+              >
+                <Download size={14} />
+                <span className="hidden sm:inline">Descargar PDF</span>
+              </button>
+
               <button
                 type="button"
                 onClick={handlePrint}
                 className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-                title="Imprimir o Guardar como PDF"
+                title="Imprimir o Guardar como PDF en navegador con firmas incluidas"
               >
                 <Printer size={15} />
-                <span>Imprimir / Guardar PDF</span>
+                <span>Imprimir / PDF con Firmas</span>
               </button>
 
               <button
                 type="button"
                 onClick={onClose}
                 className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-                title="Cerrar ventana"
+                title="Cerrar y volver al detalle de OT"
               >
                 <X size={18} />
               </button>
@@ -296,30 +490,46 @@ export default function WorkOrderReportModal({ isOpen, onClose, orderId, orderCo
                   </div>
                 </div>
 
-                {/* 7. FIRMAS DE CONFORMIDAD Y ENTREGA OPERATIVA */}
-                <div className="pt-6 pb-2 border-t border-slate-300 space-y-6">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 text-center">
-                    Validación y Firmas de Conformidad de Mantenimiento
+                {/* 7. FIRMAS DIGITALES DE CONFORMIDAD Y ENTREGA OPERATIVA */}
+                <div className="pt-6 pb-2 border-t border-slate-300 space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                        Validación y Firmas Digitales de Conformidad
+                      </h3>
+                      <p className="text-[10px] text-slate-500 print:hidden">
+                        Permite firmar directamente en pantalla táctil con el dedo o con el mouse.
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full print:hidden">
+                      Firma Digital Válida para Cierre y Auditoría
+                    </span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-6 text-center">
-                    <div className="space-y-1">
-                      <div className="border-b border-slate-900 pb-12" />
-                      <div className="font-bold text-[11px] text-slate-900">Técnico Ejecutor</div>
-                      <div className="text-[9px] text-slate-500">Mecánico / Electricista Planta</div>
-                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                    <SignaturePad
+                      signerKey="technician"
+                      orderId={orderId}
+                      label="Técnico Ejecutor"
+                      role="Mecánico / Electricista Planta"
+                      defaultName={orderData.tasks?.[0]?.TechnicianName || orderData.technicians?.[0]?.name || ''}
+                    />
 
-                    <div className="space-y-1">
-                      <div className="border-b border-slate-900 pb-12" />
-                      <div className="font-bold text-[11px] text-slate-900">Supervisor de Mantenimiento</div>
-                      <div className="text-[9px] text-slate-500">Gestión de Activos & Confiabilidad</div>
-                    </div>
+                    <SignaturePad
+                      signerKey="supervisor"
+                      orderId={orderId}
+                      label="Supervisor de Mantenimiento"
+                      role="Gestión de Activos & Confiabilidad"
+                      defaultName={orderData.CreatedByName || ''}
+                    />
 
-                    <div className="space-y-1">
-                      <div className="border-b border-slate-900 pb-12" />
-                      <div className="font-bold text-[11px] text-slate-900">Jefe / Supervisor de Producción</div>
-                      <div className="text-[9px] text-slate-500">Conformidad de Entrega Operativa</div>
-                    </div>
+                    <SignaturePad
+                      signerKey="production"
+                      orderId={orderId}
+                      label="Jefe / Supervisor de Producción"
+                      role="Conformidad de Entrega Operativa"
+                      defaultName=""
+                    />
                   </div>
                 </div>
 

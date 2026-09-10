@@ -229,5 +229,6 @@ export const api = {
   // === Reportes Corporativos (Historial ConsuMan y Ficha Técnica de OT) ===
   getMaintenanceHistoryReport: async (params) => await client.get('/reports/maintenance-history', { params }),
   getWorkOrderReport:          async (id) => await client.get(`/reports/work-order/${id}`),
+  getWorkOrderPDF:             async (id) => await client.get(`/workorders/${id}/pdf`, { responseType: 'blob' }),
 };
 

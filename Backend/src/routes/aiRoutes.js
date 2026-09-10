@@ -140,48 +140,51 @@ async function callAiWithCascade(messages, options = {}) {
   throw new Error('Todos los proveedores de IA externos fallaron o excedieron el tiempo límite.');
 }
 
-// Fallback industrial knowledge base in case external API is temporarily unavailable
+// Fallback industrial knowledge base in case external API is temporarily unavailable (Mobile concise)
 const aiDiagnosisFallback = {
   default: {
+    historicalAnalysis: "Sin fallas similares previas registradas en planta.",
     causes: [
-      "Desgaste mecánico progresivo por vibración o lubricación insuficiente.",
-      "Fluctuación de tensión o armónicos en la red del Centro de Costo.",
-      "Acumulación de suciedad/residuos que atascan o restringen el movimiento del mecanismo."
+      "Desgaste mecánico o falta de lubricación en mecanismo motriz.",
+      "Fluctuación de voltaje o recalentamiento de devanados en motor.",
+      "Atascamiento por acumulación de viruta o suciedad operativa."
     ],
     recommendations: [
-      "Aislar la máquina mecánica y eléctricamente aplicando protocolo LOTO antes de intervenir.",
-      "Verificar con multímetro la tensión en bornes de alimentación y temperatura de motor.",
-      "Inspeccionar visualmente acoples, mangueras de presión y sellos de estanqueidad.",
-      "Reemplazar componentes defectuosos utilizando piezas nuevas registradas en almacén."
+      "1. Bloquear energía con candado LOTO antes de abrir tapas.",
+      "2. Medir continuidad y voltaje de línea con multímetro.",
+      "3. Inspeccionar acoples y lubricar puntos de fricción."
     ],
+    safetyWarning: "Obligatorio candado LOTO en tablero y uso de guantes dieléctricos.",
     confidence: "85%"
   },
   prensa: {
+    historicalAnalysis: "Historial registra revisiones rutinarias de presión hidráulica.",
     causes: [
-      "Fuga interna o desgaste en los sellos del cilindro hidráulico.",
-      "Válvula direccional o de alivio de presión descalibrada o trabada.",
-      "Bajo nivel o degradación de fluido hidráulico H-68."
+      "Fuga interna o desgaste de sellos en émbolo de cilindro principal.",
+      "Válvula direccional o alivio de presión descalibrada.",
+      "Nivel bajo o pérdida de viscosidad de fluido hidráulico H-68."
     ],
     recommendations: [
-      "Aplicar LOTO y despresurizar el circuito hidráulico antes de abrir conexiones.",
-      "Verificar nivel de aceite y manómetros en central hidráulica.",
-      "Inspeccionar electroválvulas y verificar conmutación de bobinas 24V DC.",
-      "Purgar aire de las líneas hidráulicas y probar ciclo en vacío."
+      "1. Despresurizar circuito por completo y colocar calzo de seguridad.",
+      "2. Comprobar nivel de aceite en visor de central hidráulica.",
+      "3. Probar conmutación eléctrica en bobina de electroválvula 24V."
     ],
+    safetyWarning: "No intervenir sin calzo mecánico bajo el pisador / carro superior.",
     confidence: "90%"
   },
   horno: {
+    historicalAnalysis: "Equipo con controles periódicos de curvas de temperatura.",
     causes: [
-      "Falla o interrupción en banco de resistencias eléctricas o contactor/relé SSR.",
-      "Descalibración o ruptura de termopar Tipo K por fatiga térmica.",
-      "Obstrucción o fallo en motor de ventilación de recirculación."
+      "Falla en banco de resistencias o contactor/relé de estado sólido.",
+      "Fatiga térmica o falso contacto en termopar Tipo K.",
+      "Restricción en turbina de recirculación de aire forzado."
     ],
     recommendations: [
-      "Bloqueo LOTO eléctrico obligatorio.",
-      "Medir resistencia y continuidad en los elementos calefactores con megóhmetro/multímetro.",
-      "Verificar señal de milivoltios en termopar Tipo K y calibración del PID.",
-      "Comprobar el flujo y recirculación de aire forzado."
+      "1. Bloqueo eléctrico LOTO y dejar enfriar a menos de 40°C.",
+      "2. Medir resistencia en bornes de calefactores con multímetro.",
+      "3. Verificar señal mV del sensor de temperatura hacia el pirómetro."
     ],
+    safetyWarning: "Riesgo de quemaduras severas: verificar enfriamiento antes de ingresar.",
     confidence: "92%"
   }
 };
@@ -234,36 +237,30 @@ router.post('/diagnose', async (req, res) => {
     historyRecords = histRes.recordset || [];
     if (historyRecords.length > 0) {
       historyContext = historyRecords.map((h, i) => 
-        `OT #${i+1} [${h.Code}]:
-- Tipo: ${h.Type} | Estado: ${h.Status} | Fecha: ${h.ExecutionDate || h.ScheduledDate || 'N/A'}
-- Descripción de Falla: ${h.Description || 'Sin detalle'}
-- Tareas ejecutadas: ${h.TasksSummary || 'Sin tareas registradas'}
-- Repuestos consumidos: ${h.SparePartsSummary || 'Ninguno'}
-- Tiempo Parada Real: ${h.DowntimeMinutes || 0} min`
-      ).join('\n\n');
+        `OT #${i+1} [${h.Code}]: Tipo ${h.Type} (${h.Status}) - Falla: "${h.Description || 'Sin detalle'}". Labores: ${h.TasksSummary || 'Ninguna'}. Repuestos: ${h.SparePartsSummary || 'Ninguno'}. Parada: ${h.DowntimeMinutes || 0}m`
+      ).join('\n');
     }
   } catch (dbErr) {
     console.warn('⚠️ Advertencia: No se pudo consultar histórico de Azure SQL:', dbErr.message);
   }
 
   // 2. Invocar Cascada de Modelos de IA con RAG histórico
-  const systemPrompt = `Eres el Ingeniero Experto de Mantenimiento y Confiabilidad Industrial de Planta para GRUPO SOLE (fabricación industrial de electrodomésticos, termas y campanas).
-Tu tarea es diagnosticar averías mecánicas, eléctricas, hidráulicas y neumáticas reportadas en las Órdenes de Trabajo (OT).
+  const systemPrompt = `Eres el Asistente Técnico Especialista de Mantenimiento de Planta para GRUPO SOLE.
+Los técnicos leen tu diagnóstico en la pantalla de su teléfono CELULAR en medio de la planta industrial ruidosa.
 
-REGLAS DE DIAGNÓSTICO:
-1. REVISIÓN OBLIGATORIA DEL HISTORIAL:
-   - Analiza minuciosamente el bloque "HISTORIAL DE MANTENIMIENTOS PREVIOS DE ESTE ACTIVO".
-   - Si existen intervenciones o fallas previas similares o vinculadas, cítalas expresamente en el campo "historicalAnalysis".
-   - Si el historial indica que NO hay antecedentes o las OTs previas no guardan relación, indícalo con total transparencia: "ℹ️ No se registran fallas similares previas para este equipo en el historial. Diagnóstico elaborado en base a principios de ingeniería para este tipo de maquinaria."
-2. GENERACIÓN DE CAUSAS RAÍZ: Proporciona entre 3 y 5 causas posibles ordenadas de mayor a menor probabilidad.
-3. PASOS RECOMENDADOS: Secuencia lógica y segura de verificación técnica (presión, multímetro, inspección visual, purga, etc.).
-4. SEGURIDAD: Protocolos LOTO y EPP crítico según aplique.
-5. FORMATO ESTRICTO: Responde ÚNICAMENTE con un JSON válido sin texto adicional:
+REGLAS ESTRICTAS DE BREVEDAD PARA CELULAR (MOBILE-FIRST):
+1. MÁXIMA SÍNTESIS: NO uses párrafos largos, NO des teoría ni rodeos. Todo debe ser ultra-directo y legible en una pantalla de 5 pulgadas.
+2. HISTORIAL (historicalAnalysis): Máximo 1 frase resumida de 1 línea (ej. "Falla similar en cilindro ocurrida hace 3 semanas" o "Sin antecedentes previos en el historial").
+3. CAUSAS RAÍZ (possibleCauses): Exactamente 2 o 3 causas posibles, de 1 SOLA LÍNEA cada una.
+4. ACCIONES RÁPIDAS (recommendedSteps): Exactamente 3 pasos de verificación técnica en orden, directos y de 1 SOLA LÍNEA cada uno.
+5. SEGURIDAD (safetyWarning): 1 advertencia clave de seguridad o bloqueo LOTO (1 línea).
+
+FORMATO ESTRICTO: Responde ÚNICAMENTE con un JSON válido sin markdown ni texto adicional:
 {
-  "historicalAnalysis": "Texto detallado del análisis histórico o aclaración.",
-  "possibleCauses": ["Causa 1...", "Causa 2...", "Causa 3..."],
-  "recommendedSteps": ["Paso 1...", "Paso 2...", "Paso 3..."],
-  "safetyWarning": "Advertencia obligatoria de seguridad LOTO / EPP.",
+  "historicalAnalysis": "Frase de 1 línea sobre el historial o antecedentes.",
+  "possibleCauses": ["Causa 1 directa", "Causa 2 directa", "Causa 3 directa"],
+  "recommendedSteps": ["1. Paso clave directo", "2. Paso clave directo", "3. Paso clave directo"],
+  "safetyWarning": "Regla obligatoria de seguridad LOTO / EPP.",
   "confidenceScore": "90%"
 }`;
 
@@ -322,13 +319,13 @@ Genera el diagnóstico en formato JSON.`;
     symptomReported: cleanSymptom,
     generatedAt: new Date().toISOString(),
     aiModel: 'Motor Experto Local (Fallback Offline)',
-    historicalAnalysis: historyRecords.length > 0 
-      ? `Se detectaron ${historyRecords.length} órdenes de trabajo previas para este equipo en Azure SQL.` 
-      : 'ℹ️ No se registran órdenes de trabajo previas para este equipo en el sistema.',
+    historicalAnalysis: fallback.historicalAnalysis || (historyRecords.length > 0 
+      ? `Se detectaron ${historyRecords.length} órdenes de trabajo previas en Azure SQL.` 
+      : 'Sin órdenes de trabajo previas para este equipo.'),
     confidenceScore: fallback.confidence,
     possibleCauses: fallback.causes,
     recommendedSteps: fallback.recommendations,
-    safetyWarning: "🚨 Recuerda portar el EPP obligatorio y aplicar bloqueo LOTO antes de manipular componentes electrificados o hidráulicos en el CECO.",
+    safetyWarning: fallback.safetyWarning || "Obligatorio candado LOTO en tablero y guantes dieléctricos.",
     historyCount: historyRecords.length
   });
 });

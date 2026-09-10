@@ -805,8 +805,8 @@ router.get('/:id/pdf', async (req, res) => {
     doc.moveDown(1);
 
     // Título de Acta y Estado
-    doc.fillColor('#000000').fontSize(16).text(`ACTA DE ORDEN DE TRABAJO: ${ot.Code}`, { align: 'left' });
-    doc.fontSize(12).fillColor('#333333').text(`Tipo: ${ot.Type.toUpperCase()}  |  Prioridad: ${ot.Priority}  |  Estado: ${ot.Status}`);
+    doc.fillColor('#000000').fontSize(16).text(`ACTA DE ORDEN DE TRABAJO: ${ot.Code || 'OT-00'}`, { align: 'left' });
+    doc.fontSize(12).fillColor('#333333').text(`Tipo: ${(ot.Type || 'Mantenimiento').toUpperCase()}  |  Prioridad: ${ot.Priority || 'Media'}  |  Estado: ${ot.Status || 'Iniciada'}`);
     doc.moveDown(0.5);
 
     // Datos del CECO y Activo
@@ -836,15 +836,17 @@ router.get('/:id/pdf', async (req, res) => {
     
     doc.moveDown(4);
 
-    // Firmas y cierre
-    const signY = 680;
+    // Firmas de conformidad (3 actores: Técnico, Mantenimiento, Producción)
+    const signY = 670;
     doc.strokeColor('#000').lineWidth(1)
-       .moveTo(70, signY).lineTo(230, signY).stroke()
-       .moveTo(350, signY).lineTo(510, signY).stroke();
+       .moveTo(50, signY).lineTo(180, signY).stroke()
+       .moveTo(215, signY).lineTo(345, signY).stroke()
+       .moveTo(380, signY).lineTo(510, signY).stroke();
 
-    doc.fillColor('#333').fontSize(10)
-       .text('Firma del Técnico Responsable', 85, signY + 10)
-       .text('V°B° Supervisor de Mantenimiento', 360, signY + 10);
+    doc.fillColor('#333').fontSize(9)
+       .text('Técnico Responsable\nEjecución de Labor', 50, signY + 8, { width: 130, align: 'center' })
+       .text('Supervisor Mantenimiento\nGestión de Confiabilidad', 215, signY + 8, { width: 130, align: 'center' })
+       .text('Supervisor Producción\nConformidad Operativa', 380, signY + 8, { width: 130, align: 'center' });
     
     doc.fontSize(8).fillColor('#999').text(`Generado automáticamente por Antigravity CMMS (Azure SQL) el ${new Date().toLocaleString()}`, 50, 780, { align: 'center' });
 

@@ -581,35 +581,78 @@ router.post('/', async (req, res) => {
     // Generar código autoincremental
     const countResult = await pool.request().query("SELECT ISNULL(MAX(Id), 0) as maxId FROM MANSOLE.WorkOrders");
     const newId = countResult.recordset[0].maxId + 1;
-    const code = type === 'Preventivo' ? `OT-PREV-00${newId}` : `OT-CORR-00${newId}`;
+    const code = type === 'Preventivo' ? `OT-PREV-00${newId}` : type === 'Mejora' ? `OT-MEJ-00${newId}` : `OT-CORR-00${newId}`;
     
-    // Si no enviaron assetId, buscamos por Code temporalmente o dejamos Null
+    // Si no enviaron assetId, buscamos por Code
     let finalAssetId = assetId ? parseInt(assetId) : null;
+    let finalAreaId = req.body.areaId ? parseInt(req.body.areaId) : null;
+
+    if (!finalAssetId && assetCode) {
+      const aRes = await pool.request()
+        .input('aCode', sql.NVarChar, assetCode)
+        .query('SELECT TOP 1 Id, AreaId FROM MANSOLE.Assets WHERE Code = @aCode');
+      if (aRes.recordset.length > 0) {
+        finalAssetId = aRes.recordset[0].Id;
+        if (!finalAreaId && aRes.recordset[0].AreaId) {
+          finalAreaId = aRes.recordset[0].AreaId;
+        }
+      }
+    }
+
+    if (!finalAreaId && costCenterCode) {
+      const arRes = await pool.request()
+        .input('ceco', sql.NVarChar, costCenterCode)
+        .query('SELECT TOP 1 Id FROM MANSOLE.Areas WHERE CostCenterCode = @ceco');
+      if (arRes.recordset.length > 0) {
+        finalAreaId = arRes.recordset[0].Id;
+      }
+    }
     
     const query = `
       INSERT INTO MANSOLE.WorkOrders (
-        Code, AssetId, Type, Priority, ScheduledDate, DowntimeMinutes, 
+        Code, AssetId, AreaId, Type, Priority, ScheduledDate, DowntimeMinutes, 
         Description, Status, LaborCost, TotalCost
       ) 
       OUTPUT INSERTED.Id
       VALUES (
-        @Code, @AssetId, @Type, @Priority, @ScheduledDate, @DowntimeMinutes,
+        @Code, @AssetId, @AreaId, @Type, @Priority, @ScheduledDate, @DowntimeMinutes,
         @Description, 'Iniciado en Planta', @LaborCost, @TotalCost
       )
     `;
     const request = pool.request();
     request.input('Code', sql.VarChar, code);
     request.input('AssetId', sql.Int, finalAssetId);
+    request.input('AreaId', sql.Int, finalAreaId);
     request.input('Type', sql.VarChar, type || 'Correctivo');
     request.input('Priority', sql.VarChar, priority || 'Media');
     request.input('ScheduledDate', sql.DateTime, scheduledDate ? new Date(scheduledDate) : new Date());
-    request.input('DowntimeMinutes', sql.Int, downtimeMinutes ? parseInt(downtimeMinutes) : 0);
+    request.input('DowntimeMinutes', sql.Int, (type === 'Correctivo' && downtimeMinutes) ? parseInt(downtimeMinutes) : 0);
     request.input('Description', sql.NVarChar, description || 'Sin descripción');
     request.input('LaborCost', sql.Decimal(18,2), labor);
     request.input('TotalCost', sql.Decimal(18,2), totalCost);
     
     const result = await request.query(query);
     const insertedId = result.recordset[0].Id;
+
+    // Si enviaron técnicos, registrar las tareas iniciales asignadas
+    if (Array.isArray(technicians) && technicians.length > 0) {
+      for (const tech of technicians) {
+        if (tech && tech.name && tech.name.trim() !== '') {
+          try {
+            await pool.request()
+              .input('woId', sql.Int, insertedId)
+              .input('techName', sql.NVarChar, tech.name.trim())
+              .input('comments', sql.NVarChar, type === 'Correctivo' ? 'Atención de avería correctiva' : `${type} planificado`)
+              .query(`
+                INSERT INTO MANSOLE.WorkOrderTasks (WorkOrderId, ActivityId, IsCompleted, Comments, TechnicianName, Status)
+                VALUES (@woId, 1, 0, @comments, @techName, 'Asignada')
+              `);
+          } catch (taskErr) {
+            console.error('Error insertando tarea de técnico asignado:', taskErr.message);
+          }
+        }
+      }
+    }
     
     res.status(201).json({ id: insertedId, code, message: 'Orden de trabajo creada con éxito en Azure SQL' });
   } catch (error) {

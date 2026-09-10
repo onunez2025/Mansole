@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { api, API_BASE } from '../services/api';
-import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle2, AlertTriangle, Filter, CheckCircle, Clock, HelpCircle, Timer, Trash2, PlusCircle, Check, X, Package, Boxes, Lock, ChevronDown, ChevronUp, Printer } from 'lucide-react';
+import { Hammer, Plus, Download, Bot, Users, FileText, Search, Play, CheckCircle2, AlertTriangle, Filter, CheckCircle, Clock, HelpCircle, Timer, Trash2, PlusCircle, Check, X, Package, Boxes, Lock, ChevronDown, ChevronUp, Printer, UserCheck, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { OrderCardSkeleton } from '../components/UI';
 import HelpModal from '../components/HelpModal';
@@ -30,6 +30,8 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [availableAssets, setAvailableAssets] = useState([]);
+  const [availableCostCenters, setAvailableCostCenters] = useState([]);
+  const [availableTechnicians, setAvailableTechnicians] = useState([]);
   const [catalogActivities, setCatalogActivities] = useState([]);
   const [selectedActivityId, setSelectedActivityId] = useState('');
   const [taskComments, setTaskComments] = useState('');
@@ -43,6 +45,17 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
   const [activeTaskPartForm, setActiveTaskPartForm] = useState(null);
   const [partFormState, setPartFormState] = useState({ sparePartId: '', quantity: 1 });
 
+  // Permisos y Roles de Asignación Técnica
+  const canAssignTechnicians = currentUser?.permissions?.includes('mansole.workorders.assign') || 
+                               currentUser?.permissions?.includes('*') || 
+                               currentUser?.role === 'Administrador' || 
+                               currentUser?.role === 'Supervisor' || 
+                               currentUser?.role === 'Supervisor de Planta' || 
+                               currentUser?.role === 'Coordinador de Mantenimiento y Producción' || 
+                               currentUser?.role === 'Analista de Planeamiento';
+
+  const currentUserName = currentUser?.name || [currentUser?.firstName, currentUser?.lastName].filter(Boolean).join(' ').trim() || currentUser?.username || 'Técnico de Planta';
+
   // Filtros de Proceso y Búsqueda
   const [activeStage, setActiveStage] = useState('Todas');
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,13 +68,13 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
     areaName: 'Área de Metalmecánica',
     costCenterCode: 'CECO-SOL-102',
     description: '',
-    downtimeMinutes: 30,
-    tech1: 'Juan Perez (Técnico 1)',
-    tech1Hours: 2.5,
-    tech2: 'Miguel Torres (Técnico 2)',
-    tech2Hours: 2.5,
-    sparePartName: 'REP-VLM-001 Válvula Proporcional',
-    sparePartCost: 350.00
+    downtimeMinutes: 0,
+    tech1: '',
+    tech1Hours: 2.0,
+    tech2: '',
+    tech2Hours: 2.0,
+    sparePartName: '',
+    sparePartCost: 0
   });
 
   const loadOrders = (silent = false) => {
@@ -320,7 +333,48 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
     api.getAssets().then(data => {
       if (Array.isArray(data)) setAvailableAssets(data);
     }).catch(() => {});
+
+    // Cargar catálogo de Centros de Costo (CECOs)
+    api.getCatalogCostCenters().then(data => {
+      if (Array.isArray(data)) setAvailableCostCenters(data);
+    }).catch(() => {});
+
+    // Cargar lista de técnicos y colaboradores de planta
+    api.getUsers().then(data => {
+      if (Array.isArray(data)) {
+        const activeUsers = data.filter(u => u.isActive !== false);
+        setAvailableTechnicians(activeUsers);
+      }
+    }).catch(() => {});
   }, []);
+
+  const openCreateModalWithDefaults = () => {
+    const firstAsset = availableAssets[0];
+    const defaultAssetCode = firstAsset ? (firstAsset.code || firstAsset.Code) : 'PRENSA-01';
+    const defaultAssetName = firstAsset ? (firstAsset.name || firstAsset.Name) : 'Prensa Hidráulica 200T #1';
+    const defaultAreaName = firstAsset ? (firstAsset.areaName || firstAsset.AreaName) : 'Área General';
+    const defaultCeco = firstAsset?.costCenterCode || firstAsset?.CostCenterCode || (availableCostCenters[0]?.CeCoste || 'CECO-SOL-101');
+
+    const firstTech = availableTechnicians.length > 0 ? availableTechnicians[0].name : currentUserName;
+
+    setNewOT({
+      type: 'Correctivo',
+      priority: 'Alta',
+      assetCode: defaultAssetCode,
+      assetName: defaultAssetName,
+      areaName: defaultAreaName,
+      costCenterCode: defaultCeco,
+      description: '',
+      downtimeMinutes: 0,
+      tech1: firstTech,
+      tech1Hours: 2.0,
+      tech2: '',
+      tech2Hours: 2.0,
+      sparePartName: '',
+      sparePartCost: 0
+    });
+    setShowCreateModal(true);
+  };
 
   const triggerAiHelp = async (assetName, description, code) => {
     setAiLoading(true);
@@ -347,11 +401,24 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
 
   const handleCreateOT = async (e) => {
     e.preventDefault();
-    const technicians = [
-      { name: newOT.tech1, hours: parseFloat(newOT.tech1Hours) || 0 }
-    ];
-    if (newOT.tech2 && newOT.tech2.trim() !== '') {
-      technicians.push({ name: newOT.tech2, hours: parseFloat(newOT.tech2Hours) || 0 });
+
+    let technicians = [];
+    if (newOT.type === 'Correctivo') {
+      // En correctivo el técnico que atiende y reporta la falla es el asignado directo
+      technicians = [{ name: currentUserName, hours: 0 }];
+    } else {
+      // En Preventivo o Mejora
+      if (canAssignTechnicians) {
+        if (newOT.tech1 && newOT.tech1.trim() !== '') {
+          technicians.push({ name: newOT.tech1.trim(), hours: parseFloat(newOT.tech1Hours) || 0 });
+        }
+        if (newOT.tech2 && newOT.tech2.trim() !== '') {
+          technicians.push({ name: newOT.tech2.trim(), hours: parseFloat(newOT.tech2Hours) || 0 });
+        }
+      } else {
+        // Técnico sin rol de asignador: se registra como responsable inicial
+        technicians = [{ name: currentUserName, hours: 0 }];
+      }
     }
 
     try {
@@ -363,10 +430,10 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
         type: newOT.type,
         priority: newOT.priority,
         scheduledDate: new Date().toISOString(),
-        downtimeMinutes: parseFloat(newOT.downtimeMinutes) || 0,
+        downtimeMinutes: newOT.type === 'Correctivo' ? (parseFloat(newOT.downtimeMinutes) || 0) : 0,
         description: newOT.description,
         technicians,
-        spareParts: [{ code: 'REP-NEW', name: newOT.sparePartName, quantity: 1, cost: parseFloat(newOT.sparePartCost) }]
+        spareParts: []
       };
       
       const response = await api.createWorkOrder(payload);
@@ -455,7 +522,7 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
             <span className="hidden sm:inline">Guía LOTO</span>
             <span className="sm:hidden">Guía</span>
           </button>
-          <button className="flex-1 sm:flex-initial btn btn-primary text-xs justify-center py-1.5 sm:py-2" onClick={() => setShowCreateModal(true)}>
+          <button className="flex-1 sm:flex-initial btn btn-primary text-xs justify-center py-1.5 sm:py-2 cursor-pointer" onClick={openCreateModalWithDefaults}>
             <Plus size={15} /> 
             <span className="hidden sm:inline">Emitir Nueva OT</span>
             <span className="sm:hidden">Nueva OT</span>
@@ -483,13 +550,13 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
             className={`pipeline-tab text-xs ${activeStage === 'En Progreso' ? 'active' : ''}`}
             onClick={() => setActiveStage('En Progreso')}
           >
-            ⚙️ En Planta <span className="pipeline-count">{stageCounts['En Progreso']}</span>
+            🔵 En Progreso <span className="pipeline-count">{stageCounts['En Progreso']}</span>
           </button>
           <button 
             className={`pipeline-tab text-xs ${activeStage === 'Finalizada' ? 'active' : ''}`}
             onClick={() => setActiveStage('Finalizada')}
           >
-            ✅ Finalizadas <span className="pipeline-count">{stageCounts.Finalizada}</span>
+            🟢 Finalizadas <span className="pipeline-count">{stageCounts.Finalizada}</span>
           </button>
           <button 
             className={`pipeline-tab text-xs ${activeStage === 'Cerrada' ? 'active' : ''}`}
@@ -540,7 +607,9 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className="text-sm font-bold text-slate-900 font-mono">{ot.code}</span>
-                    <span className={`badge ${ot.type === 'Preventivo' ? 'badge-info' : 'badge-danger'} text-[11px]`}>{ot.type}</span>
+                    <span className={`badge ${ot.type === 'Preventivo' ? 'badge-info' : ot.type === 'Mejora' ? 'bg-purple-100 text-purple-800 border-purple-200' : 'badge-danger'} text-[11px]`}>
+                      {ot.type}
+                    </span>
                     <span className={`badge ${isFinished ? 'badge-success' : isInProgress ? 'badge-info' : isClosed ? 'badge-mono' : 'badge-warning'} text-[11px]`}>
                       {ot.status}
                     </span>
@@ -1446,10 +1515,22 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
             <form onSubmit={handleCreateOT} className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="form-group mb-0">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Tipo de Mantenimiento</label>
-                  <select className="form-select text-xs" value={newOT.type} onChange={e => setNewOT({...newOT, type: e.target.value})}>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Tipo de Mantenimiento *</label>
+                  <select 
+                    className="form-select text-xs" 
+                    value={newOT.type} 
+                    onChange={e => {
+                      const selectedType = e.target.value;
+                      setNewOT({
+                        ...newOT, 
+                        type: selectedType,
+                        downtimeMinutes: selectedType === 'Correctivo' ? (newOT.downtimeMinutes || 30) : 0
+                      });
+                    }}
+                  >
                     <option value="Correctivo">🚨 Correctivo (Falla)</option>
                     <option value="Preventivo">📅 Preventivo (Rutinario)</option>
+                    <option value="Mejora">💡 Mejora (Adaptación / Optimización)</option>
                   </select>
                 </div>
                 <div className="form-group mb-0">
@@ -1467,7 +1548,7 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Seleccionar Activo *</label>
                   {availableAssets.length > 0 ? (
                     <select 
-                      className="form-select text-xs"
+                      className="form-select text-xs font-mono"
                       value={newOT.assetCode}
                       onChange={e => {
                         const selected = availableAssets.find(a => (a.code || a.Code) === e.target.value);
@@ -1477,7 +1558,7 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
                             assetCode: selected.code || selected.Code,
                             assetName: selected.name || selected.Name,
                             areaName: selected.areaName || selected.AreaName || 'Área General',
-                            costCenterCode: selected.costCenterCode || selected.CostCenterCode || 'CECO-SOL-101'
+                            costCenterCode: selected.costCenterCode || selected.CostCenterCode || newOT.costCenterCode
                           });
                         }
                       }}
@@ -1493,38 +1574,181 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
                   )}
                 </div>
                 <div className="form-group mb-0">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">CECO Imputable</label>
-                  <input className="form-input text-xs bg-slate-50 text-slate-600 font-bold" value={newOT.costCenterCode} readOnly />
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">CECO Imputable (Catálogo) *</label>
+                  {availableCostCenters.length > 0 ? (
+                    <select
+                      className="form-select text-xs font-mono"
+                      value={newOT.costCenterCode}
+                      onChange={e => setNewOT({ ...newOT, costCenterCode: e.target.value })}
+                    >
+                      {availableCostCenters.map(c => (
+                        <option key={c.CeCoste} value={c.CeCoste}>
+                          [{c.CeCoste}] {c.CeCosteDescripcion || c.Area || c.Gerencia}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input className="form-input text-xs bg-slate-50 text-slate-600 font-bold" value={newOT.costCenterCode} readOnly />
+                  )}
                 </div>
               </div>
 
               <div className="form-group mb-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Descripción de Incidencia *</label>
-                <textarea className="form-textarea text-xs" required rows="2" value={newOT.description} onChange={e => setNewOT({...newOT, description: e.target.value})} placeholder="Ej. Pérdida de presión en circuito primario de prensa..." />
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  {newOT.type === 'Correctivo' ? 'Descripción de la Avería / Falla *' : newOT.type === 'Mejora' ? 'Descripción de la Mejora / Adaptación *' : 'Descripción de la Labor Preventiva *'}
+                </label>
+                <textarea 
+                  className="form-textarea text-xs" 
+                  required 
+                  rows="2" 
+                  value={newOT.description} 
+                  onChange={e => setNewOT({...newOT, description: e.target.value})} 
+                  placeholder={newOT.type === 'Correctivo' ? "Ej. Pérdida de presión en circuito primario de prensa..." : newOT.type === 'Mejora' ? "Ej. Instalación de protector acrílico de seguridad y canaleta en zona de alimentación..." : "Ej. Inspección rutinaria semanal de conexiones eléctricas y nivel de aceite..."} 
+                />
               </div>
 
-              <div className="form-group mb-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Tiempo de Parada (Minutos KPI)</label>
-                <input type="number" className="form-input text-xs" value={newOT.downtimeMinutes} onChange={e => setNewOT({...newOT, downtimeMinutes: e.target.value})} />
-              </div>
+              {/* Tiempo de Parada: Solo para mantenimientos Correctivos donde la máquina se detuvo */}
+              {newOT.type === 'Correctivo' && (
+                <div className="form-group mb-0 bg-red-50/70 border border-red-200/90 p-3 rounded-xl">
+                  <label className="block text-xs font-bold text-red-900 mb-1 flex items-center justify-between">
+                    <span>Tiempo de Parada Previo (Minutos KPI)</span>
+                    <span className="text-[10px] font-semibold text-red-700 font-mono">Downtime de Falla</span>
+                  </label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    className="form-input text-xs bg-white font-mono" 
+                    value={newOT.downtimeMinutes} 
+                    onChange={e => setNewOT({...newOT, downtimeMinutes: Math.max(0, parseInt(e.target.value, 10) || 0)})} 
+                    placeholder="Minutos que la máquina estuvo detenida antes del inicio de la atención técnica"
+                  />
+                  <span className="text-[11px] text-red-700 mt-1 block">
+                    Solo aplica en correctivos: representa el tiempo que la línea estuvo parada por la falla antes de iniciar la reparación.
+                  </span>
+                </div>
+              )}
 
-              <div className="bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-200">
-                <strong className="text-xs text-slate-700 block mb-2 font-bold uppercase tracking-wider">
-                  👥 Asignación de Múltiples Técnicos:
-                </strong>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
-                  <input className="form-input text-xs sm:col-span-2" placeholder="Nombre Técnico 1" value={newOT.tech1} onChange={e => setNewOT({...newOT, tech1: e.target.value})} />
-                  <input type="number" step="0.5" className="form-input text-xs" placeholder="Horas" value={newOT.tech1Hours} onChange={e => setNewOT({...newOT, tech1Hours: e.target.value})} />
+              {/* Asignación de Técnicos Inteligente según Tipo y Permisos */}
+              {newOT.type === 'Correctivo' ? (
+                /* En Correctivo: El técnico que reporta la falla queda asignado automáticamente */
+                <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-center gap-2.5 shadow-2xs">
+                  <UserCheck size={20} className="text-amber-600 shrink-0" />
+                  <div>
+                    <span className="font-bold text-slate-900 block">Técnico Asignado Automáticamente:</span>
+                    <span className="text-slate-600">
+                      <strong className="text-slate-900 font-semibold">{currentUserName}</strong> — Por ser atención de falla correctiva in-situ, la OT se auto-asigna a quien registra el incidente para iniciar la labor técnica de inmediato.
+                    </span>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <input className="form-input text-xs sm:col-span-2" placeholder="Nombre Técnico 2 (Opcional)" value={newOT.tech2} onChange={e => setNewOT({...newOT, tech2: e.target.value})} />
-                  <input type="number" step="0.5" className="form-input text-xs" placeholder="Horas" value={newOT.tech2Hours} onChange={e => setNewOT({...newOT, tech2Hours: e.target.value})} />
+              ) : canAssignTechnicians ? (
+                /* En Preventivo o Mejora y el usuario TIENE permisos de asignación */
+                <div className="bg-slate-50 p-3 sm:p-4 rounded-xl border border-slate-200 space-y-3 shadow-2xs">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <strong className="text-xs text-slate-800 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                      <Users size={14} className="text-blue-600" />
+                      <span>Asignación de Cuadrilla Técnica ({newOT.type}):</span>
+                    </strong>
+                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                      Planificación Autorizada
+                    </span>
+                  </div>
+
+                  {/* Técnico 1 */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                        Técnico Principal Responsable *
+                      </label>
+                      {availableTechnicians.length > 0 ? (
+                        <select 
+                          className="form-select text-xs"
+                          value={newOT.tech1} 
+                          onChange={e => setNewOT({...newOT, tech1: e.target.value})}
+                        >
+                          {availableTechnicians.map(t => (
+                            <option key={t.id} value={t.name}>
+                              {t.name} ({t.role || 'Técnico'})
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input className="form-input text-xs" placeholder="Nombre Técnico 1" value={newOT.tech1} onChange={e => setNewOT({...newOT, tech1: e.target.value})} />
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1" title="Horas Hombre estimadas para la labor">
+                        Horas Planificadas (Hs)
+                      </label>
+                      <input 
+                        type="number" 
+                        step="0.5" 
+                        min="0"
+                        className="form-input text-xs" 
+                        placeholder="Ej. 2.0" 
+                        value={newOT.tech1Hours} 
+                        onChange={e => setNewOT({...newOT, tech1Hours: e.target.value})} 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Técnico 2 (Opcional) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                        Técnico de Apoyo (Opcional)
+                      </label>
+                      {availableTechnicians.length > 0 ? (
+                        <select 
+                          className="form-select text-xs"
+                          value={newOT.tech2} 
+                          onChange={e => setNewOT({...newOT, tech2: e.target.value})}
+                        >
+                          <option value="">-- Ninguno (Un solo técnico) --</option>
+                          {availableTechnicians.map(t => (
+                            <option key={t.id} value={t.name}>
+                              {t.name} ({t.role || 'Técnico'})
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input className="form-input text-xs" placeholder="Nombre Técnico 2 (Opcional)" value={newOT.tech2} onChange={e => setNewOT({...newOT, tech2: e.target.value})} />
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1" title="Horas Hombre estimadas para el técnico de apoyo">
+                        Horas Planificadas (Hs)
+                      </label>
+                      <input 
+                        type="number" 
+                        step="0.5" 
+                        min="0"
+                        className="form-input text-xs" 
+                        placeholder="Ej. 2.0" 
+                        value={newOT.tech2Hours} 
+                        onChange={e => setNewOT({...newOT, tech2Hours: e.target.value})} 
+                      />
+                    </div>
+                  </div>
+                  <span className="text-[11px] text-slate-400 block italic">
+                    * El segundo campo representa las horas hombre estimadas (ej. 2.0 = dos horas de labor) para valorizar el costo de mano de obra en planta.
+                  </span>
                 </div>
-              </div>
+              ) : (
+                /* En Preventivo o Mejora y el usuario NO TIENE permisos de asignación */
+                <div className="p-3 bg-blue-50/80 border border-blue-200/80 rounded-xl text-xs text-blue-900 flex items-center gap-2.5 shadow-2xs">
+                  <Clock size={20} className="text-blue-600 shrink-0" />
+                  <div>
+                    <span className="font-bold text-slate-900 block">Asignación por Supervisión:</span>
+                    <span className="text-slate-600">
+                      Estás registrando una solicitud de <strong>{newOT.type.toLowerCase()}</strong>. La asignación formal de cuadrilla técnica y horas estimadas será realizada por la Jefatura o Planificador de Mantenimiento al aprobar la orden.
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
-                <button type="button" className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => setShowCreateModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center">Crear OT</button>
+                <button type="button" className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center cursor-pointer" onClick={() => setShowCreateModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center cursor-pointer">Crear OT</button>
               </div>
             </form>
           </div>

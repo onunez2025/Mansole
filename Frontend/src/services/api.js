@@ -218,6 +218,15 @@ export const api = {
   updateCatalogCostCenter: async (code, data) => await client.put(`/catalogs/cost-centers/${code}`, data),
   deleteCatalogCostCenter: async (code) => await client.delete(`/catalogs/cost-centers/${code}`),
 
+  getCatalogLocations:   async () => await client.get('/catalogs/locations'),
+  createCatalogLocation: async (data) => await client.post('/catalogs/locations', data),
+  updateCatalogLocation: async (id, data) => await client.put(`/catalogs/locations/${id}`, data),
+  deleteCatalogLocation: async (id) => await client.delete(`/catalogs/locations/${id}`),
+
+  // === Activos y QR ===
+  getLocations: async () => await client.get('/assets/locations'),
+  getAssetPublicQR: async (code) => await client.get(`/assets/public-qr/${code}`),
+
   // === Adjuntos / Documentos en Azure Blob Storage (Manuales, Planos, Evidencias) ===
   getAttachments:   async (entityType, entityId) => await client.get(`/attachments/${entityType}/${entityId}`),
   uploadAttachment: async (formData, onProgress) => await client.post('/attachments/upload', formData, {

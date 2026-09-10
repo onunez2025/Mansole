@@ -17,6 +17,7 @@ import AccessDeniedPage from './pages/AccessDeniedPage';
 import HelpModal from './components/HelpModal';
 import ChangelogModal from './components/ChangelogModal';
 import MansitoAssistant from './components/MansitoAssistant';
+import AssetQRScanView from './components/AssetQRScanView';
 import ModalPortal from './components/UI/ModalPortal';
 import { useAuth } from './hooks/useAuth';
 import './index.css';
@@ -43,6 +44,44 @@ export default function App() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [showGlobalHelp, setShowGlobalHelp] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
+
+  // Escaneo móvil de código QR en maquinaria física
+  const [scannedAssetCode, setScannedAssetCode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('scanAsset') || params.get('qr') || null;
+    }
+    return null;
+  });
+  const [targetOrderCode, setTargetOrderCode] = useState(null);
+  const [targetCreateAsset, setTargetCreateAsset] = useState(null);
+
+  const handleQRSelectOrder = (orderCode) => {
+    setScannedAssetCode(null);
+    window.history.replaceState({}, '', window.location.pathname);
+    setTargetOrderCode(orderCode);
+    setActiveTab('workOrders');
+  };
+
+  const handleQRCreateOrder = (asset) => {
+    setScannedAssetCode(null);
+    window.history.replaceState({}, '', window.location.pathname);
+    setTargetCreateAsset(asset);
+    setActiveTab('workOrders');
+  };
+
+  const handleQRClose = () => {
+    setScannedAssetCode(null);
+    window.history.replaceState({}, '', window.location.pathname);
+  };
+
+  const handleQRGoToLogin = (orderCode, assetCode) => {
+    if (orderCode) setTargetOrderCode(orderCode);
+    if (assetCode) setTargetCreateAsset({ code: assetCode });
+    setScannedAssetCode(null);
+    window.history.replaceState({}, '', window.location.pathname);
+    setPublicView('login');
+  };
 
   // Si el usuario pierde acceso al módulo abierto (logout, cambio de rol), volver al dashboard.
   useEffect(() => {
@@ -91,6 +130,18 @@ export default function App() {
   if (!isAuthenticated) {
     return (
       <>
+        {/* Vista Móvil al escanear QR de maquinaria sin necesidad de login previo */}
+        {scannedAssetCode && (
+          <AssetQRScanView 
+            assetCode={scannedAssetCode}
+            currentUser={null}
+            onSelectOrder={handleQRSelectOrder}
+            onCreateOrder={handleQRCreateOrder}
+            onClose={handleQRClose}
+            onGoToLogin={handleQRGoToLogin}
+          />
+        )}
+
         <AnimatePresence mode="wait">
           {publicView === 'landing' ? (
             <motion.div
@@ -138,7 +189,16 @@ export default function App() {
 
     switch (activeTab) {
       case 'dashboard': return <Dashboard currentUser={user} />;
-      case 'workOrders': return <WorkOrders currentUser={user} onNavigateToReports={() => setActiveTab('reports')} />;
+      case 'workOrders': 
+        return (
+          <WorkOrders 
+            currentUser={user} 
+            onNavigateToReports={() => setActiveTab('reports')} 
+            initialOrderCode={targetOrderCode}
+            initialCreateAsset={targetCreateAsset}
+            onClearInitialParams={() => { setTargetOrderCode(null); setTargetCreateAsset(null); }}
+          />
+        );
       case 'reports': return <Reports currentUser={user} />;
       case 'schedule': return <Schedule currentUser={user} onNavigateToWorkOrders={() => setActiveTab('workOrders')} />;
       case 'assets': return <Assets currentUser={user} />;
@@ -209,6 +269,17 @@ export default function App() {
         </ModalPortal>
       )}
 
+      {/* Vista Móvil al escanear QR de maquinaria autenticado */}
+      {scannedAssetCode && (
+        <AssetQRScanView 
+          assetCode={scannedAssetCode}
+          currentUser={user}
+          onSelectOrder={handleQRSelectOrder}
+          onCreateOrder={handleQRCreateOrder}
+          onClose={handleQRClose}
+          onGoToLogin={handleQRGoToLogin}
+        />
+      )}
 
       {/* Asistente Flotante de IA de Planta: Mansito */}
       <MansitoAssistant currentUser={user} />

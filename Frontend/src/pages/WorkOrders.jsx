@@ -10,7 +10,7 @@ import WorkOrderReportModal from '../components/WorkOrderReportModal';
 // Caché en cliente para que al volver a OTs cargue de inmediato (0ms)
 let cachedWorkOrdersList = null;
 
-export default function WorkOrders({ currentUser, onNavigateToReports }) {
+export default function WorkOrders({ currentUser, onNavigateToReports, initialOrderCode, initialCreateAsset, onClearInitialParams }) {
   const [workOrders, setWorkOrders] = useState(cachedWorkOrdersList || []);
   const [loading, setLoading] = useState(!cachedWorkOrdersList);
   const [selectedOT, setSelectedOT] = useState(null);
@@ -347,6 +347,40 @@ export default function WorkOrders({ currentUser, onNavigateToReports }) {
       }
     }).catch(() => {});
   }, []);
+
+  // Seleccionar automáticamente OT si se ingresó mediante escaneo QR
+  useEffect(() => {
+    if (initialOrderCode && workOrders.length > 0) {
+      const match = workOrders.find(o => 
+        String(o.code || '').toLowerCase() === String(initialOrderCode).toLowerCase() ||
+        String(o.id) === String(initialOrderCode)
+      );
+      if (match) {
+        setSelectedOT(match);
+        if (onClearInitialParams) onClearInitialParams();
+      }
+    }
+  }, [initialOrderCode, workOrders]);
+
+  // Abrir modal de creación de OT para activo escaneado por QR
+  useEffect(() => {
+    if (initialCreateAsset) {
+      const code = initialCreateAsset.Code || initialCreateAsset.code || '';
+      const name = initialCreateAsset.Name || initialCreateAsset.name || '';
+      const area = initialCreateAsset.AreaName || initialCreateAsset.areaName || '';
+      const ceco = initialCreateAsset.CostCenterCode || initialCreateAsset.costCenterCode || '';
+      setNewOT(prev => ({
+        ...prev,
+        type: 'Correctivo',
+        assetCode: code || prev.assetCode,
+        assetName: name || prev.assetName,
+        areaName: area || prev.areaName,
+        costCenterCode: ceco || prev.costCenterCode
+      }));
+      setShowCreateModal(true);
+      if (onClearInitialParams) onClearInitialParams();
+    }
+  }, [initialCreateAsset]);
 
   const openCreateModalWithDefaults = () => {
     const firstAsset = availableAssets[0];

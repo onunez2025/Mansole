@@ -285,4 +285,99 @@ router.delete('/cost-centers/:code', async (req, res) => {
   }
 });
 
+/* =========================================================================
+   4. CATÁLOGO DE UBICACIONES (MANSOLE.Locations)
+   ========================================================================= */
+
+// GET /api/catalogs/locations
+router.get('/locations', async (req, res) => {
+  try {
+    const pool = await getDbConnection();
+    const result = await pool.request().query(`
+      SELECT l.Id, l.Name, l.Description, l.CreatedAt,
+             (SELECT COUNT(*) FROM MANSOLE.Assets WHERE LocationId = l.Id) as AssetCount
+      FROM MANSOLE.Locations l
+      ORDER BY l.Name ASC
+    `);
+    res.json(result.recordset);
+  } catch (err) {
+    console.error('Error GET /catalogs/locations:', err);
+    res.status(500).json({ error: 'Error al obtener ubicaciones' });
+  }
+});
+
+// POST /api/catalogs/locations
+router.post('/locations', async (req, res) => {
+  const { name, description } = req.body;
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'El nombre de la ubicación es requerido' });
+  }
+  try {
+    const pool = await getDbConnection();
+    const result = await pool.request()
+      .input('name', sql.NVarChar, name.trim())
+      .input('description', sql.NVarChar, description ? description.trim() : '')
+      .query(`
+        INSERT INTO MANSOLE.Locations (Name, Description)
+        OUTPUT INSERTED.Id
+        VALUES (@name, @description)
+      `);
+    res.status(201).json({ id: result.recordset[0].Id, message: 'Ubicación registrada con éxito' });
+  } catch (err) {
+    console.error('Error POST /catalogs/locations:', err);
+    res.status(500).json({ error: 'Error al registrar ubicación' });
+  }
+});
+
+// PUT /api/catalogs/locations/:id
+router.put('/locations/:id', async (req, res) => {
+  const { name, description } = req.body;
+  const { id } = req.params;
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'El nombre de la ubicación es requerido' });
+  }
+  try {
+    const pool = await getDbConnection();
+    await pool.request()
+      .input('id', sql.Int, parseInt(id))
+      .input('name', sql.NVarChar, name.trim())
+      .input('description', sql.NVarChar, description ? description.trim() : '')
+      .query(`
+        UPDATE MANSOLE.Locations
+        SET Name = @name, Description = @description
+        WHERE Id = @id
+      `);
+    res.json({ message: 'Ubicación actualizada con éxito' });
+  } catch (err) {
+    console.error('Error PUT /catalogs/locations/:id:', err);
+    res.status(500).json({ error: 'Error al actualizar ubicación' });
+  }
+});
+
+// DELETE /api/catalogs/locations/:id
+router.delete('/locations/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const pool = await getDbConnection();
+    const countCheck = await pool.request()
+      .input('id', sql.Int, parseInt(id))
+      .query('SELECT COUNT(*) as count FROM MANSOLE.Assets WHERE LocationId = @id');
+
+    if (countCheck.recordset[0].count > 0) {
+      return res.status(400).json({ 
+        error: `No se puede eliminar la ubicación porque contiene ${countCheck.recordset[0].count} activo(s) asociado(s).` 
+      });
+    }
+
+    await pool.request()
+      .input('id', sql.Int, parseInt(id))
+      .query('DELETE FROM MANSOLE.Locations WHERE Id = @id');
+
+    res.json({ message: 'Ubicación eliminada con éxito' });
+  } catch (err) {
+    console.error('Error DELETE /catalogs/locations/:id:', err);
+    res.status(500).json({ error: 'Error al eliminar ubicación' });
+  }
+});
+
 module.exports = router;

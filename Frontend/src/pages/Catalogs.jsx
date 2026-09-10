@@ -14,7 +14,8 @@ import {
   X,
   Building2,
   Tag,
-  Factory
+  Factory,
+  MapPin
 } from 'lucide-react';
 import { api } from '../services/api';
 import { toast } from 'sonner';
@@ -28,6 +29,7 @@ export default function Catalogs({ currentUser }) {
   const [areas, setAreas] = useState([]);
   const [categories, setCategories] = useState([]);
   const [costCenters, setCostCenters] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
@@ -39,18 +41,21 @@ export default function Catalogs({ currentUser }) {
   const [areaForm, setAreaForm] = useState({ name: '', costCenterCode: 'CECO-SOL-101', description: '' });
   const [catForm, setCatForm] = useState({ name: '', description: '' });
   const [cecoForm, setCecoForm] = useState({ ceCoste: '', ceCosteDescripcion: '', gerencia: 'G. Producción', area: 'Producción', responsable: '', observaciones: '' });
+  const [locForm, setLocForm] = useState({ name: '', description: '' });
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [areasRes, catsRes, cecoRes] = await Promise.all([
+      const [areasRes, catsRes, cecoRes, locsRes] = await Promise.all([
         api.getCatalogAreas(),
         api.getCatalogCategories(),
-        api.getCatalogCostCenters()
+        api.getCatalogCostCenters(),
+        api.getCatalogLocations()
       ]);
       setAreas(Array.isArray(areasRes) ? areasRes : []);
       setCategories(Array.isArray(catsRes) ? catsRes : []);
       setCostCenters(Array.isArray(cecoRes) ? cecoRes : []);
+      setLocations(Array.isArray(locsRes) ? locsRes : []);
     } catch (err) {
       toast.error('Error cargando catálogos de Azure SQL');
     } finally {
@@ -186,6 +191,45 @@ export default function Catalogs({ currentUser }) {
     }
   };
 
+  // --- Handlers Ubicaciones ---
+  const handleOpenLocModal = (item = null) => {
+    setEditingItem(item);
+    if (item) {
+      setLocForm({ name: item.Name || '', description: item.Description || '' });
+    } else {
+      setLocForm({ name: '', description: '' });
+    }
+    setShowModal(true);
+  };
+
+  const handleSaveLoc = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingItem) {
+        await api.updateCatalogLocation(editingItem.Id, locForm);
+        toast.success('Ubicación actualizada exitosamente');
+      } else {
+        await api.createCatalogLocation(locForm);
+        toast.success('Ubicación registrada exitosamente');
+      }
+      setShowModal(false);
+      loadData();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al guardar ubicación');
+    }
+  };
+
+  const handleDeleteLoc = async (id) => {
+    if (!window.confirm('¿Estás seguro de eliminar esta ubicación física?')) return;
+    try {
+      await api.deleteCatalogLocation(id);
+      toast.success('Ubicación eliminada');
+      loadData();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'No se pudo eliminar la ubicación');
+    }
+  };
+
   // Filtros
   const filteredAreas = areas.filter(a => 
     (a.Name || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -203,6 +247,11 @@ export default function Catalogs({ currentUser }) {
     (c.Responsable || '').toLowerCase().includes(search.toLowerCase())
   );
 
+  const filteredLocs = locations.filter(l => 
+    (l.Name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (l.Description || '').toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <div className="space-y-6 pb-12">
       {/* Header con botón de ayuda */}
@@ -218,7 +267,7 @@ export default function Catalogs({ currentUser }) {
             <span>Configuración de Catálogos</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1 hidden sm:block">
-            Gobierna las tablas base del CMMS en Azure SQL: Áreas de Planta, Familias de Maquinaria y Centros de Costos.
+            Gobierna las tablas base del CMMS en Azure SQL: Áreas de Planta, Familias, Ubicaciones Físicas y Centros de Costos.
           </p>
         </div>
 
@@ -238,6 +287,7 @@ export default function Catalogs({ currentUser }) {
               if (activeTab === 'areas') handleOpenAreaModal();
               if (activeTab === 'categories') handleOpenCatModal();
               if (activeTab === 'cecos') handleOpenCecoModal();
+              if (activeTab === 'locations') handleOpenLocModal();
             }}
             className="flex-1 sm:flex-initial px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs"
           >
@@ -246,6 +296,7 @@ export default function Catalogs({ currentUser }) {
               {activeTab === 'areas' && 'Nueva Área'}
               {activeTab === 'categories' && 'Nueva Categoría'}
               {activeTab === 'cecos' && 'Nuevo CECO'}
+              {activeTab === 'locations' && 'Nueva Ubicación'}
             </span>
             <span className="sm:hidden">Nuevo</span>
           </button>
@@ -277,6 +328,18 @@ export default function Catalogs({ currentUser }) {
           >
             <Tag size={14} />
             <span>Categorías ({categories.length})</span>
+          </button>
+
+          <button
+            onClick={() => { setActiveTab('locations'); setSearch(''); }}
+            className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 sm:gap-2 transition-all whitespace-nowrap flex-shrink-0 ${
+              activeTab === 'locations' 
+                ? 'bg-white text-slate-900 shadow-xs' 
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <MapPin size={14} />
+            <span>Ubicaciones ({locations.length})</span>
           </button>
 
           <button
@@ -490,6 +553,66 @@ export default function Catalogs({ currentUser }) {
                 </table>
               </div>
             )}
+
+            {/* TAB 4: UBICACIONES FÍSICAS */}
+            {activeTab === 'locations' && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/60 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                      <th className="p-4">ID</th>
+                      <th className="p-4">Nombre de la Ubicación</th>
+                      <th className="p-4">Emplazamiento / Descripción</th>
+                      <th className="p-4">Máquinas Asignadas</th>
+                      <th className="p-4 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs">
+                    {filteredLocs.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="p-8 text-center text-slate-400">
+                          No se encontraron ubicaciones físicas registradas.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredLocs.map((loc) => (
+                        <tr key={loc.Id} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="p-4 font-mono font-bold text-slate-400">#{loc.Id}</td>
+                          <td className="p-4 font-semibold text-slate-900 flex items-center gap-2">
+                            <MapPin size={14} className="text-amber-600 flex-shrink-0" />
+                            <span>{loc.Name}</span>
+                          </td>
+                          <td className="p-4 text-slate-500 max-w-md truncate">{loc.Description || '—'}</td>
+                          <td className="p-4">
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                              {loc.AssetCount || 0} equipos
+                            </span>
+                          </td>
+                          <td className="p-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => handleOpenLocModal(loc)}
+                                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                                title="Editar Ubicación"
+                              >
+                                <Edit3 size={15} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteLoc(loc.Id)}
+                                className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
+                                title="Eliminar Ubicación"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -627,6 +750,37 @@ export default function Catalogs({ currentUser }) {
                     placeholder="Nombre del jefe de línea..."
                     value={cecoForm.responsable}
                     onChange={e => setCecoForm({ ...cecoForm, responsable: e.target.value })}
+                    className="w-full px-3.5 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:border-slate-900"
+                  />
+                </div>
+                <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+                  <button type="button" onClick={() => setShowModal(false)} className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg flex-1 sm:flex-initial text-center">Cancelar</button>
+                  <button type="submit" className="px-4 py-1.5 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800 flex-1 sm:flex-initial text-center">Guardar</button>
+                </div>
+              </form>
+            )}
+
+            {/* Formulario Ubicación */}
+            {activeTab === 'locations' && (
+              <form onSubmit={handleSaveLoc} className="space-y-3 pt-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Nombre de la Ubicación *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej. Nave Principal - Bahía A"
+                    value={locForm.name}
+                    onChange={e => setLocForm({ ...locForm, name: e.target.value })}
+                    className="w-full px-3.5 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:border-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Descripción / Emplazamiento</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Detalle del emplazamiento físico, zona o nave de planta..."
+                    value={locForm.description}
+                    onChange={e => setLocForm({ ...locForm, description: e.target.value })}
                     className="w-full px-3.5 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:border-slate-900"
                   />
                 </div>

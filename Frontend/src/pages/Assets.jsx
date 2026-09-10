@@ -3,11 +3,12 @@ import { api } from '../services/api';
 import { 
   Wrench, FileText, Plus, CheckCircle2, AlertOctagon, Layers, 
   Edit3, Trash2, Search, UploadCloud, Download, ExternalLink, 
-  Paperclip, Loader2, Image as ImageIcon 
+  Paperclip, Loader2, Image as ImageIcon, QrCode, MapPin, Printer 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { TableSkeleton } from '../components/UI';
 import ModalPortal from '../components/UI/ModalPortal';
+import AssetQRModal from '../components/AssetQRModal';
 
 // Caché en cliente para carga instantánea
 let cachedAssetsList = null;
@@ -16,12 +17,28 @@ export default function Assets({ currentUser }) {
   const [assets, setAssets] = useState(cachedAssetsList || []);
   const [areas, setAreas] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(!cachedAssetsList);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
+  const [qrModalAsset, setQrModalAsset] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [newAsset, setNewAsset] = useState({ code: '', name: '', brand: '', model: '', serialNumber: '', status: 'Operativo', areaId: '', categoryId: '' });
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const imageInputRef = useRef(null);
+
+  const [newAsset, setNewAsset] = useState({ 
+    code: '', 
+    name: '', 
+    brand: '', 
+    model: '', 
+    serialNumber: '', 
+    status: 'Operativo', 
+    areaId: '', 
+    categoryId: '',
+    locationId: '',
+    imageUrl: ''
+  });
 
   // Estado de Archivos Adjuntos (Azure Blob Storage)
   const [attachments, setAttachments] = useState([]);
@@ -34,8 +51,9 @@ export default function Assets({ currentUser }) {
     Promise.all([
       api.getAssets(),
       api.getAreas(),
-      api.getCategories()
-    ]).then(([data, areasData, catsData]) => {
+      api.getCategories(),
+      api.getLocations ? api.getLocations() : api.getCatalogLocations()
+    ]).then(([data, areasData, catsData, locsData]) => {
       if (Array.isArray(data)) {
         const clean = data.map((a, i) => ({
           id: a.id || a.Id || i + 1,
@@ -49,6 +67,8 @@ export default function Assets({ currentUser }) {
           areaName: a.areaName || a.AreaName || 'Área General',
           areaId: a.areaId || a.AreaId || '',
           costCenterCode: a.costCenterCode || a.CostCenterCode || 'CECO-SOL-101',
+          locationId: a.locationId || a.LocationId || '',
+          locationName: a.locationName || a.LocationName || a.Location || 'Sin Ubicación asignada',
           acquisitionDate: a.acquisitionDate || a.AcquisitionDate || '',
           status: a.status || a.Status || 'Operativo',
           imageUrl: a.imageUrl || a.ImageUrl || ''
@@ -58,6 +78,7 @@ export default function Assets({ currentUser }) {
       }
       if (Array.isArray(areasData)) setAreas(areasData);
       if (Array.isArray(catsData)) setCategories(catsData);
+      if (Array.isArray(locsData)) setLocations(locsData);
       setLoading(false);
     }).catch(() => {
       if (!cachedAssetsList) setAssets([]);
@@ -75,7 +96,6 @@ export default function Assets({ currentUser }) {
       .catch(() => setAttachments([]))
       .finally(() => setLoadingAttachments(false));
   };
-
 
   useEffect(() => {
     if (selectedAsset?.id) {
@@ -113,6 +133,53 @@ export default function Assets({ currentUser }) {
     }
   };
 
+  const handleAssetImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Seleccione un archivo de imagen válido (.png, .jpg, .jpeg, .webp)');
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error('La imagen no debe superar los 15MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    const toastId = toast.loading('Subiendo fotografía a Azure Blob Storage...');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('entityType', 'AssetImage');
+      formData.append('entityId', editingAsset?.id || 0);
+
+      const res = await api.uploadAttachment(formData);
+      const url = res?.blobUrl || res?.data?.blobUrl;
+      if (url) {
+        setNewAsset(prev => ({ ...prev, imageUrl: url }));
+        toast.success('Fotografía subida a Azure exitosamente', { id: toastId });
+      } else {
+        const reader = new FileReader();
+        reader.onload = () => {
+          setNewAsset(prev => ({ ...prev, imageUrl: reader.result }));
+          toast.success('Imagen cargada en el formulario', { id: toastId });
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (err) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setNewAsset(prev => ({ ...prev, imageUrl: reader.result }));
+        toast.success('Imagen cargada en el formulario', { id: toastId });
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleDeleteAttachment = async (attachmentId, fileName) => {
     if (!window.confirm(`¿Deseas desvincular el archivo "${fileName}"?`)) return;
     try {
@@ -125,15 +192,36 @@ export default function Assets({ currentUser }) {
   };
 
   const openCreate = () => {
-
     setEditingAsset(null);
-    setNewAsset({ code: '', name: '', brand: '', model: '', serialNumber: '', status: 'Operativo', areaId: areas[0]?.Id || '', categoryId: categories[0]?.Id || '' });
+    setNewAsset({ 
+      code: '', 
+      name: '', 
+      brand: '', 
+      model: '', 
+      serialNumber: '', 
+      status: 'Operativo', 
+      areaId: areas[0]?.Id || areas[0]?.id || '', 
+      categoryId: categories[0]?.Id || categories[0]?.id || '',
+      locationId: locations[0]?.Id || locations[0]?.id || '',
+      imageUrl: ''
+    });
     setShowCreateModal(true);
   };
 
   const openEdit = (a) => {
     setEditingAsset(a);
-    setNewAsset({ code: a.code, name: a.name, brand: a.brand, model: a.model, serialNumber: a.serialNumber, status: a.status, areaId: a.areaId, categoryId: a.categoryId });
+    setNewAsset({ 
+      code: a.code, 
+      name: a.name, 
+      brand: a.brand, 
+      model: a.model, 
+      serialNumber: a.serialNumber, 
+      status: a.status, 
+      areaId: a.areaId, 
+      categoryId: a.categoryId,
+      locationId: a.locationId || '',
+      imageUrl: a.imageUrl || ''
+    });
     setShowCreateModal(true);
   };
 
@@ -143,11 +231,24 @@ export default function Assets({ currentUser }) {
       if (editingAsset) {
         await api.updateAsset(editingAsset.id, newAsset);
         toast.success(`Activo "${newAsset.name}" actualizado exitosamente`);
+        setShowCreateModal(false);
       } else {
-        await api.createAsset(newAsset);
+        const res = await api.createAsset(newAsset);
+        const createdCode = res?.code || newAsset.code;
         toast.success(`Activo "${newAsset.name}" registrado exitosamente`);
+        setShowCreateModal(false);
+        // Abrir inmediatamente la ventana de impresión de QR que se pegará en la máquina
+        const matchedArea = areas.find(a => String(a.Id || a.id) === String(newAsset.areaId));
+        const matchedLoc = locations.find(l => String(l.Id || l.id) === String(newAsset.locationId));
+        setQrModalAsset({
+          ...newAsset,
+          id: res?.id,
+          code: createdCode,
+          areaName: matchedArea?.Name || 'Planta',
+          costCenterCode: matchedArea?.CostCenterCode || 'CECO',
+          locationName: matchedLoc?.Name || 'Planta'
+        });
       }
-      setShowCreateModal(false);
       loadAssets();
     } catch (err) {
       toast.error(`Error al guardar activo: ${err.message}`);
@@ -243,15 +344,29 @@ export default function Assets({ currentUser }) {
               </h4>
               <div className="text-xs text-slate-500 space-y-1 mb-4 leading-relaxed">
                 <div><strong className="text-slate-700">Área:</strong> {a.areaName}</div>
+                <div className="flex items-center gap-1">
+                  <strong className="text-slate-700">Ubicación:</strong> 
+                  <span className="inline-flex items-center gap-1 text-slate-700 font-medium">
+                    <MapPin size={11} className="text-amber-600" />
+                    {a.locationName || 'Sin asignar'}
+                  </span>
+                </div>
                 <div><strong className="text-slate-700">Marca / Modelo:</strong> {a.brand || '—'} {a.model || ''}</div>
                 <div><strong className="text-slate-700">Num. Serie:</strong> <span className="font-mono">{a.serialNumber || '—'}</span></div>
               </div>
 
-              <div className="mt-auto pt-3 border-t border-slate-100 flex items-center gap-2">
+              <div className="mt-auto pt-3 border-t border-slate-100 flex items-center gap-1.5 flex-wrap">
                 <button className="btn btn-secondary flex-1 text-xs py-1.5" onClick={() => setSelectedAsset(a)}>
                   <FileText size={14} /> 
                   <span className="hidden sm:inline">Ficha Técnica</span>
                   <span className="sm:hidden">Ficha</span>
+                </button>
+                <button 
+                  className="btn btn-secondary text-xs p-1.5 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-200" 
+                  onClick={() => setQrModalAsset(a)} 
+                  title="Generar / Imprimir Código QR para la máquina"
+                >
+                  <QrCode size={14} />
                 </button>
                 <button className="btn btn-secondary text-xs p-1.5" onClick={() => openEdit(a)} title="Editar activo">
                   <Edit3 size={14} />
@@ -278,6 +393,19 @@ export default function Assets({ currentUser }) {
                 </div>
                 <button onClick={() => setSelectedAsset(null)} className="text-slate-400 hover:text-slate-700 text-lg leading-none p-1">✕</button>
               </div>
+
+              {/* Imagen del activo si está disponible */}
+              {selectedAsset.imageUrl && (
+                <div className="mb-3 h-36 w-full rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
+                  <img 
+                    src={selectedAsset.imageUrl} 
+                    alt={selectedAsset.name} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.target.style.display='none'; }}
+                  />
+                </div>
+              )}
+
               <div className="bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200 mb-4 text-xs leading-relaxed text-slate-700">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                   <div><span className="text-slate-500">Marca:</span> <strong className="text-slate-900">{selectedAsset.brand || '—'}</strong></div>
@@ -285,6 +413,13 @@ export default function Assets({ currentUser }) {
                   <div><span className="text-slate-500">Num. Serie:</span> <strong className="text-slate-900 font-mono">{selectedAsset.serialNumber || '—'}</strong></div>
                   <div><span className="text-slate-500">Adquisición:</span> <strong className="text-slate-900">{selectedAsset.acquisitionDate || 'N/A'}</strong></div>
                   <div><span className="text-slate-500">Área Planta:</span> <strong className="text-slate-900">{selectedAsset.areaName}</strong></div>
+                  <div>
+                    <span className="text-slate-500">Ubicación:</span>{' '}
+                    <strong className="text-slate-900 inline-flex items-center gap-1">
+                      <MapPin size={11} className="text-amber-600" />
+                      {selectedAsset.locationName || 'Sin asignar'}
+                    </strong>
+                  </div>
                   <div><span className="text-slate-500">Estado Actual:</span> <span className="badge badge-success ml-1">{selectedAsset.status}</span></div>
                 </div>
               </div>
@@ -402,11 +537,19 @@ export default function Assets({ currentUser }) {
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
-                <button className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => setSelectedAsset(null)}>Cerrar</button>
-                <button className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center" onClick={() => { setSelectedAsset(null); openEdit(selectedAsset); }}>
-                  <Wrench size={14} /> <span>Editar Activo</span>
+              <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-200">
+                <button 
+                  className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 text-indigo-700 hover:bg-indigo-50" 
+                  onClick={() => setQrModalAsset(selectedAsset)}
+                >
+                  <QrCode size={14} /> <span>Etiqueta QR</span>
                 </button>
+                <div className="flex items-center gap-2">
+                  <button className="btn btn-secondary text-xs py-1.5 px-3" onClick={() => setSelectedAsset(null)}>Cerrar</button>
+                  <button className="btn btn-primary text-xs py-1.5 px-4" onClick={() => { const a = selectedAsset; setSelectedAsset(null); openEdit(a); }}>
+                    <Wrench size={14} /> <span>Editar Activo</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -426,6 +569,62 @@ export default function Assets({ currentUser }) {
             </div>
 
             <form onSubmit={handleSaveAsset} className="space-y-3">
+              {/* Sección de Imagen del Activo */}
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">Fotografía de la Máquina</label>
+                  {newAsset.imageUrl && (
+                    <button 
+                      type="button" 
+                      onClick={() => setNewAsset({ ...newAsset, imageUrl: '' })}
+                      className="text-[11px] text-red-600 hover:underline font-medium"
+                    >
+                      Quitar foto
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 rounded-lg bg-slate-200 border border-slate-300 overflow-hidden shrink-0 flex items-center justify-center">
+                    {newAsset.imageUrl ? (
+                      <img src={newAsset.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon size={22} className="text-slate-400" />
+                    )}
+                  </div>
+
+                  <div className="flex-1 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => imageInputRef.current?.click()}
+                        disabled={uploadingImage}
+                        className="btn btn-secondary text-xs py-1 px-2.5 flex items-center gap-1.5"
+                      >
+                        {uploadingImage ? <Loader2 size={13} className="animate-spin" /> : <UploadCloud size={13} />}
+                        <span>{newAsset.imageUrl ? 'Cambiar Foto' : 'Subir Imagen'}</span>
+                      </button>
+                      <input 
+                        type="file" 
+                        ref={imageInputRef} 
+                        onChange={handleAssetImageUpload} 
+                        accept="image/*" 
+                        style={{ display: 'none' }} 
+                      />
+                      <span className="text-[10px] text-slate-400">JPG, PNG o WebP</span>
+                    </div>
+
+                    <input
+                      type="url"
+                      placeholder="O escribe/pega la URL de la imagen (https://...)"
+                      value={newAsset.imageUrl}
+                      onChange={e => setNewAsset({ ...newAsset, imageUrl: e.target.value })}
+                      className="form-input text-xs py-1"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="form-group mb-0">
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Código Activo *</label>
@@ -436,6 +635,7 @@ export default function Assets({ currentUser }) {
                   <input className="form-input text-xs" required value={newAsset.name} onChange={e => setNewAsset({...newAsset, name: e.target.value})} placeholder="Ej. Prensa Hidráulica 100T" />
                 </div>
               </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="form-group mb-0">
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Marca</label>
@@ -446,6 +646,7 @@ export default function Assets({ currentUser }) {
                   <input className="form-input text-xs" value={newAsset.model} onChange={e => setNewAsset({...newAsset, model: e.target.value})} placeholder="Ej. HV-200" />
                 </div>
               </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="form-group mb-0">
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Área / CECO *</label>
@@ -468,30 +669,52 @@ export default function Assets({ currentUser }) {
                   </select>
                 </div>
               </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="form-group mb-0">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Ubicación Física (Planta)</label>
+                  <select className="form-select text-xs" value={newAsset.locationId} onChange={e => setNewAsset({...newAsset, locationId: e.target.value})}>
+                    <option value="">— Seleccionar Ubicación —</option>
+                    {locations.map(l => (
+                      <option key={l.Id || l.id} value={l.Id || l.id}>
+                        {l.Name || l.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="form-group mb-0">
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Número de Serie</label>
                   <input className="form-input text-xs" value={newAsset.serialNumber} onChange={e => setNewAsset({...newAsset, serialNumber: e.target.value})} placeholder="SN-XXXXXX" />
                 </div>
-                <div className="form-group mb-0">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Estado</label>
-                  <select className="form-select text-xs" value={newAsset.status} onChange={e => setNewAsset({...newAsset, status: e.target.value})}>
-                    <option value="Operativo">✅ Operativo</option>
-                    <option value="En Mantenimiento">🔧 En Mantenimiento</option>
-                    <option value="Fuera de Servicio">❌ Fuera de Servicio</option>
-                  </select>
-                </div>
               </div>
+
+              <div className="form-group mb-0">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Estado Operativo</label>
+                <select className="form-select text-xs" value={newAsset.status} onChange={e => setNewAsset({...newAsset, status: e.target.value})}>
+                  <option value="Operativo">✅ Operativo</option>
+                  <option value="En Mantenimiento">🔧 En Mantenimiento</option>
+                  <option value="Fuera de Servicio">❌ Fuera de Servicio</option>
+                </select>
+              </div>
+
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
                 <button type="button" className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center" onClick={() => setShowCreateModal(false)}>Cancelar</button>
                 <button type="submit" className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center">
-                  {editingAsset ? 'Guardar' : 'Registrar'}
+                  {editingAsset ? 'Guardar Cambios' : 'Registrar Activo'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       </ModalPortal>
+      )}
+
+      {/* Modal Generar / Imprimir Código QR */}
+      {qrModalAsset && (
+        <AssetQRModal 
+          asset={qrModalAsset} 
+          onClose={() => setQrModalAsset(null)} 
+        />
       )}
     </div>
   );

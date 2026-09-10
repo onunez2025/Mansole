@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../services/api';
-import { CalendarClock, Edit3, RefreshCw, Search, CalendarDays, Table as TableIcon, ChevronLeft, ChevronRight, Clock, AlertTriangle, CheckCircle2, X, Plus, Trash2 } from 'lucide-react';
+import { CalendarClock, Edit3, RefreshCw, Search, CalendarDays, Table as TableIcon, ChevronLeft, ChevronRight, Clock, AlertTriangle, CheckCircle2, X, Plus, Trash2, Play, Eye, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import { TableSkeleton } from '../components/UI';
 import ModalPortal from '../components/UI/ModalPortal';
@@ -30,10 +30,12 @@ const formatDisplayDate = (dateStr) => {
   return clean;
 };
 
-export default function Schedule({ currentUser }) {
+export default function Schedule({ currentUser, onNavigateToWorkOrders }) {
   const [schedule, setSchedule] = useState(cachedScheduleList || []);
   const [loading, setLoading] = useState(!cachedScheduleList);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [showReprogramForm, setShowReprogramForm] = useState(false);
+  const [isStartingOT, setIsStartingOT] = useState(false);
   const [newDate, setNewDate] = useState('');
   const [reprogramReason, setReprogramReason] = useState('Parada de producción aplazada o espera de ventana operativa en línea');
   const [activeFilter, setActiveFilter] = useState('Todos');
@@ -203,7 +205,17 @@ export default function Schedule({ currentUser }) {
     }
   };
 
-  const canReprogram = currentUser?.role === 'Administrador' || currentUser?.role === 'Supervisor' || currentUser?.role === 'Supervisor de Planta';
+  const canReprogram = useMemo(() => {
+    const role = currentUser?.role || '';
+    const permissions = currentUser?.permissions || [];
+    return (
+      role === 'Administrador' ||
+      role === 'Supervisor' ||
+      role === 'Supervisor de Planta' ||
+      permissions.includes('mansole.schedule.reprogram') ||
+      permissions.includes('*')
+    );
+  }, [currentUser]);
 
   // Filtrado por estado y texto de búsqueda
   const filteredSchedule = useMemo(() => {
@@ -301,9 +313,46 @@ export default function Schedule({ currentUser }) {
     setCalendarDate(new Date(2026, 8, 1)); // Septiembre 2026
   };
 
+  const openDetailModal = (item) => {
+    setSelectedItem(item);
+    setNewDate(item.nextDueDate);
+    setShowReprogramForm(false);
+  };
+
   const openReprogramModal = (item) => {
     setSelectedItem(item);
     setNewDate(item.nextDueDate);
+    setShowReprogramForm(true);
+  };
+
+  const handleStartMaintenance = async () => {
+    if (!selectedItem) return;
+    setIsStartingOT(true);
+    try {
+      const payload = {
+        type: 'Preventivo',
+        priority: selectedItem.status === 'Vencido' ? 'Alta' : 'Media',
+        assetId: selectedItem.assetId || null,
+        assetCode: selectedItem.assetCode,
+        assetName: selectedItem.assetName,
+        areaName: selectedItem.areaName,
+        costCenterCode: selectedItem.costCenterCode,
+        scheduledDate: selectedItem.nextDueDate,
+        description: `Mantenimiento Preventivo Programado: ${selectedItem.activityName} (${selectedItem.frequencyType})`,
+        technicians: currentUser ? [{ name: currentUser.name || currentUser.fullName || 'Técnico Asignado', hours: 1 }] : []
+      };
+
+      const res = await api.createWorkOrder(payload);
+      toast.success(`Orden de Trabajo Preventiva iniciada exitosamente (Código: ${res.code || 'OT-PREV'})`);
+      setSelectedItem(null);
+      if (onNavigateToWorkOrders) {
+        onNavigateToWorkOrders();
+      }
+    } catch (err) {
+      toast.error(`Error al iniciar mantenimiento: ${err.response?.data?.error || err.message}`);
+    } finally {
+      setIsStartingOT(false);
+    }
   };
 
   return (
@@ -492,12 +541,19 @@ export default function Schedule({ currentUser }) {
                   return (
                     <div
                       key={idx}
-                      className={`min-h-[115px] p-2 flex flex-col justify-between transition-colors ${
-                        cell.isCurrentMonth ? 'bg-white hover:bg-slate-50/50' : 'bg-slate-50/60 text-slate-400'
+                      onClick={() => {
+                        if (events.length > 0) {
+                          setActiveDayModal({ dateKey: cell.dateKey, events });
+                        }
+                      }}
+                      className={`min-h-[120px] p-1.5 sm:p-2 flex flex-col justify-between transition-colors ${
+                        events.length > 0 ? 'cursor-pointer hover:bg-slate-50/80 ' : ''
+                      }${
+                        cell.isCurrentMonth ? 'bg-white' : 'bg-slate-50/60 text-slate-400'
                       }`}
                     >
                       {/* Número del Día */}
-                      <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center justify-between mb-1">
                         <span
                           className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full ${
                             isToday
@@ -511,7 +567,7 @@ export default function Schedule({ currentUser }) {
                         </span>
 
                         {events.length > 0 && (
-                          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded-full">
+                          <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded-full border border-slate-200">
                             {events.length} {events.length === 1 ? 'act' : 'acts'}
                           </span>
                         )}
@@ -524,10 +580,10 @@ export default function Schedule({ currentUser }) {
                           const isProximo = evt.status === 'Próximo a Vencer';
 
                           const pillStyle = isVencido
-                            ? 'bg-red-50 text-red-800 border-red-200 hover:bg-red-100'
+                            ? 'bg-red-50/90 text-red-900 border-red-200 hover:bg-red-100 hover:border-red-300'
                             : isProximo
-                            ? 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100'
-                            : 'bg-emerald-50 text-emerald-900 border-emerald-200 hover:bg-emerald-100';
+                            ? 'bg-amber-50/90 text-amber-950 border-amber-200 hover:bg-amber-100 hover:border-amber-300'
+                            : 'bg-emerald-50/90 text-emerald-950 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300';
 
                           const dotColor = isVencido
                             ? 'bg-red-500'
@@ -539,13 +595,24 @@ export default function Schedule({ currentUser }) {
                             <button
                               key={evt.id}
                               type="button"
-                              onClick={() => openReprogramModal(evt)}
-                              className={`w-full text-left p-1 rounded-md border text-[10px] font-semibold truncate block transition-all shadow-2xs cursor-pointer ${pillStyle}`}
-                              title={`[${evt.assetCode}] ${evt.activityName} (${evt.frequencyType}) - Estado: ${evt.status}. Clic para reprogramar`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openDetailModal(evt);
+                              }}
+                              className={`w-full text-left p-1 rounded-md sm:rounded-lg border text-[10px] sm:text-[10.5px] block transition-all shadow-2xs cursor-pointer hover:shadow-xs hover:scale-[1.01] ${pillStyle}`}
+                              title={`Máquina: [${evt.assetCode}] ${evt.assetName}\nLabor: ${evt.activityName}\nFrecuencia: ${evt.frequencyType}\nEstado: ${evt.status}\nÁrea: ${evt.areaName} (${evt.costCenterCode})\n\n👉 Clic para ver detalle completo o iniciar mantenimiento`}
                             >
-                              <div className="flex items-center gap-1 truncate">
+                              <div className="flex items-center gap-1 min-w-0">
                                 <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotColor}`} />
-                                <span className="font-bold font-mono">[{evt.assetCode}]</span>
+                                <span className="font-extrabold font-mono text-[9.5px] sm:text-[10px] text-slate-900 shrink-0">
+                                  [{evt.assetCode}]
+                                </span>
+                                <span className="font-bold text-[10px] sm:text-[10.5px] text-slate-800 truncate">
+                                  {evt.assetName}
+                                </span>
+                              </div>
+                              <div className="text-[9px] sm:text-[9.5px] text-slate-600 truncate pl-2 flex items-center gap-1 font-normal">
+                                <span className="text-slate-400 font-bold shrink-0">•</span>
                                 <span className="truncate">{evt.activityName}</span>
                               </div>
                             </button>
@@ -556,8 +623,11 @@ export default function Schedule({ currentUser }) {
                         {events.length > 2 && (
                           <button
                             type="button"
-                            onClick={() => setActiveDayModal({ dateKey: cell.dateKey, events })}
-                            className="w-full text-center text-[10px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50/70 hover:bg-blue-100/70 py-0.5 rounded border border-blue-200 transition-colors cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveDayModal({ dateKey: cell.dateKey, events });
+                            }}
+                            className="w-full text-center text-[9.5px] sm:text-[10px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50/80 hover:bg-blue-100 py-0.5 rounded border border-blue-200 transition-colors cursor-pointer"
                           >
                             +{events.length - 2} más...
                           </button>
@@ -613,15 +683,29 @@ export default function Schedule({ currentUser }) {
                         </td>
                         <td><span className={`badge ${badgeClass} text-[11px]`}>{s.status}</span></td>
                         <td>
-                          {canReprogram ? (
-                            <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <button 
+                              type="button"
+                              className="btn btn-secondary text-xs py-1 px-2.5 cursor-pointer flex items-center gap-1"
+                              onClick={() => openDetailModal(s)}
+                              title="Ver detalle de mantenimiento y ejecutar labor"
+                            >
+                              <Eye size={12} className="text-blue-600" />
+                              <span>Detalle / Iniciar</span>
+                            </button>
+
+                            {canReprogram && (
                               <button 
-                                className="btn btn-secondary text-xs py-1 px-2.5 cursor-pointer"
+                                type="button"
+                                className="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
                                 onClick={() => openReprogramModal(s)}
                                 title="Reprogramar fecha"
                               >
-                                <Edit3 size={12} /> Reprogramar
+                                <Edit3 size={13} />
                               </button>
+                            )}
+
+                            {canReprogram && (
                               <button
                                 type="button"
                                 className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
@@ -630,12 +714,8 @@ export default function Schedule({ currentUser }) {
                               >
                                 <Trash2 size={13} />
                               </button>
-                            </div>
-                          ) : (
-                            <span className="text-[11px] text-slate-400 font-medium">
-                              Solo Supervisores
-                            </span>
-                          )}
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -686,15 +766,35 @@ export default function Schedule({ currentUser }) {
                       <div className="text-[11px] text-slate-500 font-mono">{evt.assetName} • {evt.frequencyType}</div>
                     </div>
 
-                    {canReprogram && (
-                      <div className="flex items-center gap-1 flex-shrink-0">
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveDayModal(null);
+                          openDetailModal(evt);
+                        }}
+                        className="btn btn-secondary text-xs py-1 px-2.5 cursor-pointer flex items-center gap-1 font-semibold text-blue-700 hover:bg-blue-50"
+                        title="Ver detalle del mantenimiento e iniciar"
+                      >
+                        <Eye size={12} className="text-blue-600" />
+                        <span>Detalle / Iniciar</span>
+                      </button>
+
+                      {canReprogram && (
                         <button
                           type="button"
-                          onClick={() => openReprogramModal(evt)}
-                          className="btn btn-secondary text-xs py-1 px-2.5 cursor-pointer"
+                          onClick={() => {
+                            setActiveDayModal(null);
+                            openReprogramModal(evt);
+                          }}
+                          className="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+                          title="Reprogramar fecha"
                         >
-                          <Edit3 size={12} /> Reprogramar
+                          <Edit3 size={13} />
                         </button>
+                      )}
+
+                      {canReprogram && (
                         <button
                           type="button"
                           onClick={() => handleDeleteScheduleEntry(evt.id, evt.activityName)}
@@ -703,8 +803,8 @@ export default function Schedule({ currentUser }) {
                         >
                           <Trash2 size={13} />
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -713,59 +813,199 @@ export default function Schedule({ currentUser }) {
         </ModalPortal>
       )}
 
-      {/* Modal de Reprogramación */}
+      {/* Modal Detalle de Mantenimiento Programado & Ejecución / Reprogramación */}
       {selectedItem && (
         <ModalPortal>
           <div className="modal-overlay" onClick={() => setSelectedItem(null)}>
             <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-200">
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">Reprogramación de Preventivo</h3>
-              <button onClick={() => setSelectedItem(null)} className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer">
-                <X size={18} />
-              </button>
+              {/* Cabecera del Modal */}
+              <div className="flex justify-between items-start mb-3 pb-3 border-b border-slate-200 gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="text-xs font-black text-blue-700 font-mono tracking-tight">
+                      PLAN PREVENTIVO #{selectedItem.id}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                      selectedItem.status === 'Vencido' 
+                        ? 'bg-red-100 text-red-800 border-red-300' 
+                        : selectedItem.status === 'Próximo a Vencer' 
+                          ? 'bg-amber-100 text-amber-800 border-amber-300' 
+                          : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                    }`}>
+                      {selectedItem.status === 'Vencido' ? '🔴 Vencido' :
+                       selectedItem.status === 'Próximo a Vencer' ? '🟡 Próximo' : '🟢 Programado'}
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
+                    Detalle de Mantenimiento Programado
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Información operativa del plan preventivo y ejecución en planta
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setSelectedItem(null)} 
+                  className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                  title="Cerrar ventana"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Ficha Completa del Activo y CECO */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 mb-3 shadow-2xs">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Activo / Maquinaria a Intervenir
+                </div>
+                <div>
+                  <div className="text-sm font-extrabold text-slate-900 flex items-center gap-1.5 flex-wrap">
+                    <span className="font-mono text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded text-xs">
+                      [{selectedItem.assetCode}]
+                    </span>
+                    <span>{selectedItem.assetName}</span>
+                  </div>
+                  <div className="text-xs text-slate-600 mt-1 flex items-center gap-2 flex-wrap">
+                    <span>Área: <strong>{selectedItem.areaName}</strong></span>
+                    <span>•</span>
+                    <span>CECO: <strong className="font-mono text-indigo-700">{selectedItem.costCenterCode}</strong></span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200/80 grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-semibold">ACTIVIDAD / LABOR</span>
+                    <span className="font-bold text-slate-800">{selectedItem.activityName}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-semibold">FRECUENCIA / PERÍODO</span>
+                    <span className="font-bold text-slate-800">{selectedItem.frequencyType}</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-xs">
+                  <span className="text-slate-600">Fecha Programada:</span>
+                  <span className="font-mono font-bold text-slate-900 text-sm">
+                    📅 {formatDisplayDate(selectedItem.nextDueDate)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Botón Principal: Iniciar Mantenimiento / Crear OT */}
+              <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl mb-3 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div>
+                  <div className="text-xs font-bold text-blue-950 flex items-center gap-1.5">
+                    <Play size={14} className="text-blue-600" />
+                    <span>Ejecución Inmediata en Planta</span>
+                  </div>
+                  <div className="text-[11px] text-blue-800 mt-0.5">
+                    Genera la Orden de Trabajo (OT) preventiva con esta máquina y actividad asignada.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleStartMaintenance}
+                  disabled={isStartingOT}
+                  className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer shrink-0 transition-all hover:shadow"
+                >
+                  {isStartingOT ? (
+                    <>
+                      <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Iniciando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play size={14} />
+                      <span>Iniciar Mantenimiento</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Sección de Reprogramación: Condicionada por Permisos */}
+              {canReprogram ? (
+                <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                  <button
+                    type="button"
+                    onClick={() => setShowReprogramForm(!showReprogramForm)}
+                    className="w-full p-2.5 bg-slate-100 hover:bg-slate-200/80 transition-colors flex items-center justify-between text-xs font-bold text-slate-700 cursor-pointer select-none"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Edit3 size={13} className="text-slate-600" />
+                      <span>Reprogramar Fecha de Preventivo</span>
+                    </span>
+                    <span className="text-[10px] text-blue-600 font-semibold">
+                      {showReprogramForm ? 'Ocultar campos ▲' : 'Modificar fecha ▼'}
+                    </span>
+                  </button>
+
+                  {showReprogramForm && (
+                    <form onSubmit={handleReprogram} className="p-3 space-y-3 bg-white border-t border-slate-200">
+                      <div className="form-group mb-0">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Nueva Fecha Propuesta *</label>
+                        <input 
+                          type="date" 
+                          className="form-input text-xs font-mono" 
+                          required 
+                          value={newDate} 
+                          onChange={e => setNewDate(e.target.value)} 
+                        />
+                      </div>
+
+                      <div className="form-group mb-0">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Motivo de Reprogramación *</label>
+                        <textarea 
+                          className="form-textarea text-xs" 
+                          rows="2" 
+                          required
+                          value={reprogramReason} 
+                          onChange={e => setReprogramReason(e.target.value)} 
+                          placeholder="Explique el motivo: espera de repuestos, ventana operativa de planta, etc."
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                        <button 
+                          type="button" 
+                          className="btn btn-secondary text-xs py-1 px-3 cursor-pointer" 
+                          onClick={() => setShowReprogramForm(false)}
+                        >
+                          Cancelar
+                        </button>
+                        <button 
+                          type="submit" 
+                          className="btn btn-primary text-xs py-1 px-3 cursor-pointer"
+                        >
+                          Guardar Reprogramación
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              ) : (
+                /* Usuario sin permiso de reprogramación */
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 flex items-start gap-2">
+                  <Clock size={16} className="text-slate-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-slate-800 block">Reprogramación de Fechas Restringida</span>
+                    <span>
+                      Solo la Jefatura o Supervisores autorizados pueden alterar las fechas programadas del plan. Como técnico, puedes ejecutar esta labor haciendo clic en <strong>"Iniciar Mantenimiento"</strong>.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end pt-3 border-t border-slate-200 mt-3">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary text-xs py-1.5 px-4 cursor-pointer" 
+                  onClick={() => setSelectedItem(null)}
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
-
-            <div className="bg-blue-50 border border-blue-200 p-3 sm:p-3.5 rounded-xl mb-4 text-xs text-blue-800 leading-relaxed">
-              Estás modificando la fecha programada de <strong>"{selectedItem.activityName}"</strong> en el activo <strong>[{selectedItem.assetCode}] {selectedItem.assetName}</strong>. La reprogramación quedará registrada con justificación para la auditoría de CECO.
-            </div>
-
-            <form onSubmit={handleReprogram} className="space-y-3">
-              <div className="form-group mb-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Fecha Actualmente Programada</label>
-                <input className="form-input text-xs bg-slate-50 text-slate-500 font-mono" disabled value={formatDisplayDate(selectedItem.nextDueDate)} />
-              </div>
-
-              <div className="form-group mb-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Nueva Fecha Propuesta *</label>
-                <input 
-                  type="date" 
-                  className="form-input text-xs font-mono" 
-                  required 
-                  value={newDate} 
-                  onChange={e => setNewDate(e.target.value)} 
-                />
-              </div>
-
-              <div className="form-group mb-0">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Motivo de Reprogramación *</label>
-                <textarea 
-                  className="form-textarea text-xs" 
-                  rows="2" 
-                  required
-                  value={reprogramReason} 
-                  onChange={e => setReprogramReason(e.target.value)} 
-                  placeholder="Explique el motivo: espera de repuestos, ventana operativa de planta, etc."
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
-                <button type="button" className="btn btn-secondary text-xs py-1.5 px-3 flex-1 sm:flex-initial justify-center cursor-pointer" onClick={() => setSelectedItem(null)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary text-xs py-1.5 px-4 flex-1 sm:flex-initial justify-center cursor-pointer">Guardar Fecha</button>
-              </div>
-            </form>
           </div>
-        </div>
-      </ModalPortal>
+        </ModalPortal>
       )}
 
       {/* Modal de Programar Nuevo Mantenimiento Preventivo */}

@@ -140,7 +140,7 @@ export default function App() {
       case 'dashboard': return <Dashboard currentUser={user} />;
       case 'workOrders': return <WorkOrders currentUser={user} onNavigateToReports={() => setActiveTab('reports')} />;
       case 'reports': return <Reports currentUser={user} />;
-      case 'schedule': return <Schedule currentUser={user} />;
+      case 'schedule': return <Schedule currentUser={user} onNavigateToWorkOrders={() => setActiveTab('workOrders')} />;
       case 'assets': return <Assets currentUser={user} />;
       case 'inventory': return <Inventory currentUser={user} />;
       case 'activities': return <Activities currentUser={user} />;

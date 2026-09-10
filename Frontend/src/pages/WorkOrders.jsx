@@ -1785,9 +1785,9 @@ export default function WorkOrders({ currentUser, onNavigateToReports, initialOr
                     </span>
                   </div>
 
-                  {/* Técnico 1 */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    <div className="sm:col-span-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Técnico 1 */}
+                    <div>
                       <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                         Técnico Principal Responsable *
                       </label>
@@ -1807,25 +1807,9 @@ export default function WorkOrders({ currentUser, onNavigateToReports, initialOr
                         <input className="form-input text-xs" placeholder="Nombre Técnico 1" value={newOT.tech1} onChange={e => setNewOT({...newOT, tech1: e.target.value})} />
                       )}
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-700 mb-1" title="Horas Hombre estimadas para la labor">
-                        Horas Planificadas (Hs)
-                      </label>
-                      <input 
-                        type="number" 
-                        step="0.5" 
-                        min="0"
-                        className="form-input text-xs" 
-                        placeholder="Ej. 2.0" 
-                        value={newOT.tech1Hours} 
-                        onChange={e => setNewOT({...newOT, tech1Hours: e.target.value})} 
-                      />
-                    </div>
-                  </div>
 
-                  {/* Técnico 2 (Opcional) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    <div className="sm:col-span-2">
+                    {/* Técnico 2 (Opcional) */}
+                    <div>
                       <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                         Técnico de Apoyo (Opcional)
                       </label>
@@ -1846,24 +1830,7 @@ export default function WorkOrders({ currentUser, onNavigateToReports, initialOr
                         <input className="form-input text-xs" placeholder="Nombre Técnico 2 (Opcional)" value={newOT.tech2} onChange={e => setNewOT({...newOT, tech2: e.target.value})} />
                       )}
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-700 mb-1" title="Horas Hombre estimadas para el técnico de apoyo">
-                        Horas Planificadas (Hs)
-                      </label>
-                      <input 
-                        type="number" 
-                        step="0.5" 
-                        min="0"
-                        className="form-input text-xs" 
-                        placeholder="Ej. 2.0" 
-                        value={newOT.tech2Hours} 
-                        onChange={e => setNewOT({...newOT, tech2Hours: e.target.value})} 
-                      />
-                    </div>
                   </div>
-                  <span className="text-[11px] text-slate-400 block italic">
-                    * El segundo campo representa las horas hombre estimadas (ej. 2.0 = dos horas de labor) para valorizar el costo de mano de obra en planta.
-                  </span>
                 </div>
               ) : (
                 /* En Preventivo o Mejora y el usuario NO TIENE permisos de asignación */

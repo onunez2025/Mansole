@@ -112,11 +112,11 @@ export default function AssetQRScanView({ assetCode, currentUser, onSelectOrder,
               {/* Tarjeta de la Máquina */}
               <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200">
                 <div className="flex gap-3">
-                  {asset.ImageUrl && (
+                  {(asset.ImageUrl || asset.imageUrl) && (
                     <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 border border-slate-200 bg-white">
                       <img 
-                        src={asset.ImageUrl} 
-                        alt={asset.Name} 
+                        src={asset.ImageUrl || asset.imageUrl} 
+                        alt={asset.Name || asset.name} 
                         className="w-full h-full object-cover"
                         onError={(e) => { e.target.style.display='none'; }}
                       />
@@ -126,29 +126,29 @@ export default function AssetQRScanView({ assetCode, currentUser, onSelectOrder,
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-1 mb-1">
                       <span className="font-mono text-xs font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                        [{asset.Code}]
+                        [{asset.Code || asset.code}]
                       </span>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                        asset.Status === 'Operativo' 
+                        (asset.Status || asset.status) === 'Operativo' 
                           ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                           : 'bg-amber-50 text-amber-700 border-amber-200'
                       }`}>
-                        {asset.Status}
+                        {asset.Status || asset.status}
                       </span>
                     </div>
 
                     <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug truncate">
-                      {asset.Name}
+                      {asset.Name || asset.name}
                     </h3>
 
                     <div className="text-[11px] text-slate-500 space-y-0.5 mt-1">
                       <div className="flex items-center gap-1 truncate">
                         <Building2 size={12} className="text-slate-400 shrink-0" />
-                        <span className="truncate">{asset.AreaName || 'Planta'} ({asset.CostCenterCode || 'CECO'})</span>
+                        <span className="truncate">{asset.AreaName || asset.areaName || 'Planta'} ({asset.CostCenterCode || asset.costCenterCode || 'CECO'})</span>
                       </div>
                       <div className="flex items-center gap-1 truncate">
                         <MapPin size={12} className="text-amber-600 shrink-0" />
-                        <span className="truncate"><strong>Ubicación:</strong> {asset.LocationName || 'Sin ubicación específica'}</span>
+                        <span className="truncate"><strong>Ubicación:</strong> {asset.LocationName || asset.locationName || 'Sin ubicación específica'}</span>
                       </div>
                     </div>
                   </div>

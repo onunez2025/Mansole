@@ -61,8 +61,9 @@ router.get('/public-qr/:code', async (req, res) => {
   const { code } = req.params;
   try {
     const pool = await getDbConnection();
+    const cleanCode = (code || '').trim();
     const assetRes = await pool.request()
-      .input('code', sql.NVarChar, code)
+      .input('code', sql.NVarChar, cleanCode)
       .query(`
         SELECT a.Id, a.Code, a.Name, a.Brand, a.Model, a.SerialNumber, a.Status, a.ImageUrl,
                c.Name as CategoryName, ar.Name as AreaName, ar.CostCenterCode,
@@ -71,25 +72,26 @@ router.get('/public-qr/:code', async (req, res) => {
         LEFT JOIN MANSOLE.AssetCategories c ON a.CategoryId = c.Id
         LEFT JOIN MANSOLE.Areas ar ON a.AreaId = ar.Id
         LEFT JOIN MANSOLE.Locations l ON a.LocationId = l.Id
-        WHERE a.Code = @code OR CAST(a.Id AS NVARCHAR) = @code
+        WHERE LOWER(RTRIM(LTRIM(a.Code))) = LOWER(@code) 
+           OR CAST(a.Id AS NVARCHAR) = @code
       `);
 
     if (assetRes.recordset.length === 0) {
-      return res.status(404).json({ error: 'Máquina o activo no encontrado' });
+      return res.status(404).json({ error: `La máquina con código "${cleanCode}" no existe en el sistema.` });
     }
 
     const asset = assetRes.recordset[0];
 
+    // Consultar OTs abiertas o en proceso para esta máquina específica
     const otRes = await pool.request()
       .input('assetId', sql.Int, asset.Id)
       .query(`
-        SELECT w.Id, w.Code, w.Description, w.MaintenanceType, w.Priority, w.Status,
-               w.AssignedTo, w.CreatedAt, w.ScheduledStartDate, w.ScheduledEndDate,
-               u.FullName as AssignedTechnicianName
+        SELECT w.Id, w.Code, w.Description, w.Type as MaintenanceType, w.Priority, w.Status,
+               w.ScheduledDate, w.LaborCost, w.TotalCost,
+               (SELECT TOP 1 wt.TechnicianName FROM MANSOLE.WorkOrderTasks wt WHERE wt.WorkOrderId = w.Id AND wt.TechnicianName IS NOT NULL) as AssignedTechnicianName
         FROM MANSOLE.WorkOrders w
-        LEFT JOIN MANSOLE.Users u ON w.AssignedTo = u.Id
-        WHERE w.AssetId = @assetId AND w.Status IN ('Abierta', 'Pendiente', 'En Progreso', 'En Proceso', 'En Pausa', 'Asignada')
-        ORDER BY CASE WHEN w.Priority = 'Critica' OR w.Priority = 'Crítica' THEN 1 WHEN w.Priority = 'Alta' THEN 2 ELSE 3 END, w.CreatedAt DESC
+        WHERE w.AssetId = @assetId AND w.Status NOT IN ('Cerrada', 'Finalizada')
+        ORDER BY CASE WHEN w.Priority = 'Critica' OR w.Priority = 'Crítica' THEN 1 WHEN w.Priority = 'Alta' THEN 2 ELSE 3 END, w.Id DESC
       `);
 
     res.json({

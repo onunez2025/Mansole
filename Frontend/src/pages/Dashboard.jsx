@@ -103,28 +103,28 @@ export default function Dashboard({ currentUser }) {
       value: `${kpi.overallAvailability}%`, 
       desc: 'Meta mensual > 95%', 
       icon: <TrendingUp size={20} />, 
-      color: 'text-emerald-600 bg-emerald-50 border-emerald-200' 
+      color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800' 
     },
     { 
       title: 'MTTR (T. Med. Reparación)', 
       value: `${kpi.mttrHours} hrs`, 
       desc: 'Promedio resolución correctivos', 
       icon: <Clock size={20} />, 
-      color: 'text-blue-600 bg-blue-50 border-blue-200' 
+      color: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800' 
     },
     { 
       title: 'MTBF (T. Entre Fallas)', 
       value: `${kpi.mtbfHours} hrs`, 
       desc: 'Confiabilidad operativa en planta', 
       icon: <Cpu size={20} />, 
-      color: 'text-indigo-600 bg-indigo-50 border-indigo-200' 
+      color: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800' 
     },
     { 
       title: 'Cumplimiento Preventivo', 
       value: `${kpi.preventiveCompliance}%`, 
       desc: `${kpi.closedOrdersCount} OTs finalizadas`, 
       icon: <CheckCircle2 size={20} />, 
-      color: 'text-purple-600 bg-purple-50 border-purple-200' 
+      color: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 border-purple-200 dark:border-purple-800' 
     },
   ];
 
@@ -197,7 +197,7 @@ export default function Dashboard({ currentUser }) {
             <Calendar size={14} className="text-blue-600 dark:text-blue-400 shrink-0" />
             <div className="flex items-center gap-1.5 flex-wrap">
               <div className="flex items-center gap-1">
-                <span className="text-slate-400 dark:text-slate-500 font-medium">Desde:</span>
+                <span className="text-slate-400 dark:text-slate-400 font-medium">Desde:</span>
                 <input
                   type="date"
                   value={startDate}
@@ -207,11 +207,11 @@ export default function Dashboard({ currentUser }) {
                     setActivePreset('custom');
                     if (val && endDate) fetchData(val, endDate);
                   }}
-                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-medium focus:outline-none focus:border-slate-900 dark:focus:border-slate-400 cursor-pointer"
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-xs text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:border-slate-900 dark:focus:border-slate-400 cursor-pointer"
                 />
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-slate-400 dark:text-slate-500 font-medium">Hasta:</span>
+                <span className="text-slate-400 dark:text-slate-400 font-medium">Hasta:</span>
                 <input
                   type="date"
                   value={endDate}
@@ -221,7 +221,7 @@ export default function Dashboard({ currentUser }) {
                     setActivePreset('custom');
                     if (startDate && val) fetchData(startDate, val);
                   }}
-                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-xs text-slate-800 dark:text-slate-200 font-medium focus:outline-none focus:border-slate-900 dark:focus:border-slate-400 cursor-pointer"
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 text-xs text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:border-slate-900 dark:focus:border-slate-400 cursor-pointer"
                 />
               </div>
             </div>
@@ -255,14 +255,14 @@ export default function Dashboard({ currentUser }) {
         {cards.map((c, i) => (
           <div key={i} className="stat-card">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{c.title}</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{c.title}</span>
               <div className={`w-9 h-9 rounded-lg flex items-center justify-center border ${c.color}`}>
                 {c.icon}
               </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mb-2">{c.value}</div>
-            <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-auto">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight mb-2">{c.value}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-auto">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500" />
               <span>{c.desc}</span>
             </div>
           </div>

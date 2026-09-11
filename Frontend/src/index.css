@@ -220,12 +220,58 @@ html.dark, :root.dark, .dark {
   --bg-card: #1E293B;
   --border-subtle: #334155;
   --border-hover: #475569;
-  --text-primary: #F8FAFC;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
+  --text-primary: #FFFFFF;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
   --primary: #3B82F6;
   --primary-hover: #2563EB;
   --primary-accent: #60A5FA;
+  color-scheme: dark;
+}
+
+/* Ensure native widgets and form controls adopt dark theme */
+.dark body {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+}
+
+.dark input[type="date"] {
+  color-scheme: dark;
+}
+
+/* Fallback contrast safety for components using slate text classes in dark mode */
+.dark .text-slate-900:not([class*="dark:text-"]) {
+  color: #FFFFFF !important;
+}
+
+.dark .text-slate-800:not([class*="dark:text-"]) {
+  color: #F8FAFC !important;
+}
+
+.dark .text-slate-700:not([class*="dark:text-"]) {
+  color: #E2E8F0 !important;
+}
+
+.dark .text-slate-600:not([class*="dark:text-"]) {
+  color: #CBD5E1 !important;
+}
+
+.dark .text-slate-500:not([class*="dark:text-"]) {
+  color: #94A3B8 !important;
+}
+
+/* Surface and border fallback safety in dark mode */
+.dark .bg-white:not([class*="dark:bg-"]) {
+  background-color: var(--bg-card);
+}
+
+.dark .bg-slate-50:not([class*="dark:bg-"]) {
+  background-color: #0F172A;
+}
+
+.dark .border-slate-200:not([class*="dark:border-"]),
+.dark .border-slate-100:not([class*="dark:border-"]) {
+  border-color: var(--border-subtle);
 }
 
 /* App Shell */
@@ -483,32 +529,32 @@ html, body {
 
 /* Dark mode badge accents */
 .dark .badge-success {
-  background: rgba(6, 95, 70, 0.25);
+  background: rgba(16, 185, 129, 0.18);
   color: #34D399;
-  border-color: rgba(5, 150, 105, 0.4);
+  border-color: rgba(16, 185, 129, 0.4);
 }
 
 .dark .badge-danger {
-  background: rgba(153, 27, 27, 0.25);
+  background: rgba(239, 68, 68, 0.18);
   color: #F87171;
-  border-color: rgba(220, 38, 38, 0.4);
+  border-color: rgba(239, 68, 68, 0.4);
 }
 
 .dark .badge-info {
-  background: rgba(30, 64, 175, 0.25);
+  background: rgba(59, 130, 246, 0.18);
   color: #60A5FA;
-  border-color: rgba(37, 99, 235, 0.4);
+  border-color: rgba(59, 130, 246, 0.4);
 }
 
 .dark .badge-warning {
-  background: rgba(146, 64, 14, 0.25);
-  color: #FBBF24;
-  border-color: rgba(217, 119, 6, 0.4);
+  background: rgba(245, 158, 11, 0.18);
+  color: #FCD34D;
+  border-color: rgba(245, 158, 11, 0.45);
 }
 
 .dark .badge-mono {
-  background: rgba(51, 65, 85, 0.4);
-  color: #CBD5E1;
+  background: #1E293B;
+  color: #E2E8F0;
   border-color: #475569;
 }
 
@@ -573,6 +619,21 @@ html, body {
   background: var(--bg-app);
 }
 
+.dark .custom-table th {
+  background: #0F172A;
+  color: #94A3B8;
+  border-bottom: 1px solid #334155;
+}
+
+.dark .custom-table td {
+  color: #CBD5E1;
+  border-bottom: 1px solid #334155;
+}
+
+.dark .custom-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .custom-table tbody tr:last-child td {
   border-bottom: none;
 }
@@ -635,6 +696,11 @@ html, body {
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.06);
   color: #475569;
+}
+
+.dark .pipeline-count {
+  background: rgba(255, 255, 255, 0.1);
+  color: #CBD5E1;
 }
 
 .pipeline-tab.active .pipeline-count {

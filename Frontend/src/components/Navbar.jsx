@@ -161,7 +161,7 @@ export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu
         {/* Botón Central de Ayuda y Procedimientos */}
         <button
           onClick={onOpenHelp}
-          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-750 text-xs font-semibold transition-all shadow-xs cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold transition-all shadow-xs cursor-pointer"
           title="Manual de Procedimientos SOP"
         >
           <HelpCircle size={15} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
@@ -171,7 +171,7 @@ export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu
         {/* Botón y Badge de Versión / Changelog */}
         <button
           onClick={onOpenChangelog}
-          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50/60 dark:hover:bg-slate-750 text-xs font-semibold transition-all shadow-xs cursor-pointer group"
+          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50/60 dark:hover:bg-slate-700 text-xs font-semibold transition-all shadow-xs cursor-pointer group"
           title="Registro de Versiones y Pull Requests (Changelog)"
         >
           <GitPullRequest size={14} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0 group-hover:scale-110 transition-transform" />
@@ -188,7 +188,7 @@ export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu
             className={`relative p-1.5 sm:p-2 rounded-lg border transition-colors flex-shrink-0 cursor-pointer ${
               showNotifications 
                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500/20' 
-                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-750'
+                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700'
             }`}
             title="Centro de Notificaciones"
           >

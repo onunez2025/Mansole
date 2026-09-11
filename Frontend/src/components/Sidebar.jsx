@@ -87,7 +87,7 @@ export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout
         </div>
 
         {/* Status de Conexión */}
-        <div className="px-5 py-2.5 bg-slate-50/70 dark:bg-slate-850/60 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
+        <div className="px-5 py-2.5 bg-slate-50/70 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
           <span className="text-slate-500 dark:text-slate-400 font-medium">Planta Lima-Norte</span>
           <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-semibold">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -140,7 +140,7 @@ export default function Sidebar({ activeTab, setActiveTab, currentUser, onLogout
         </nav>
 
         {/* Acceso directo a Novedades / Changelog */}
-        <div className="px-3 py-2 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-850/60">
+        <div className="px-3 py-2 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60">
           <button
             onClick={onOpenChangelog}
             className="w-full flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-800 hover:shadow-2xs transition-all cursor-pointer group"

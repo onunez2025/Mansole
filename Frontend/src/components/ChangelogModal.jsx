@@ -182,7 +182,7 @@ export default function ChangelogModal({ isOpen, onClose }) {
         </div>
 
         {/* Barra de Búsqueda y Filtros Rápidos */}
-        <div className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-850 border-b border-slate-200/80 dark:border-slate-800 shrink-0 space-y-3">
+        <div className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 shrink-0 space-y-3">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
             {/* Input de Búsqueda */}
             <div className="relative flex-1">
@@ -405,7 +405,7 @@ export default function ChangelogModal({ isOpen, onClose }) {
                             const badge = getTypeBadge(change.type);
 
                             return (
-                              <div key={idx} className="p-3 hover:bg-slate-50/50 dark:hover:bg-slate-750/50 transition-colors flex items-start gap-2.5 text-xs">
+                              <div key={idx} className="p-3 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors flex items-start gap-2.5 text-xs">
                                 <div className={`px-2 py-0.5 rounded-md border text-[10px] font-bold shrink-0 flex items-center gap-1 ${badge.bg}`}>
                                   {badge.icon}
                                   <span>{badge.label}</span>

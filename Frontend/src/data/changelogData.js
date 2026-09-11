@@ -3,22 +3,62 @@
  * Cada entrada documenta el PR asociado, fecha, resumen ejecutivo y detalle de cambios por categoría.
  */
 
-export const CURRENT_VERSION = 'v2.11.0';
+export const CURRENT_VERSION = 'v2.11.1';
 export const LAST_RELEASE_DATE = '11 de Septiembre, 2026';
 export const GITHUB_REPO_URL = 'https://github.com/onunez2025/Mansole';
 
 export const CHANGELOG_DATA = [
   {
-    version: 'v2.11.0',
-    prNumber: 30,
-    prTitle: 'feat: Modo Oscuro/Claro global y barra de filtros dinámicos facetados para Activos',
-    prUrl: `${GITHUB_REPO_URL}/pull/30`,
+    version: 'v2.11.1',
+    prNumber: 31,
+    prTitle: 'fix: Ajuste de alto contraste y corrección de paleta de colores en Modo Oscuro',
+    prUrl: `${GITHUB_REPO_URL}/pull/31`,
     commitHash: 'head',
     commitUrl: `${GITHUB_REPO_URL}/commits/master`,
     date: '11 de Septiembre, 2026',
     isLatest: true,
-    tag: 'Actual / Theme & Filters',
+    tag: 'Actual / Hotfix UX & Accesibilidad',
     tagColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    summary: 'Ajuste integral de la jerarquía de contrastes y paleta cromática en Modo Oscuro según estándares WCAG AA. Se corrigieron los números de métricas en los cards de KPIs del Dashboard (que antes se oscurecían con text-slate-900), se redefinieron las variables de texto secundario y atenuado (--text-secondary a Slate-300 y --text-muted a Slate-400), se optimizaron las insignias suaves (badges de alerta, CECO y éxito) para evitar tonalidades apagadas o barrosas, y se aplicaron reglas de salvaguarda para que inputs, selectores de fecha y tablas mantengan máxima nitidez visual en planta.',
+    highlights: [
+      'Números de KPIs en Dashboard: Corrección de contraste en los valores numéricos principales (98.5%, 11.3 hrs, etc.) garantizando blanco puro (dark:text-white) sobre las tarjetas oscuras.',
+      'Iconos de Indicadores Rediseñados: Contenedores con gradientes sutiles y bordes translúcidos en Dark Mode (dark:bg-*-950/60 y dark:text-*-400) eliminando el efecto de destello pastel.',
+      'Contraste de Tablas y Encabezados: Cabeceras de tabla con fondo Slate-900 y texto Slate-400 nítido, filas con hover sutil y badges de CECO / Alerta calibrados para alta legibilidad.',
+      'Selectores de Fecha y Controles: Sincronización con color-scheme: dark para que el selector nativo de calendario se visualice con iconos y texto claros.',
+      'Limpieza de Clases Huérfanas: Corrección de clases no estándar (slate-850, slate-750) en Sidebar, Navbar, modales y filtros de Activos.'
+    ],
+    changes: [
+      {
+        type: 'fix',
+        scope: 'Dashboard / KPIs',
+        title: 'Contraste y Visibilidad en Métricas Clave',
+        desc: 'Valores numéricos de disponibilidad, MTTR, MTBF y cumplimiento configurados con dark:text-white; títulos y descripciones en dark:text-slate-400.'
+      },
+      {
+        type: 'style',
+        scope: 'Design System / CSS',
+        title: 'Ajuste de Variables de Texto y Badges en Dark Mode',
+        desc: 'Actualización de --text-secondary (#CBD5E1) y --text-muted (#94A3B8) en index.css. Nuevos estilos de badges con contraste reforzado para warning, info, success y danger.'
+      },
+      {
+        type: 'fix',
+        scope: 'UI / Navbar & Sidebar',
+        title: 'Normalización de Colores de Fondo y Estados Hover',
+        desc: 'Reemplazo de referencias de color arbitrarias por tokens estándar de Tailwind (slate-800, slate-700) en barra lateral y cabecera.'
+      }
+    ]
+  },
+  {
+    version: 'v2.11.0',
+    prNumber: 30,
+    prTitle: 'feat: Modo Oscuro/Claro global y barra de filtros dinámicos facetados para Activos',
+    prUrl: `${GITHUB_REPO_URL}/pull/30`,
+    commitHash: 'da9c43c',
+    commitUrl: `${GITHUB_REPO_URL}/commit/da9c43c`,
+    date: '11 de Septiembre, 2026',
+    isLatest: false,
+    tag: 'Estable / Theme & Filters',
+    tagColor: 'bg-slate-100 text-slate-700 border-slate-300',
     summary: 'Implementación completa del sistema de Modo Oscuro y Modo Claro con selector instantáneo en la barra de navegación superior (Navbar), persistencia en localStorage y detección automática de preferencias del sistema operativo. Además, se añade la barra de filtros dinámicos facetados en el módulo de Activos (Marca, CECO, Categoría y Ubicación) con contadores en tiempo real, chips interactivos y restablecimiento rápido.',
     highlights: [
       'Modo Oscuro & Modo Claro Global: Selector accesible en Navbar con iconos Sol/Luna, cambio instantáneo sin recarga, persistencia local y soporte de contraste optimizado para entornos industriales.',

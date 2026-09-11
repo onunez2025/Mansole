@@ -424,7 +424,7 @@ export default function Assets({ currentUser }) {
                 className={`w-full pl-2.5 pr-7 py-1.5 text-xs rounded-lg font-medium border transition-colors cursor-pointer appearance-none truncate ${
                   filters.brand !== 'ALL' 
                     ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-200 font-semibold' 
-                    : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100/80 dark:hover:bg-slate-750 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
+                    : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100/80 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
                 }`}
               >
                 <option value="ALL">🏷️ Marca: Todas ({filterOptions.brands.reduce((acc, b) => acc + b.count, 0)})</option>
@@ -449,7 +449,7 @@ export default function Assets({ currentUser }) {
                 className={`w-full pl-2.5 pr-7 py-1.5 text-xs rounded-lg font-medium border transition-colors cursor-pointer appearance-none truncate ${
                   filters.costCenter !== 'ALL' 
                     ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-200 font-semibold' 
-                    : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100/80 dark:hover:bg-slate-750 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
+                    : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100/80 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
                 }`}
               >
                 <option value="ALL">🏢 CECO: Todos ({filterOptions.cecos.reduce((acc, c) => acc + c.count, 0)})</option>
@@ -474,7 +474,7 @@ export default function Assets({ currentUser }) {
                 className={`w-full pl-2.5 pr-7 py-1.5 text-xs rounded-lg font-medium border transition-colors cursor-pointer appearance-none truncate ${
                   filters.category !== 'ALL' 
                     ? 'bg-purple-50 dark:bg-purple-950/60 border-purple-300 dark:border-purple-700 text-purple-900 dark:text-purple-200 font-semibold' 
-                    : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100/80 dark:hover:bg-slate-750 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
+                    : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100/80 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
                 }`}
               >
                 <option value="ALL">⚙️ Categoría: Todas ({assets.length})</option>
@@ -499,7 +499,7 @@ export default function Assets({ currentUser }) {
                 className={`w-full pl-2.5 pr-7 py-1.5 text-xs rounded-lg font-medium border transition-colors cursor-pointer appearance-none truncate ${
                   filters.location !== 'ALL' 
                     ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 font-semibold' 
-                    : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100/80 dark:hover:bg-slate-750 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
+                    : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100/80 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
                 }`}
               >
                 <option value="ALL">📍 Ubicación: Todas ({assets.length})</option>
@@ -716,30 +716,30 @@ export default function Assets({ currentUser }) {
                 </div>
               )}
 
-              <div className="bg-slate-50 p-3.5 sm:p-4 rounded-xl border border-slate-200 mb-4 text-xs leading-relaxed text-slate-700">
+              <div className="bg-slate-50 dark:bg-slate-800/80 p-3.5 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-4 text-xs leading-relaxed text-slate-700 dark:text-slate-200">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-                  <div><span className="text-slate-500">Marca:</span> <strong className="text-slate-900">{selectedAsset.brand || '—'}</strong></div>
-                  <div><span className="text-slate-500">Modelo:</span> <strong className="text-slate-900">{selectedAsset.model || '—'}</strong></div>
-                  <div><span className="text-slate-500">Num. Serie:</span> <strong className="text-slate-900 font-mono">{selectedAsset.serialNumber || '—'}</strong></div>
-                  <div><span className="text-slate-500">Adquisición:</span> <strong className="text-slate-900">{selectedAsset.acquisitionDate || 'N/A'}</strong></div>
-                  <div><span className="text-slate-500">Área Planta:</span> <strong className="text-slate-900">{selectedAsset.areaName}</strong></div>
+                  <div><span className="text-slate-500 dark:text-slate-400">Marca:</span> <strong className="text-slate-900 dark:text-slate-100">{selectedAsset.brand || '—'}</strong></div>
+                  <div><span className="text-slate-500 dark:text-slate-400">Modelo:</span> <strong className="text-slate-900 dark:text-slate-100">{selectedAsset.model || '—'}</strong></div>
+                  <div><span className="text-slate-500 dark:text-slate-400">Num. Serie:</span> <strong className="text-slate-900 dark:text-slate-100 font-mono">{selectedAsset.serialNumber || '—'}</strong></div>
+                  <div><span className="text-slate-500 dark:text-slate-400">Adquisición:</span> <strong className="text-slate-900 dark:text-slate-100">{selectedAsset.acquisitionDate || 'N/A'}</strong></div>
+                  <div><span className="text-slate-500 dark:text-slate-400">Área Planta:</span> <strong className="text-slate-900 dark:text-slate-100">{selectedAsset.areaName}</strong></div>
                   <div>
-                    <span className="text-slate-500">Ubicación:</span>{' '}
-                    <strong className="text-slate-900 inline-flex items-center gap-1">
-                      <MapPin size={11} className="text-amber-600" />
+                    <span className="text-slate-500 dark:text-slate-400">Ubicación:</span>{' '}
+                    <strong className="text-slate-900 dark:text-slate-100 inline-flex items-center gap-1">
+                      <MapPin size={11} className="text-amber-600 dark:text-amber-400" />
                       {selectedAsset.locationName || 'Sin asignar'}
                     </strong>
                   </div>
-                  <div><span className="text-slate-500">Estado Actual:</span> <span className="badge badge-success ml-1">{selectedAsset.status}</span></div>
+                  <div><span className="text-slate-500 dark:text-slate-400">Estado Actual:</span> <span className="badge badge-success ml-1">{selectedAsset.status}</span></div>
                 </div>
               </div>
               {/* Sección de Documentos y Planos en Azure Blob Storage */}
               <div className="flex items-center justify-between mb-2.5">
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <Layers size={14} className="text-blue-600" />
+                <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers size={14} className="text-blue-600 dark:text-blue-400" />
                   <span>Planos & Manuales (Azure Blob Storage)</span>
                   {attachments.length > 0 && (
-                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200 ml-1">
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 ml-1">
                       {attachments.length}
                     </span>
                   )}

@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import { 
   Bell, Search, Menu, X, HelpCircle, AlertTriangle, 
   Clock, CheckCircle2, Info, Trash2, CheckCheck, ExternalLink,

@@ -385,8 +385,8 @@ export default function Assets({ currentUser }) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Activos Industriales & CECOs</h3>
-          <p className="text-sm text-slate-500 mt-0.5 hidden sm:block">Jerarquía de costos: Planta Industrial → Áreas de Producción → Equipos</p>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Activos Industriales & CECOs</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 hidden sm:block">Jerarquía de costos: Planta Industrial → Áreas de Producción → Equipos</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           <div className="relative flex-1 sm:w-64">
@@ -396,7 +396,7 @@ export default function Assets({ currentUser }) {
               placeholder="Buscar máquina, código o CECO..." 
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all"
+              className="w-full pl-9 pr-3 py-1.5 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-slate-900 dark:focus:border-slate-400 focus:ring-1 focus:ring-slate-900 transition-all"
             />
           </div>
           <button className="btn btn-primary text-xs flex-shrink-0" onClick={openCreate}>
@@ -408,10 +408,10 @@ export default function Assets({ currentUser }) {
       </div>
 
       {/* Barra de Filtros Dinámicos (Opción 1: Marca, CECO, Categoría, Ubicación) */}
-      <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-3.5 shadow-2xs space-y-2.5">
+      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 sm:p-3.5 shadow-2xs space-y-2.5">
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 shrink-0 mr-1">
-            <Filter size={13} className="text-slate-700" />
+          <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5 shrink-0 mr-1">
+            <Filter size={13} className="text-slate-700 dark:text-slate-300" />
             <span>Filtros:</span>
           </span>
 
@@ -423,8 +423,8 @@ export default function Assets({ currentUser }) {
                 onChange={(e) => setFilters(prev => ({ ...prev, brand: e.target.value }))}
                 className={`w-full pl-2.5 pr-7 py-1.5 text-xs rounded-lg font-medium border transition-colors cursor-pointer appearance-none truncate ${
                   filters.brand !== 'ALL' 
-                    ? 'bg-blue-50 border-blue-300 text-blue-900 font-semibold' 
-                    : 'bg-slate-50 hover:bg-slate-100/80 border-slate-200 text-slate-800'
+                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-200 font-semibold' 
+                    : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100/80 dark:hover:bg-slate-750 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
                 }`}
               >
                 <option value="ALL">🏷️ Marca: Todas ({filterOptions.brands.reduce((acc, b) => acc + b.count, 0)})</option>
@@ -448,8 +448,8 @@ export default function Assets({ currentUser }) {
                 onChange={(e) => setFilters(prev => ({ ...prev, costCenter: e.target.value }))}
                 className={`w-full pl-2.5 pr-7 py-1.5 text-xs rounded-lg font-medium border transition-colors cursor-pointer appearance-none truncate ${
                   filters.costCenter !== 'ALL' 
-                    ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-semibold' 
-                    : 'bg-slate-50 hover:bg-slate-100/80 border-slate-200 text-slate-800'
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-200 font-semibold' 
+                    : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100/80 dark:hover:bg-slate-750 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
                 }`}
               >
                 <option value="ALL">🏢 CECO: Todos ({filterOptions.cecos.reduce((acc, c) => acc + c.count, 0)})</option>
@@ -473,8 +473,8 @@ export default function Assets({ currentUser }) {
                 onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
                 className={`w-full pl-2.5 pr-7 py-1.5 text-xs rounded-lg font-medium border transition-colors cursor-pointer appearance-none truncate ${
                   filters.category !== 'ALL' 
-                    ? 'bg-purple-50 border-purple-300 text-purple-900 font-semibold' 
-                    : 'bg-slate-50 hover:bg-slate-100/80 border-slate-200 text-slate-800'
+                    ? 'bg-purple-50 dark:bg-purple-950/60 border-purple-300 dark:border-purple-700 text-purple-900 dark:text-purple-200 font-semibold' 
+                    : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100/80 dark:hover:bg-slate-750 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
                 }`}
               >
                 <option value="ALL">⚙️ Categoría: Todas ({assets.length})</option>
@@ -498,8 +498,8 @@ export default function Assets({ currentUser }) {
                 onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
                 className={`w-full pl-2.5 pr-7 py-1.5 text-xs rounded-lg font-medium border transition-colors cursor-pointer appearance-none truncate ${
                   filters.location !== 'ALL' 
-                    ? 'bg-amber-50 border-amber-300 text-amber-900 font-semibold' 
-                    : 'bg-slate-50 hover:bg-slate-100/80 border-slate-200 text-slate-800'
+                    ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 font-semibold' 
+                    : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100/80 dark:hover:bg-slate-750 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200'
                 }`}
               >
                 <option value="ALL">📍 Ubicación: Todas ({assets.length})</option>
@@ -520,7 +520,7 @@ export default function Assets({ currentUser }) {
             <button
               onClick={handleClearFilters}
               title="Restablecer filtros"
-              className="px-2.5 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+              className="px-2.5 py-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 rounded-lg transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
             >
               <RotateCcw size={12} />
               <span className="hidden sm:inline">Limpiar</span>
@@ -529,17 +529,17 @@ export default function Assets({ currentUser }) {
         </div>
 
         {/* Fila de Chips Activos y Contador */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-slate-500 text-[11px] font-semibold">
-              Mostrando <strong className="text-slate-900">{filteredAssets.length}</strong> de {assets.length} activos
+            <span className="text-slate-500 dark:text-slate-400 text-[11px] font-semibold">
+              Mostrando <strong className="text-slate-900 dark:text-slate-100">{filteredAssets.length}</strong> de {assets.length} activos
             </span>
 
             {/* Chip de Búsqueda de Texto */}
             {searchQuery.trim() && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-medium border border-slate-200">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-medium border border-slate-200 dark:border-slate-700">
                 Texto: "{searchQuery}"
-                <button onClick={() => setSearchQuery('')} className="hover:text-slate-900 cursor-pointer ml-0.5" title="Quitar búsqueda">
+                <button onClick={() => setSearchQuery('')} className="hover:text-slate-900 dark:hover:text-white cursor-pointer ml-0.5" title="Quitar búsqueda">
                   <X size={11} />
                 </button>
               </span>
@@ -547,9 +547,9 @@ export default function Assets({ currentUser }) {
 
             {/* Chip de Marca */}
             {filters.brand !== 'ALL' && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[11px] font-medium border border-blue-200">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-[11px] font-medium border border-blue-200 dark:border-blue-800">
                 Marca: {filters.brand}
-                <button onClick={() => setFilters(p => ({ ...p, brand: 'ALL' }))} className="hover:text-blue-900 cursor-pointer ml-0.5" title="Quitar filtro">
+                <button onClick={() => setFilters(p => ({ ...p, brand: 'ALL' }))} className="hover:text-blue-900 dark:hover:text-white cursor-pointer ml-0.5" title="Quitar filtro">
                   <X size={11} />
                 </button>
               </span>
@@ -557,9 +557,9 @@ export default function Assets({ currentUser }) {
 
             {/* Chip de CECO */}
             {filters.costCenter !== 'ALL' && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-medium border border-emerald-200">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[11px] font-medium border border-emerald-200 dark:border-emerald-800">
                 CECO: {filters.costCenter}
-                <button onClick={() => setFilters(p => ({ ...p, costCenter: 'ALL' }))} className="hover:text-emerald-900 cursor-pointer ml-0.5" title="Quitar filtro">
+                <button onClick={() => setFilters(p => ({ ...p, costCenter: 'ALL' }))} className="hover:text-emerald-900 dark:hover:text-white cursor-pointer ml-0.5" title="Quitar filtro">
                   <X size={11} />
                 </button>
               </span>
@@ -567,9 +567,9 @@ export default function Assets({ currentUser }) {
 
             {/* Chip de Categoría */}
             {filters.category !== 'ALL' && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[11px] font-medium border border-purple-200">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 text-[11px] font-medium border border-purple-200 dark:border-purple-800">
                 Categoría: {filterOptions.categories.find(c => String(c.id) === String(filters.category))?.name || filters.category}
-                <button onClick={() => setFilters(p => ({ ...p, category: 'ALL' }))} className="hover:text-purple-900 cursor-pointer ml-0.5" title="Quitar filtro">
+                <button onClick={() => setFilters(p => ({ ...p, category: 'ALL' }))} className="hover:text-purple-900 dark:hover:text-white cursor-pointer ml-0.5" title="Quitar filtro">
                   <X size={11} />
                 </button>
               </span>
@@ -577,9 +577,9 @@ export default function Assets({ currentUser }) {
 
             {/* Chip de Ubicación */}
             {filters.location !== 'ALL' && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[11px] font-medium border border-amber-200">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[11px] font-medium border border-amber-200 dark:border-amber-800">
                 Ubicación: {filterOptions.locations.find(l => String(l.id) === String(filters.location))?.name || filters.location}
-                <button onClick={() => setFilters(p => ({ ...p, location: 'ALL' }))} className="hover:text-amber-950 cursor-pointer ml-0.5" title="Quitar filtro">
+                <button onClick={() => setFilters(p => ({ ...p, location: 'ALL' }))} className="hover:text-amber-950 dark:hover:text-white cursor-pointer ml-0.5" title="Quitar filtro">
                   <X size={11} />
                 </button>
               </span>
@@ -589,7 +589,7 @@ export default function Assets({ currentUser }) {
           {activeFiltersCount > 0 && (
             <button 
               onClick={handleClearFilters}
-              className="text-[11px] text-slate-500 hover:text-slate-800 underline cursor-pointer"
+              className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 underline cursor-pointer"
             >
               Borrar todos los filtros
             </button>
@@ -609,12 +609,12 @@ export default function Assets({ currentUser }) {
           ))}
         </div>
       ) : filteredAssets.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center max-w-lg mx-auto my-6 shadow-xs">
-          <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3.5 text-slate-400">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 p-12 text-center max-w-lg mx-auto my-6 shadow-xs">
+          <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3.5 text-slate-400">
             <Filter size={22} />
           </div>
-          <h4 className="text-sm sm:text-base font-bold text-slate-900 mb-1">No se encontraron activos</h4>
-          <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+          <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 mb-1">No se encontraron activos</h4>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
             No hay ninguna máquina que coincida con los filtros seleccionados o el término de búsqueda.
           </p>
           <button 
@@ -628,8 +628,8 @@ export default function Assets({ currentUser }) {
       ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
         {filteredAssets.map((a, idx) => (
-          <div key={a.id || idx} className="stat-card flex flex-col p-0 overflow-hidden hover:border-slate-300 transition-all">
-            <div className="h-44 w-full relative bg-slate-100 border-b border-slate-200">
+          <div key={a.id || idx} className="stat-card flex flex-col p-0 overflow-hidden hover:border-slate-300 dark:hover:border-slate-700 transition-all">
+            <div className="h-44 w-full relative bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
               <img
                 src={a.imageUrl || '/images/prensa.jpg'}
                 alt={a.name}
@@ -642,27 +642,27 @@ export default function Assets({ currentUser }) {
                   {a.status}
                 </span>
               </div>
-              <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-md text-[11px] font-bold text-slate-800 border border-slate-200 font-mono shadow-xs">
+              <div className="absolute bottom-3 left-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xs px-2.5 py-1 rounded-md text-[11px] font-bold text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-mono shadow-xs">
                 {a.costCenterCode}
               </div>
             </div>
 
             <div className="p-5 flex-1 flex flex-col">
-              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider font-mono">{a.categoryName}</span>
-              <h4 className="text-base font-bold text-slate-900 mt-1 mb-2 leading-tight">
+              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider font-mono">{a.categoryName}</span>
+              <h4 className="text-base font-bold text-slate-900 dark:text-slate-100 mt-1 mb-2 leading-tight">
                 [{a.code}] {a.name}
               </h4>
-              <div className="text-xs text-slate-500 space-y-1 mb-4 leading-relaxed">
-                <div><strong className="text-slate-700">Área:</strong> {a.areaName}</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1 mb-4 leading-relaxed">
+                <div><strong className="text-slate-700 dark:text-slate-300">Área:</strong> {a.areaName}</div>
                 <div className="flex items-center gap-1">
-                  <strong className="text-slate-700">Ubicación:</strong> 
-                  <span className="inline-flex items-center gap-1 text-slate-700 font-medium">
-                    <MapPin size={11} className="text-amber-600" />
+                  <strong className="text-slate-700 dark:text-slate-300">Ubicación:</strong> 
+                  <span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 font-medium">
+                    <MapPin size={11} className="text-amber-600 dark:text-amber-400" />
                     {a.locationName || 'Sin asignar'}
                   </span>
                 </div>
-                <div><strong className="text-slate-700">Marca / Modelo:</strong> {a.brand || '—'} {a.model || ''}</div>
-                <div><strong className="text-slate-700">Num. Serie:</strong> <span className="font-mono">{a.serialNumber || '—'}</span></div>
+                <div><strong className="text-slate-700 dark:text-slate-300">Marca / Modelo:</strong> {a.brand || '—'} {a.model || ''}</div>
+                <div><strong className="text-slate-700 dark:text-slate-300">Num. Serie:</strong> <span className="font-mono">{a.serialNumber || '—'}</span></div>
               </div>
 
               <div className="mt-auto pt-3 border-t border-slate-100 flex items-center gap-1.5 flex-wrap">

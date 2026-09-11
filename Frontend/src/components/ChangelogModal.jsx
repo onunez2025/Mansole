@@ -182,7 +182,7 @@ export default function ChangelogModal({ isOpen, onClose }) {
         </div>
 
         {/* Barra de Búsqueda y Filtros Rápidos */}
-        <div className="p-3 sm:p-4 bg-slate-50 border-b border-slate-200/80 shrink-0 space-y-3">
+        <div className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-850 border-b border-slate-200/80 dark:border-slate-800 shrink-0 space-y-3">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
             {/* Input de Búsqueda */}
             <div className="relative flex-1">
@@ -192,12 +192,12 @@ export default function ChangelogModal({ isOpen, onClose }) {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar por palabra clave, módulo o PR (ej. kpi, calendario, loto, pr #24)..."
-                className="w-full pl-9 pr-8 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                className="w-full pl-9 pr-8 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
               />
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 text-xs cursor-pointer"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 text-xs cursor-pointer"
                 >
                   <X size={13} />
                 </button>
@@ -208,14 +208,14 @@ export default function ChangelogModal({ isOpen, onClose }) {
             <div className="flex items-center gap-1.5 justify-end">
               <button
                 onClick={expandAll}
-                className="text-[11px] font-semibold text-slate-600 hover:text-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-white transition-colors cursor-pointer"
+                className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 title="Expandir todas las versiones"
               >
                 Expandir todo
               </button>
               <button
                 onClick={collapseAll}
-                className="text-[11px] font-semibold text-slate-600 hover:text-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-white transition-colors cursor-pointer"
+                className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 title="Colapsar todas las versiones"
               >
                 Colapsar todo
@@ -225,7 +225,7 @@ export default function ChangelogModal({ isOpen, onClose }) {
 
           {/* Chips de filtro por versión */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs no-scrollbar">
-            <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
               <Filter size={11} /> Versión:
             </span>
             {[
@@ -240,8 +240,8 @@ export default function ChangelogModal({ isOpen, onClose }) {
                 onClick={() => setSelectedVersionFilter(f.id)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   selectedVersionFilter === f.id
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                    ? 'bg-slate-900 dark:bg-indigo-600 text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
                 }`}
               >
                 {f.label}
@@ -251,7 +251,7 @@ export default function ChangelogModal({ isOpen, onClose }) {
 
           {/* Chips de filtro por tipo de cambio */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs no-scrollbar">
-            <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider shrink-0 mr-1">
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider shrink-0 mr-1">
               Categoría:
             </span>
             {[
@@ -269,7 +269,7 @@ export default function ChangelogModal({ isOpen, onClose }) {
                 className={`px-2 py-0.5 rounded-md text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   selectedTypeFilter === f.id
                     ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
                 }`}
               >
                 {f.label}
@@ -279,14 +279,14 @@ export default function ChangelogModal({ isOpen, onClose }) {
         </div>
 
         {/* Lista de Versiones & Pull Requests (Timeline) */}
-        <div className="p-3 sm:p-6 overflow-y-auto flex-1 space-y-4 sm:space-y-6 bg-slate-50/50">
+        <div className="p-3 sm:p-6 overflow-y-auto flex-1 space-y-4 sm:space-y-6 bg-slate-50/50 dark:bg-slate-950/40">
           {filteredChangelog.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-2xl border border-slate-200 p-6">
-              <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+            <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
+              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-3">
                 <Search size={22} />
               </div>
-              <h4 className="text-sm font-bold text-slate-800 mb-1">No se encontraron cambios con ese criterio</h4>
-              <p className="text-xs text-slate-500 mb-4">Prueba con otra palabra clave o restablece los filtros aplicados.</p>
+              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">No se encontraron cambios con ese criterio</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Prueba con otra palabra clave o restablece los filtros aplicados.</p>
               <button
                 onClick={() => { setSearchTerm(''); setSelectedVersionFilter('ALL'); setSelectedTypeFilter('ALL'); }}
                 className="btn btn-secondary text-xs cursor-pointer"
@@ -301,20 +301,20 @@ export default function ChangelogModal({ isOpen, onClose }) {
               return (
                 <div 
                   key={release.version}
-                  className={`bg-white rounded-2xl border transition-all shadow-xs ${
+                  className={`bg-white dark:bg-slate-900 rounded-2xl border transition-all shadow-xs ${
                     release.isLatest 
-                      ? 'border-indigo-300 ring-2 ring-indigo-500/10' 
-                      : 'border-slate-200/90'
+                      ? 'border-indigo-300 dark:border-indigo-700 ring-2 ring-indigo-500/10' 
+                      : 'border-slate-200/90 dark:border-slate-800'
                   }`}
                 >
                   {/* Cabecera de la Versión */}
                   <div 
                     onClick={() => toggleVersion(release.version)}
-                    className="p-4 sm:p-5 flex items-start sm:items-center justify-between gap-3 cursor-pointer hover:bg-slate-50/70 transition-colors rounded-t-2xl"
+                    className="p-4 sm:p-5 flex items-start sm:items-center justify-between gap-3 cursor-pointer hover:bg-slate-50/70 dark:hover:bg-slate-800/70 transition-colors rounded-t-2xl"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                        <span className="text-base sm:text-lg font-black font-mono text-slate-900 tracking-tight">
+                        <span className="text-base sm:text-lg font-black font-mono text-slate-900 dark:text-slate-100 tracking-tight">
                           {release.version}
                         </span>
 
@@ -322,7 +322,7 @@ export default function ChangelogModal({ isOpen, onClose }) {
                           {release.tag}
                         </span>
 
-                        <span className="text-xs text-slate-500 flex items-center gap-1 font-medium">
+                        <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 font-medium">
                           <Calendar size={13} className="text-slate-400" />
                           {release.date}
                         </span>
@@ -335,10 +335,10 @@ export default function ChangelogModal({ isOpen, onClose }) {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 font-semibold transition-colors group text-[11px]"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/60 border border-purple-200 dark:border-purple-800 font-semibold transition-colors group text-[11px]"
                           title="Ver Pull Request en GitHub"
                         >
-                          <GitPullRequest size={12} className="text-purple-600" />
+                          <GitPullRequest size={12} className="text-purple-600 dark:text-purple-400" />
                           <span>PR #{release.prNumber}</span>
                           <ExternalLink size={10} className="opacity-60 group-hover:opacity-100" />
                         </a>
@@ -348,22 +348,22 @@ export default function ChangelogModal({ isOpen, onClose }) {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 font-mono text-[11px] transition-colors group"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 font-mono text-[11px] transition-colors group"
                           title="Ver Commit en GitHub"
                         >
-                          <GitCommit size={12} className="text-slate-500" />
+                          <GitCommit size={12} className="text-slate-500 dark:text-slate-400" />
                           <span>{release.commitHash}</span>
                           <ExternalLink size={10} className="opacity-60 group-hover:opacity-100" />
                         </a>
 
-                        <span className="text-[11px] text-slate-400 hidden sm:inline truncate max-w-[280px]">
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:inline truncate max-w-[280px]">
                           {release.prTitle}
                         </span>
                       </div>
                     </div>
 
                     <button 
-                      className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors shrink-0"
+                      className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
                       aria-label={isExpanded ? 'Colapsar' : 'Expandir'}
                     >
                       {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
@@ -372,9 +372,9 @@ export default function ChangelogModal({ isOpen, onClose }) {
 
                   {/* Cuerpo Detallado (Acordeón) */}
                   {isExpanded && (
-                    <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
+                    <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 dark:border-slate-800 space-y-4">
                       {/* Resumen Ejecutivo */}
-                      <div className="p-3 rounded-xl bg-slate-50 text-slate-700 text-xs sm:text-sm leading-relaxed border border-slate-200/70 mt-3">
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs sm:text-sm leading-relaxed border border-slate-200/70 dark:border-slate-700 mt-3">
                         {release.summary}
                       </div>
 
@@ -386,7 +386,7 @@ export default function ChangelogModal({ isOpen, onClose }) {
                           </h5>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {release.highlights.map((h, i) => (
-                              <div key={i} className="flex items-start gap-2 text-xs text-slate-700 bg-white p-2.5 rounded-lg border border-slate-200/80">
+                              <div key={i} className="flex items-start gap-2 text-xs text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-200/80 dark:border-slate-700">
                                 <CheckCircle2 size={15} className="text-emerald-500 shrink-0 mt-0.5" />
                                 <span>{h}</span>
                               </div>
@@ -400,12 +400,12 @@ export default function ChangelogModal({ isOpen, onClose }) {
                         <h5 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                           Detalle de Cambios ({release.changes.length})
                         </h5>
-                        <div className="divide-y divide-slate-100 border border-slate-200/80 rounded-xl overflow-hidden bg-white">
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200/80 dark:border-slate-700 rounded-xl overflow-hidden bg-white dark:bg-slate-800">
                           {release.changes.map((change, idx) => {
                             const badge = getTypeBadge(change.type);
 
                             return (
-                              <div key={idx} className="p-3 hover:bg-slate-50/50 transition-colors flex items-start gap-2.5 text-xs">
+                              <div key={idx} className="p-3 hover:bg-slate-50/50 dark:hover:bg-slate-750/50 transition-colors flex items-start gap-2.5 text-xs">
                                 <div className={`px-2 py-0.5 rounded-md border text-[10px] font-bold shrink-0 flex items-center gap-1 ${badge.bg}`}>
                                   {badge.icon}
                                   <span>{badge.label}</span>
@@ -413,14 +413,14 @@ export default function ChangelogModal({ isOpen, onClose }) {
 
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-1.5 mb-0.5">
-                                    <span className="font-bold text-slate-900">
+                                    <span className="font-bold text-slate-900 dark:text-slate-100">
                                       [{change.scope}]
                                     </span>
-                                    <span className="font-semibold text-slate-800">
+                                    <span className="font-semibold text-slate-800 dark:text-slate-200">
                                       {change.title}
                                     </span>
                                   </div>
-                                  <p className="text-slate-600 text-[11px] sm:text-xs leading-relaxed">
+                                  <p className="text-slate-600 dark:text-slate-400 text-[11px] sm:text-xs leading-relaxed">
                                     {change.desc}
                                   </p>
                                 </div>
@@ -431,13 +431,13 @@ export default function ChangelogModal({ isOpen, onClose }) {
                       </div>
 
                       {/* Enlace al PR completo */}
-                      <div className="pt-1 flex items-center justify-between text-xs text-slate-500">
-                        <span>Publicado y fusionado en rama <code className="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">master</code></span>
+                      <div className="pt-1 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                        <span>Publicado y fusionado en rama <code className="font-mono text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">master</code></span>
                         <a
                           href={release.prUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-semibold hover:underline"
+                          className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-semibold hover:underline"
                         >
                           <span>Ver Pull Request #{release.prNumber} en GitHub</span>
                           <ArrowUpRight size={13} />

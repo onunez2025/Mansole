@@ -3,11 +3,50 @@
  * Cada entrada documenta el PR asociado, fecha, resumen ejecutivo y detalle de cambios por categoría.
  */
 
-export const CURRENT_VERSION = 'v2.10.0';
-export const LAST_RELEASE_DATE = '10 de Septiembre, 2026';
+export const CURRENT_VERSION = 'v2.11.0';
+export const LAST_RELEASE_DATE = '11 de Septiembre, 2026';
 export const GITHUB_REPO_URL = 'https://github.com/onunez2025/Mansole';
 
 export const CHANGELOG_DATA = [
+  {
+    version: 'v2.11.0',
+    prNumber: 30,
+    prTitle: 'feat: Modo Oscuro/Claro global y barra de filtros dinámicos facetados para Activos',
+    prUrl: `${GITHUB_REPO_URL}/pull/30`,
+    commitHash: 'head',
+    commitUrl: `${GITHUB_REPO_URL}/commits/master`,
+    date: '11 de Septiembre, 2026',
+    isLatest: true,
+    tag: 'Actual / Theme & Filters',
+    tagColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    summary: 'Implementación completa del sistema de Modo Oscuro y Modo Claro con selector instantáneo en la barra de navegación superior (Navbar), persistencia en localStorage y detección automática de preferencias del sistema operativo. Además, se añade la barra de filtros dinámicos facetados en el módulo de Activos (Marca, CECO, Categoría y Ubicación) con contadores en tiempo real, chips interactivos y restablecimiento rápido.',
+    highlights: [
+      'Modo Oscuro & Modo Claro Global: Selector accesible en Navbar con iconos Sol/Luna, cambio instantáneo sin recarga, persistencia local y soporte de contraste optimizado para entornos industriales.',
+      'Filtros Dinámicos Facetados en Activos: Filtrado multidimensional por Marca, Centro de Costo (CECO), Categoría y Ubicación Física con cálculo dinámico de activos por opción.',
+      'Chips de Filtro Activo: Píldoras interactivas que muestran los filtros aplicados con eliminación individual ("x") o restablecimiento integral con un solo clic.',
+      'Adaptación Integral de Componentes: Cards de Dashboard, KPIs, tablas de imputación por CECO, modales de Changelog y Ayuda adaptados a ambas paletas de color.'
+    ],
+    changes: [
+      {
+        type: 'feat',
+        scope: 'UI / Temas',
+        title: 'Selector de Modo Oscuro y Claro con Persistencia',
+        desc: 'ThemeContext con hook useTheme(), toggle en Navbar con atajo visual, sincronización en localStorage (mansole_theme) y compatibilidad con prefers-color-scheme.'
+      },
+      {
+        type: 'feat',
+        scope: 'Activos',
+        title: 'Barra de Filtros Dinámicos (Marca, CECO, Categoría, Ubicación)',
+        desc: 'Selectores dinámicos en cascada que calculan y muestran en vivo las opciones disponibles según los activos del sistema, badges de conteo y botón Limpiar Filtros.'
+      },
+      {
+        type: 'feat',
+        scope: 'Componentes',
+        title: 'Tokens de Color y Estilos Dark Mode',
+        desc: 'Variables CSS en index.css y clases Tailwind dark: para Sidebar, Navbar, tablas, modales de ayuda, changelog y paneles de analítica.'
+      }
+    ]
+  },
   {
     version: 'v2.10.0',
     prNumber: 29,
@@ -16,9 +55,9 @@ export const CHANGELOG_DATA = [
     commitHash: '3396d38',
     commitUrl: `${GITHUB_REPO_URL}/commit/3396d38`,
     date: '10 de Septiembre, 2026',
-    isLatest: true,
-    tag: 'Actual / Major Release',
-    tagColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    isLatest: false,
+    tag: 'Estable / Major Release',
+    tagColor: 'bg-slate-100 text-slate-700 border-slate-300',
     summary: 'Lanzamiento integral de movilidad en planta e interactividad operativa: códigos QR industriales escaneables desde la cámara del celular sin login para consulta instantánea de OTs pendientes, lienzo de firmas digitales táctiles en Ficha Técnica, gestión de fotografías de activos en Azure Blob Storage, nuevo catálogo maestro de Ubicaciones Físicas, tipo de mantenimiento "Mejora", y mejoras de usabilidad en el Cronograma y emisión de OTs.',
     highlights: [
       'Escaneo QR Móvil sin Login: Los técnicos escanean la etiqueta de la máquina con la cámara de su celular y acceden instantáneamente a la ficha y a las OTs pendientes del activo.',

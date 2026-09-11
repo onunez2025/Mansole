@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
 import { 
   Bell, Search, Menu, X, HelpCircle, AlertTriangle, 
   Clock, CheckCircle2, Info, Trash2, CheckCheck, ExternalLink,
-  GitPullRequest
+  GitPullRequest, Sun, Moon
 } from 'lucide-react';
 import { CURRENT_VERSION } from '../data/changelogData';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu, isMobileOpen, onOpenHelp, onOpenChangelog }) {
+  const { theme, isDark, toggleTheme } = useTheme();
   const [showNotifications, setShowNotifications] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -101,12 +102,12 @@ export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu
   };
 
   return (
-    <header className="h-14 sm:h-16 px-3 sm:px-6 md:px-8 bg-white border-b border-slate-200/80 sticky top-0 z-40 flex items-center justify-between gap-2 sm:gap-4">
+    <header className="h-14 sm:h-16 px-3 sm:px-6 md:px-8 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 sticky top-0 z-40 flex items-center justify-between gap-2 sm:gap-4 transition-colors">
       {/* Botón Hamburguesa Móvil + Título de la vista activa */}
       <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
         <button
           onClick={onToggleMobileMenu}
-          className="lg:hidden p-1.5 sm:p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors flex-shrink-0 cursor-pointer"
+          className="lg:hidden p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex-shrink-0 cursor-pointer"
           title="Menú de Navegación"
           aria-label="Abrir menú de navegación"
         >
@@ -114,49 +115,67 @@ export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu
         </button>
 
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight leading-tight truncate">
+          <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-tight truncate">
             {activeTabTitle}
           </h2>
-          <p className="text-[11px] text-slate-500 font-medium hidden sm:block leading-none truncate">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden sm:block leading-none truncate">
             Rinnai Perú • Planta Industrial
           </p>
         </div>
       </div>
 
       {/* Acciones del Navbar */}
-      <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
         {/* Buscador Rápido */}
-        <div className="relative hidden lg:block w-56">
+        <div className="relative hidden lg:block w-52 xl:w-56">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input 
             type="text" 
             placeholder="Buscar en el sistema..." 
-            className="w-full pl-9 pr-8 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all"
+            className="w-full pl-9 pr-8 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-slate-900 dark:focus:border-slate-400 focus:ring-1 focus:ring-slate-900 transition-all"
           />
-          <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">
+          <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-mono bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
             ⌘K
           </kbd>
         </div>
 
+        {/* Conmutador de Modo Claro / Modo Oscuro */}
+        <button
+          onClick={toggleTheme}
+          className={`p-1.5 sm:p-2 rounded-lg border transition-all flex-shrink-0 cursor-pointer ${
+            isDark 
+              ? 'border-slate-700 bg-slate-800 text-amber-400 hover:bg-slate-700 hover:text-amber-300 shadow-xs ring-1 ring-amber-400/20' 
+              : 'border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 shadow-xs'
+          }`}
+          title={isDark ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
+          aria-label={isDark ? 'Cambiar a Modo Claro' : 'Cambiar a Modo Oscuro'}
+        >
+          {isDark ? (
+            <Sun size={15} className="transition-transform hover:rotate-45" />
+          ) : (
+            <Moon size={15} className="transition-transform hover:-rotate-12" />
+          )}
+        </button>
+
         {/* Botón Central de Ayuda y Procedimientos */}
         <button
           onClick={onOpenHelp}
-          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 text-xs font-semibold transition-all shadow-xs cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-750 text-xs font-semibold transition-all shadow-xs cursor-pointer"
           title="Manual de Procedimientos SOP"
         >
-          <HelpCircle size={15} className="text-blue-600 flex-shrink-0" />
+          <HelpCircle size={15} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
           <span className="hidden sm:inline">Manual SOP</span>
         </button>
 
         {/* Botón y Badge de Versión / Changelog */}
         <button
           onClick={onOpenChangelog}
-          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/60 hover:border-indigo-200 text-xs font-semibold transition-all shadow-xs cursor-pointer group"
+          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50/60 dark:hover:bg-slate-750 text-xs font-semibold transition-all shadow-xs cursor-pointer group"
           title="Registro de Versiones y Pull Requests (Changelog)"
         >
-          <GitPullRequest size={14} className="text-indigo-600 flex-shrink-0 group-hover:scale-110 transition-transform" />
-          <span className="font-mono font-bold text-slate-900 group-hover:text-indigo-700">{CURRENT_VERSION}</span>
-          <span className="hidden xl:inline text-[10px] font-medium px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200/70">
+          <GitPullRequest size={14} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0 group-hover:scale-110 transition-transform" />
+          <span className="font-mono font-bold text-slate-900 dark:text-slate-100 group-hover:text-indigo-700 dark:group-hover:text-indigo-300">{CURRENT_VERSION}</span>
+          <span className="hidden xl:inline text-[10px] font-medium px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800/70">
             Changelog
           </span>
         </button>
@@ -167,8 +186,8 @@ export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu
             onClick={() => setShowNotifications(prev => !prev)}
             className={`relative p-1.5 sm:p-2 rounded-lg border transition-colors flex-shrink-0 cursor-pointer ${
               showNotifications 
-                ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-500/20' 
-                : 'border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 ring-2 ring-blue-500/20' 
+                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-750'
             }`}
             title="Centro de Notificaciones"
           >
@@ -182,18 +201,18 @@ export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu
 
           {/* Panel Flotante de Notificaciones */}
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 sm:w-96 max-w-[calc(100vw-24px)] bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 overflow-hidden animate-fadeIn">
+            <div className="absolute right-0 mt-2 w-80 sm:w-96 max-w-[calc(100vw-24px)] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl z-50 overflow-hidden animate-fadeIn">
               {/* Cabecera del Panel */}
-              <div className="p-3.5 sm:p-4 bg-slate-50/80 border-b border-slate-200/80 flex items-center justify-between gap-2">
+              <div className="p-3.5 sm:p-4 bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Bell size={16} className="text-blue-600" />
-                  <h4 className="text-sm font-bold text-slate-900">Notificaciones</h4>
+                  <Bell size={16} className="text-blue-600 dark:text-blue-400" />
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">Notificaciones</h4>
                   {unreadCount > 0 ? (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300">
                       {unreadCount} nuevas
                     </span>
                   ) : (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                       Al día
                     </span>
                   )}
@@ -203,7 +222,7 @@ export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu
                   {unreadCount > 0 && (
                     <button
                       onClick={markAllAsRead}
-                      className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-50 transition-colors cursor-pointer"
+                      className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                       title="Marcar todas como leídas"
                     >
                       <CheckCheck size={13} />
@@ -212,7 +231,7 @@ export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu
                   )}
                   <button
                     onClick={() => setShowNotifications(false)}
-                    className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors cursor-pointer"
+                    className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded transition-colors cursor-pointer"
                   >
                     <X size={15} />
                   </button>
@@ -220,13 +239,13 @@ export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu
               </div>
 
               {/* Lista de Notificaciones */}
-              <div className="max-h-[360px] overflow-y-auto divide-y divide-slate-100">
+              <div className="max-h-[360px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
                 {notifications.length === 0 ? (
                   <div className="p-8 text-center">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-2">
                       <Bell size={20} />
                     </div>
-                    <p className="text-xs font-semibold text-slate-700">No hay notificaciones pendientes</p>
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">No hay notificaciones pendientes</p>
                     <p className="text-[11px] text-slate-400 mt-0.5">La planta opera bajo condiciones normales.</p>
                   </div>
                 ) : (
@@ -234,8 +253,8 @@ export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu
                     <div
                       key={n.id}
                       onClick={() => markAsRead(n.id)}
-                      className={`p-3 sm:p-3.5 hover:bg-slate-50 transition-colors flex items-start gap-3 cursor-pointer group relative ${
-                        !n.read ? 'bg-blue-50/30' : 'bg-white'
+                      className={`p-3 sm:p-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors flex items-start gap-3 cursor-pointer group relative ${
+                        !n.read ? 'bg-blue-50/30 dark:bg-blue-950/20' : 'bg-white dark:bg-slate-900'
                       }`}
                     >
                       <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 ${getTypeBg(n.type)}`}>
@@ -244,12 +263,12 @@ export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-1 mb-0.5">
-                          <span className={`text-xs font-bold truncate ${!n.read ? 'text-slate-900' : 'text-slate-700'}`}>
+                          <span className={`text-xs font-bold truncate ${!n.read ? 'text-slate-900 dark:text-slate-100' : 'text-slate-700 dark:text-slate-300'}`}>
                             {n.title}
                           </span>
                           <span className="text-[10px] text-slate-400 shrink-0 font-medium">{n.time}</span>
                         </div>
-                        <p className="text-[11px] text-slate-600 leading-snug line-clamp-2">
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug line-clamp-2">
                           {n.message}
                         </p>
                       </div>
@@ -259,7 +278,7 @@ export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu
                           e.stopPropagation();
                           removeNotification(n.id);
                         }}
-                        className="opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-red-600 rounded transition-all cursor-pointer shrink-0"
+                        className="opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-red-600 dark:hover:text-red-400 rounded transition-all cursor-pointer shrink-0"
                         title="Eliminar notificación"
                       >
                         <Trash2 size={13} />
@@ -274,7 +293,7 @@ export default function Navbar({ currentUser, activeTabTitle, onToggleMobileMenu
               </div>
 
               {/* Pie del Panel */}
-              <div className="p-2.5 bg-slate-50/60 border-t border-slate-100 text-center">
+              <div className="p-2.5 bg-slate-50/60 dark:bg-slate-800/60 border-t border-slate-100 dark:border-slate-800 text-center">
                 <span className="text-[11px] text-slate-400 font-medium">
                   Monitoreo en vivo de planta • MANSOLE
                 </span>

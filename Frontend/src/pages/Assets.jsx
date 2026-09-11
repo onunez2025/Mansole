@@ -3,7 +3,8 @@ import { api } from '../services/api';
 import { 
   Wrench, FileText, Plus, CheckCircle2, AlertOctagon, Layers, 
   Edit3, Trash2, Search, UploadCloud, Download, ExternalLink, 
-  Paperclip, Loader2, Image as ImageIcon, QrCode, MapPin, Printer 
+  Paperclip, Loader2, Image as ImageIcon, QrCode, MapPin, Printer,
+  Filter, X, RotateCcw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { TableSkeleton } from '../components/UI';
@@ -24,6 +25,12 @@ export default function Assets({ currentUser }) {
   const [editingAsset, setEditingAsset] = useState(null);
   const [qrModalAsset, setQrModalAsset] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState({
+    brand: 'ALL',
+    costCenter: 'ALL',
+    category: 'ALL',
+    location: 'ALL'
+  });
   const [uploadingImage, setUploadingImage] = useState(false);
   const imageInputRef = useRef(null);
 
@@ -266,17 +273,113 @@ export default function Assets({ currentUser }) {
     }
   };
 
+  // Opciones dinámicas con conteo de activos
+  const filterOptions = useMemo(() => {
+    const brandCounts = {};
+    const cecoCounts = {};
+    const categoryCounts = {};
+    const locationCounts = {};
+
+    assets.forEach(a => {
+      // Marca
+      if (a.brand && a.brand.trim()) {
+        const b = a.brand.trim();
+        brandCounts[b] = (brandCounts[b] || 0) + 1;
+      }
+      // CECO
+      if (a.costCenterCode && a.costCenterCode.trim()) {
+        const c = a.costCenterCode.trim();
+        cecoCounts[c] = (cecoCounts[c] || 0) + 1;
+      }
+      // Categoría
+      const catKey = a.categoryId ? String(a.categoryId) : (a.categoryName || 'Sin Categoría');
+      const catLabel = a.categoryName || 'Sin Categoría';
+      if (!categoryCounts[catKey]) {
+        categoryCounts[catKey] = { id: catKey, name: catLabel, count: 0 };
+      }
+      categoryCounts[catKey].count += 1;
+
+      // Ubicación
+      const locKey = a.locationId ? String(a.locationId) : 'UNASSIGNED';
+      const locLabel = a.locationId ? (a.locationName || 'Ubicación asignada') : 'Sin Ubicación asignada';
+      if (!locationCounts[locKey]) {
+        locationCounts[locKey] = { id: locKey, name: locLabel, count: 0 };
+      }
+      locationCounts[locKey].count += 1;
+    });
+
+    return {
+      brands: Object.entries(brandCounts)
+        .map(([name, count]) => ({ id: name, name, count }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+      cecos: Object.entries(cecoCounts)
+        .map(([code, count]) => ({ id: code, name: code, count }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+      categories: Object.values(categoryCounts)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+      locations: Object.values(locationCounts)
+        .sort((a, b) => a.name.localeCompare(b.name))
+    };
+  }, [assets]);
+
+  const handleClearFilters = () => {
+    setFilters({
+      brand: 'ALL',
+      costCenter: 'ALL',
+      category: 'ALL',
+      location: 'ALL'
+    });
+    setSearchQuery('');
+  };
+
+  const activeFiltersCount = (filters.brand !== 'ALL' ? 1 : 0) +
+    (filters.costCenter !== 'ALL' ? 1 : 0) +
+    (filters.category !== 'ALL' ? 1 : 0) +
+    (filters.location !== 'ALL' ? 1 : 0) +
+    (searchQuery.trim() ? 1 : 0);
+
   const filteredAssets = useMemo(() => {
-    if (!searchQuery.trim()) return assets;
-    const q = searchQuery.toLowerCase();
-    return assets.filter(a => 
-      (a.name || '').toLowerCase().includes(q) ||
-      (a.code || '').toLowerCase().includes(q) ||
-      (a.areaName || '').toLowerCase().includes(q) ||
-      (a.costCenterCode || '').toLowerCase().includes(q) ||
-      (a.brand || '').toLowerCase().includes(q)
-    );
-  }, [assets, searchQuery]);
+    return assets.filter(a => {
+      // Texto de búsqueda
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const match = (
+          (a.name || '').toLowerCase().includes(q) ||
+          (a.code || '').toLowerCase().includes(q) ||
+          (a.areaName || '').toLowerCase().includes(q) ||
+          (a.costCenterCode || '').toLowerCase().includes(q) ||
+          (a.brand || '').toLowerCase().includes(q) ||
+          (a.categoryName || '').toLowerCase().includes(q) ||
+          (a.locationName || '').toLowerCase().includes(q)
+        );
+        if (!match) return false;
+      }
+
+      // Filtro Marca
+      if (filters.brand !== 'ALL' && a.brand?.trim() !== filters.brand) {
+        return false;
+      }
+
+      // Filtro CECO
+      if (filters.costCenter !== 'ALL' && a.costCenterCode?.trim() !== filters.costCenter) {
+        return false;
+      }
+
+      // Filtro Categoría
+      if (filters.category !== 'ALL') {
+        const catKey = a.categoryId ? String(a.categoryId) : (a.categoryName || 'Sin Categoría');
+        if (catKey !== String(filters.category)) return false;
+      }
+
+      // Filtro Ubicación
+      if (filters.location !== 'ALL') {
+        const locKey = a.locationId ? String(a.locationId) : 'UNASSIGNED';
+        if (locKey !== String(filters.location)) return false;
+      }
+
+      return true;
+    });
+  }, [assets, searchQuery, filters]);
 
   return (
     <div className="space-y-6">
@@ -304,6 +407,196 @@ export default function Assets({ currentUser }) {
         </div>
       </div>
 
+      {/* Barra de Filtros Dinámicos (Opción 1: Marca, CECO, Categoría, Ubicación) */}
+      <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-3.5 shadow-2xs space-y-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs">
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 shrink-0 mr-1">
+            <Filter size={13} className="text-slate-700" />
+            <span>Filtros:</span>
+          </span>
+
+          {/* Filtro: Marca */}
+          <div className="flex-1 min-w-[135px] sm:min-w-[145px]">
+            <div className="relative">
+              <select
+                value={filters.brand}
+                onChange={(e) => setFilters(prev => ({ ...prev, brand: e.target.value }))}
+                className={`w-full pl-2.5 pr-7 py-1.5 text-xs rounded-lg font-medium border transition-colors cursor-pointer appearance-none truncate ${
+                  filters.brand !== 'ALL' 
+                    ? 'bg-blue-50 border-blue-300 text-blue-900 font-semibold' 
+                    : 'bg-slate-50 hover:bg-slate-100/80 border-slate-200 text-slate-800'
+                }`}
+              >
+                <option value="ALL">🏷️ Marca: Todas ({filterOptions.brands.reduce((acc, b) => acc + b.count, 0)})</option>
+                {filterOptions.brands.map(b => (
+                  <option key={b.id} value={b.id}>
+                    {b.name} ({b.count})
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Filtro: CECO */}
+          <div className="flex-1 min-w-[135px] sm:min-w-[145px]">
+            <div className="relative">
+              <select
+                value={filters.costCenter}
+                onChange={(e) => setFilters(prev => ({ ...prev, costCenter: e.target.value }))}
+                className={`w-full pl-2.5 pr-7 py-1.5 text-xs rounded-lg font-medium border transition-colors cursor-pointer appearance-none truncate ${
+                  filters.costCenter !== 'ALL' 
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-semibold' 
+                    : 'bg-slate-50 hover:bg-slate-100/80 border-slate-200 text-slate-800'
+                }`}
+              >
+                <option value="ALL">🏢 CECO: Todos ({filterOptions.cecos.reduce((acc, c) => acc + c.count, 0)})</option>
+                {filterOptions.cecos.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.count})
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Filtro: Categoría */}
+          <div className="flex-1 min-w-[135px] sm:min-w-[145px]">
+            <div className="relative">
+              <select
+                value={filters.category}
+                onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
+                className={`w-full pl-2.5 pr-7 py-1.5 text-xs rounded-lg font-medium border transition-colors cursor-pointer appearance-none truncate ${
+                  filters.category !== 'ALL' 
+                    ? 'bg-purple-50 border-purple-300 text-purple-900 font-semibold' 
+                    : 'bg-slate-50 hover:bg-slate-100/80 border-slate-200 text-slate-800'
+                }`}
+              >
+                <option value="ALL">⚙️ Categoría: Todas ({assets.length})</option>
+                {filterOptions.categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name} ({cat.count})
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Filtro: Ubicación */}
+          <div className="flex-1 min-w-[135px] sm:min-w-[145px]">
+            <div className="relative">
+              <select
+                value={filters.location}
+                onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
+                className={`w-full pl-2.5 pr-7 py-1.5 text-xs rounded-lg font-medium border transition-colors cursor-pointer appearance-none truncate ${
+                  filters.location !== 'ALL' 
+                    ? 'bg-amber-50 border-amber-300 text-amber-900 font-semibold' 
+                    : 'bg-slate-50 hover:bg-slate-100/80 border-slate-200 text-slate-800'
+                }`}
+              >
+                <option value="ALL">📍 Ubicación: Todas ({assets.length})</option>
+                {filterOptions.locations.map(loc => (
+                  <option key={loc.id} value={loc.id}>
+                    {loc.name} ({loc.count})
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Botón rápido limpiar si hay filtros activos */}
+          {activeFiltersCount > 0 && (
+            <button
+              onClick={handleClearFilters}
+              title="Restablecer filtros"
+              className="px-2.5 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+            >
+              <RotateCcw size={12} />
+              <span className="hidden sm:inline">Limpiar</span>
+            </button>
+          )}
+        </div>
+
+        {/* Fila de Chips Activos y Contador */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-slate-500 text-[11px] font-semibold">
+              Mostrando <strong className="text-slate-900">{filteredAssets.length}</strong> de {assets.length} activos
+            </span>
+
+            {/* Chip de Búsqueda de Texto */}
+            {searchQuery.trim() && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-medium border border-slate-200">
+                Texto: "{searchQuery}"
+                <button onClick={() => setSearchQuery('')} className="hover:text-slate-900 cursor-pointer ml-0.5" title="Quitar búsqueda">
+                  <X size={11} />
+                </button>
+              </span>
+            )}
+
+            {/* Chip de Marca */}
+            {filters.brand !== 'ALL' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[11px] font-medium border border-blue-200">
+                Marca: {filters.brand}
+                <button onClick={() => setFilters(p => ({ ...p, brand: 'ALL' }))} className="hover:text-blue-900 cursor-pointer ml-0.5" title="Quitar filtro">
+                  <X size={11} />
+                </button>
+              </span>
+            )}
+
+            {/* Chip de CECO */}
+            {filters.costCenter !== 'ALL' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-medium border border-emerald-200">
+                CECO: {filters.costCenter}
+                <button onClick={() => setFilters(p => ({ ...p, costCenter: 'ALL' }))} className="hover:text-emerald-900 cursor-pointer ml-0.5" title="Quitar filtro">
+                  <X size={11} />
+                </button>
+              </span>
+            )}
+
+            {/* Chip de Categoría */}
+            {filters.category !== 'ALL' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[11px] font-medium border border-purple-200">
+                Categoría: {filterOptions.categories.find(c => String(c.id) === String(filters.category))?.name || filters.category}
+                <button onClick={() => setFilters(p => ({ ...p, category: 'ALL' }))} className="hover:text-purple-900 cursor-pointer ml-0.5" title="Quitar filtro">
+                  <X size={11} />
+                </button>
+              </span>
+            )}
+
+            {/* Chip de Ubicación */}
+            {filters.location !== 'ALL' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[11px] font-medium border border-amber-200">
+                Ubicación: {filterOptions.locations.find(l => String(l.id) === String(filters.location))?.name || filters.location}
+                <button onClick={() => setFilters(p => ({ ...p, location: 'ALL' }))} className="hover:text-amber-950 cursor-pointer ml-0.5" title="Quitar filtro">
+                  <X size={11} />
+                </button>
+              </span>
+            )}
+          </div>
+
+          {activeFiltersCount > 0 && (
+            <button 
+              onClick={handleClearFilters}
+              className="text-[11px] text-slate-500 hover:text-slate-800 underline cursor-pointer"
+            >
+              Borrar todos los filtros
+            </button>
+          )}
+        </div>
+      </div>
+
       {loading && !assets.length ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -314,6 +607,23 @@ export default function Assets({ currentUser }) {
               <div className="skeleton h-9 w-full mt-auto" />
             </div>
           ))}
+        </div>
+      ) : filteredAssets.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center max-w-lg mx-auto my-6 shadow-xs">
+          <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3.5 text-slate-400">
+            <Filter size={22} />
+          </div>
+          <h4 className="text-sm sm:text-base font-bold text-slate-900 mb-1">No se encontraron activos</h4>
+          <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+            No hay ninguna máquina que coincida con los filtros seleccionados o el término de búsqueda.
+          </p>
+          <button 
+            onClick={handleClearFilters}
+            className="btn btn-secondary text-xs inline-flex items-center gap-1.5 px-3 py-1.5 mx-auto"
+          >
+            <RotateCcw size={13} />
+            Restablecer todos los filtros
+          </button>
         </div>
       ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
